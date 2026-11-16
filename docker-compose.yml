@@ -1,0 +1,42 @@
+﻿services:
+  # Database service
+  # database:
+  #   image: postgres:16-alpine
+  #   container_name: retailcore-db
+  #   restart: always
+  #   environment:
+  #     POSTGRES_DB: retailcore_db
+  #     POSTGRES_USER: retailcore_user
+  #     POSTGRES_PASSWORD: secretpassword
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - db_data:/var/lib/postgresql/data
+  #     - ./database:/docker-entrypoint-initdb.d
+
+  # Backend service
+  # backend:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   container_name: retailcore-backend
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     - database
+
+  # Frontend service
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   container_name: retailcore-frontend
+  #   restart: unless-stopped
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - backend
+
+# volumes:
+#   db_data:
