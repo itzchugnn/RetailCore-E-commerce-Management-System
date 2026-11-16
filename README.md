@@ -35,18 +35,26 @@ Toàn bộ tài liệu kiến trúc và đặc tả triển khai được tổ c
 | **05** | `docs/Blueprints/05_backend_frontend_and_testing.md` | Kiến trúc Backend Spring Boot, Frontend React + TypeScript & Chiến lược Kiểm thử | Phần VII, VIII & IX |
 
 ### 2.2. Tài liệu Thực thi Chi tiết theo Milestone (`docs/Milestones/`)
-* **Milestone M1 – Business Analysis (`docs/Milestones/M1-Business-Analysis/`):**
+* **Milestone M1 – Business Analysis (`docs/Milestones/M1-Business-Analysis/`) [COMPLETED]:**
   * `01-Project-Charter.md`: Tuyên ngôn dự án, bối cảnh, phạm vi và mục tiêu.
   * `02-Stakeholder-Register.md`: Danh mục bên liên quan, tác nhân hệ thống (Actors) và ma trận RBAC.
   * `03-Use-Case-Diagram.md`: Sơ đồ Use Case tổng thể và phân rã các quan hệ include/extend.
   * `04-Use-Case-Specifications.md`: Đặc tả chi tiết từng Use Case trọng tâm và kịch bản luồng xử lý.
   * `05-Business-Processes.md`: Sơ đồ quy trình nghiệp vụ cốt lõi (Đặt hàng, Giữ kho, Xử lý đơn).
-  * `06-Business-Rules.md`: Danh mục quy tắc nghiệp vụ chi tiết có mã định danh (BR-PRD, BR-INV, BR-ORD...).
+  * `06-Business-Rules.md`: Bộ quy tắc nghiệp vụ v1.1 (BR-PR01..12, BR-IN01..21, BR-PM01..14...).
   * `07-Functional-Requirements.md`: Danh sách yêu cầu chức năng theo từng phân hệ.
   * `08-Non-Functional-Requirements.md`: Yêu cầu phi chức năng (Hiệu năng, ACID, Bảo mật, Sao lưu).
-  * `09-Data-Requirements.md`: Phân tích nhóm thực thể cốt lõi, yêu cầu Snapshot và Soft Delete.
-  * `10-Traceability-Matrix.md`: Ma trận truy vết (RTM) liên kết Objective -> Use Case -> FR -> BR -> DB Entity.
-  * `11-Business-Decision-Register.md`: Bảng chốt 7 quyết định nghiệp vụ (BD-01 đến BD-07) và tác động CSDL M2.
+  * `09-Data-Requirements.md`: Đặc tả yêu cầu dữ liệu v1.1 (DR-11..24, HDR-13..18) và ràng buộc CSDL.
+  * `10-Traceability-Matrix.md`: Ma trận truy vết toàn diện & Điều kiện nghiệm thu M1 (11 Exit Criteria).
+  * `11-Business-Decisions.md`: Chính thức hóa 7 quyết định nghiệp vụ (BD-01..07) với phân tích sâu BD-05 & BD-07.
+
+* **Milestone M2 – Conceptual Database Design (`docs/Milestones/M2-Conceptual-Design/`) [IN PROGRESS]:**
+  * `01-Entity-Catalog.md`: Danh mục thực thể quan niệm (Strong, Weak, Associative), đào sâu Product Catalog & Inventory.
+  * `02-Relationship-Analysis.md`: Phân tích quan hệ giữa các thực thể và bản số (Cardinality).
+  * `03-Cardinality-and-Constraints.md`: Ràng buộc nghiệp vụ và tính tham gia toàn phần/một phần.
+  * `04-Conceptual-ERD.md`: Sơ đồ ERD/EER quan niệm hoàn chỉnh (Mermaid/PlantUML).
+  * `05-Design-Decisions.md`: Quyết định thiết kế cốt lõi (OrderAllocation, vòng đời tồn kho 5 bước, M2-Q01..Q10).
+  * `06-M1-M2-Traceability.md`: Ma trận truy vết từ yêu cầu M1 sang thực thể M2.
 
 ---
 
@@ -89,8 +97,14 @@ RetailCore/
 │   │   │   ├── 08-Non-Functional-Requirements.md
 │   │   │   ├── 09-Data-Requirements.md
 │   │   │   ├── 10-Traceability-Matrix.md
-│   │   │   └── 11-Business-Decision-Register.md
-│   │   ├── M2-Conceptual-Design/       # [UPCOMING] Sơ đồ ERD/EER quan niệm
+│   │   │   └── 11-Business-Decisions.md
+│   │   ├── M2-Conceptual-Design/       # [IN PROGRESS] Thiết kế CSDL Quan niệm
+│   │   │   ├── 01-Entity-Catalog.md
+│   │   │   ├── 02-Relationship-Analysis.md
+│   │   │   ├── 03-Cardinality-and-Constraints.md
+│   │   │   ├── 04-Conceptual-ERD.md
+│   │   │   ├── 05-Design-Decisions.md
+│   │   │   └── 06-M1-M2-Traceability.md
 │   │   ├── M3-Logical-Design/          # Relational Schema & Chuẩn hóa 3NF/BCNF
 │   │   ├── M4-Physical-Design/         # Thiết kế vật lý SQL Server
 │   │   ├── M5-Backend/                 # Thiết kế kiến trúc Backend Spring Boot
