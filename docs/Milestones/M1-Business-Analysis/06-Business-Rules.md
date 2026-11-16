@@ -33,9 +33,10 @@ Bộ quy tắc nghiệp vụ dưới đây được chuẩn hóa theo 10 nhóm c
 | **BR-PR07** | Sản phẩm đã phát sinh giao dịch không được xóa vật lý tùy tiện. |
 | **BR-PR08** | SKU ngừng kinh doanh không được sử dụng trong đơn hàng mới. |
 | **BR-PR09** | Thông tin sản phẩm tại thời điểm giao dịch phải được bảo toàn khi cần thiết. |
-| **BR-PR10** | Mỗi sản phẩm phải có tối đa một danh mục chính (`IsPrimary = 1`) trong số các danh mục mà sản phẩm đang tham gia. Danh mục chính được sử dụng để xác định Breadcrumb mặc định và hỗ trợ báo cáo doanh thu. |
+| **BR-PR10** | Mỗi sản phẩm ở trạng thái Published bắt buộc phải có đúng một danh mục chính (`IsPrimary = 1`). Sản phẩm ở trạng thái Draft có thể chưa có danh mục chính. |
 | **BR-PR11** | Thuộc tính biến thể được định nghĩa linh hoạt theo từng sản phẩm. Không mặc định mọi sản phẩm đều có cùng tập thuộc tính như Size, Color hoặc Material. |
 | **BR-PR12** | Một SKU phải có một tổ hợp giá trị thuộc tính biến thể xác định trong phạm vi sản phẩm. Không được tồn tại hai SKU có cùng tổ hợp thuộc tính trong cùng một sản phẩm. |
+| **BR-PR13** | Một thuộc tính khi được gán cho một sản phẩm chỉ có một vai trò duy nhất: `DESCRIPTIVE` (mô tả chung) hoặc `VARIANT_DEFINING` (định nghĩa biến thể). Không cho phép cùng một thuộc tính vừa làm thông tin mô tả, vừa tham gia phân biệt SKU trong cùng sản phẩm. |
 
 ---
 
@@ -64,6 +65,20 @@ Bộ quy tắc nghiệp vụ dưới đây được chuẩn hóa theo 10 nhóm c
 | **BR-IN19** | Khi hàng giao thất bại và thực sự được vận chuyển quay về kho, nhân viên kho phải xác nhận nhận hàng. Hệ thống ghi StockMovement loại `DELIVERY_RETURN_IN` và tăng $\text{OnHandQty}$ theo số lượng thực tế nhận lại. |
 | **BR-IN20** | Nếu đơn hàng vẫn được tiếp tục giao sau khi hàng quay về kho, hệ thống phải thực hiện phân bổ và giữ hàng lại theo quy tắc tồn kho hiện hành trước khi xuất kho lần tiếp theo. |
 | **BR-IN21** | Nếu đơn hàng bị hủy, hệ thống phải giải phóng các lượt giữ hàng còn hiệu lực. Với hàng đã xuất kho và quay về, việc nhập lại kho phải được ghi nhận riêng, không được xử lý như thao tác giải phóng reservation. |
+| **BR-IN22** | Mỗi cặp `(WarehouseID, VariantID)` có tối đa một bản ghi `InventoryBalance`. |
+| **BR-IN23** | `OnHandQty` và `ReservedQty` không được âm; `ReservedQty` không được vượt `OnHandQty`. |
+| **BR-IN24** | Số lượng khả dụng được xác định bằng $\text{AvailableQty} = \text{OnHandQty} - \text{ReservedQty}$. |
+| **BR-IN25** | Kho ngừng hoạt động không được nhận phân bổ (`OrderWarehouseAllocation`) mới. |
+| **BR-IN26** | Tổng số lượng phân bổ (`AllocatedQty`) của một dòng đơn hàng không được vượt số lượng đặt mua của dòng đó. |
+| **BR-IN27** | Reservation chỉ được tạo thành công khi hệ thống giữ đủ số lượng cần thiết cho toàn bộ đơn hàng (nguyên tắc All-or-nothing). |
+| **BR-IN28** | Reservation hết hạn phải giải phóng số lượng đã giữ, không được làm thay đổi số lượng tồn kho vật lý (`OnHandQty`). |
+| **BR-IN29** | Việc bàn giao hàng cho đơn vị vận chuyển (`SHIPMENT_OUT`) phải làm giảm đồng thời cả tồn kho vật lý (`OnHandQty`) và tồn kho đã giữ (`ReservedQty`). |
+| **BR-IN30** | Chỉ hàng thực tế được kho tiếp nhận và ký biên bản mới được ghi nhận là hàng nhập lại từ giao thất bại (`DELIVERY_RETURN_IN`). |
+| **BR-IN31** | Mọi thay đổi tồn kho vật lý bắt buộc phải có chứng từ giao dịch tồn kho hợp lệ (`InventoryTransaction`). |
+| **BR-IN32** | Chứng từ tồn kho đã `POSTED` tuyệt đối không được chỉnh sửa trực tiếp; sai lệch phải được xử lý bằng giao dịch điều chỉnh hoặc đảo giao dịch. |
+| **BR-IN33** | Điều chỉnh tăng/giảm tồn kho phải có lý do, người thực hiện và cơ chế phê duyệt trước khi ghi sổ. |
+| **BR-IN34** | Chuyển kho phải ghi nhận xuất tại kho nguồn và nhập tại kho đích; không được tạo hoặc xóa hàng mà không có đối ứng. |
+| **BR-IN35** | Kiểm kê phải lưu lại số lượng hệ thống (`SystemQty`), số lượng thực tế (`CountedQty`) và chênh lệch (`VarianceQty`) tại thời điểm kiểm kê. |
 
 > **Quy ước quan trọng về trạng thái giữ hàng:**
 > * `ReservedQty` chỉ đại diện cho hàng đang được giữ tại kho nhưng chưa xuất khỏi kho.

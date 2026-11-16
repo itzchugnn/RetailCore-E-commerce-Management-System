@@ -54,3 +54,27 @@ Tuyệt đối không được gộp 4 khái niệm sau thành một thực th�
 | **M2-Q09** | `CustomerAddress` có cần snapshot trong `Order`? | **Bắt buộc snapshot 100%.** Địa chỉ giao hàng tại thời điểm đặt phải được sao chép nguyên văn vào `Order` để tránh việc khách đổi sổ địa chỉ làm sai lệch lịch sử đơn cũ. |
 | **M2-Q10** | `Payment` và `Order` có quan hệ 1–1 hay 1–N? | **Quan hệ 1–N.** Một đơn hàng có thể có nhiều lần thử thanh toán (`PaymentAttempt` thất bại/thành công) và nhiều giao dịch hoàn tiền (`Refund`). |
 
+---
+
+## 3. Quyết định Thiết kế Subject Area 01: Product Catalog (PC-Q01 đến PC-Q06)
+
+| ID | Vấn đề thiết kế | Quyết định chốt | Giải thích kỹ thuật & Tác động CSDL |
+| :---: | :--- | :--- | :--- |
+| **PC-Q01** | Bắt buộc Danh mục chính khi Published? | **CÓ, bắt buộc đúng một danh mục chính (`IsPrimary = 1`) khi Published.** | Cài đặt `UNIQUE FILTERED INDEX (ProductID) WHERE IsPrimary = 1` ở SQL Server. Bắt buộc có đúng 1 danh mục chính để render Breadcrumb, Canonical URL và tính doanh thu theo danh mục không trùng lặp (DR-02). |
+| **PC-Q02** | Cấu trúc phân cấp Danh mục? | **CÓ, hỗ trợ nhiều cấp cha – con.** | Thiết kế khóa ngoại đệ quy `Category.ParentCategoryID REFERENCES Category(CategoryID)`. Hỗ trợ cây danh mục đa tầng cho Thời trang & Gia dụng. |
+| **PC-Q03** | Sản phẩm không có biến thể thuộc tính (Simple Product)? | **TẠO 1 SKU MẶC ĐỊNH, tổ hợp thuộc tính rỗng.** | Không bao giờ cho phép bán trực tiếp từ `Product`. Mọi giao dịch đơn hàng và tồn kho đều trỏ duy nhất đến `ProductVariant.VariantID`. Tránh được lỗi thiết kế Polymorphic Foreign Key. |
+| **PC-Q04** | Một thuộc tính vừa mô tả vừa xác định SKU? | **KHÔNG, phân định rõ vai trò qua `IsVariantDefining`.** | Khai báo rõ ràng trong `ProductAttribute`: `IsVariantDefining = 1` (thuộc tính biến thể, sinh SKU) hoặc `= 0` (thuộc tính mô tả chung toàn sản phẩm, không sinh SKU mới). |
+| **PC-Q05** | Dùng chung định nghĩa `Attribute`? | **CÓ, dùng chung từ điển `Attribute` toàn cục.** | Chuẩn hóa toàn hệ thống. Hỗ trợ tính năng Faceted Filter / Bộ lọc thuộc tính trên Website (khách chọn lọc màu Đen sẽ ra tất cả sản phẩm có màu Đen). |
+| **PC-Q06** | Bảo toàn SKU khi đổi thuộc tính? | **CÓ, bảo toàn tuyệt đối SKU và dữ liệu lịch sử.** | Không được sửa đổi ngữ nghĩa hoặc xóa vật lý SKU đã từng phát sinh giao dịch. Áp dụng `IsActive = 0` (Soft Delete) khi ngừng kinh doanh thuộc tính/giá trị. |
+---
+
+## 4. Quyết định Thiết kế Subject Area 02: Warehouse & Inventory (WI-Q01 đến WI-Q06)
+
+| ID | Vấn đề thiết kế | Quyết định chốt | Giải thích kỹ thuật & Tác động CSDL |
+| :---: | :--- | :--- | :--- |
+| **WI-Q01** | Quản lý tồn kho đến cấp kệ, tầng, ô chứa (`Location`)? | **KHÔNG, chỉ quản lý theo cấp Kho (`Warehouse`) ở phiên bản này.** | Giữ mô hình tồn kho tinh gọn, tránh over-engineering; trường `Location` có thể mở rộng ở phase sau mà không phá vỡ mô hình hiện tại. |
+| **WI-Q02** | Giữ hàng một phần khi thiếu tồn kho? | **KHÔNG, áp dụng nguyên tắc All-or-nothing cho toàn bộ đơn hàng.** | Tránh tình trạng đơn hàng tạo thành công nhưng chỉ giữ được 1 phần hàng (gây thất vọng cho khách và phức tạp cho việc hủy dở dang). Nếu thiếu bất kỳ SKU nào trong đơn, giao dịch checkout bị từ chối và báo lỗi ngay. |
+| **WI-Q03** | Phương thức phân bổ kho (`OrderWarehouseAllocation`)? | **TỰ ĐỘNG phân bổ, cho phép nhân viên điều chỉnh trước khi xuất hàng.** | Thuật toán phân bổ tự động theo ưu tiên (Kho gần khách nhất, Kho có đủ toàn bộ hàng). Nhân viên CSKH/Kho có thể can thiệp điều chỉnh nếu có sự cố thực tế tại kho. |
+| **WI-Q04** | Theo dõi hàng chuyển kho (`In-Transit`)? | **CÓ, theo dõi chặt chẽ quy trình Chuyển kho 2 bước.** | Bổ sung thực thể `WarehouseTransfer` và `WarehouseTransferLine`. Khi kho xuất tạo `TRANSFER_OUT` thì giảm `OnHand` tại kho nguồn; hàng ở trạng thái `IN_TRANSIT`; chỉ khi kho đích ký nhận `TRANSFER_IN` thì mới tăng `OnHand` tại kho đích. |
+| **WI-Q05** | Phê duyệt phiếu kiểm kê trước khi cân chỉnh tồn kho? | **CÓ, phiếu kiểm kê bắt buộc được phê duyệt mới sinh giao dịch điều chỉnh.** | Phân tách rõ 2 bước: Hoàn tất kiểm đếm (`COMPLETED`) $\rightarrow$ Quản lý duyệt chênh lệch (`APPROVED`) $\rightarrow$ Hệ thống tự sinh `InventoryTransaction` loại `ADJUSTMENT_IN / OUT` để cập nhật `InventoryBalance`. |
+| **WI-Q06** | Cơ chế phê duyệt điều chỉnh tồn kho? | **CÓ, áp dụng cơ chế phê duyệt với các phiếu điều chỉnh tồn kho.** | Mọi giao dịch điều chỉnh tăng/giảm tồn kho (`StockAdjustment`) phải lưu vết `ApprovedBy`, `ApprovedAt` và lý do điều chỉnh (`AdjustmentReason`) để đảm bảo tính minh bạch kiểm toán. |

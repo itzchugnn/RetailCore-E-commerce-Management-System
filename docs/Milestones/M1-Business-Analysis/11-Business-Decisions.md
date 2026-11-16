@@ -76,3 +76,15 @@
 5. **Bước 5: Giao lại hoặc Hủy đơn (Re-delivery or Order Cancellation)**
    * *Nếu giao lại:* Hệ thống tiến hành phân bổ kho (`OrderAllocation`) và giữ hàng lại (`StockReservation`) theo quy tắc tồn kho hiện hành trước khi xuất kho lần 2.
    * *Nếu hủy đơn:* Kích hoạt quy trình hoàn tiền (`Refund`), giải phóng các nghĩa vụ liên quan và đóng đơn hàng.
+---
+
+## 3. Chính thức hóa Quyết định Thiết kế Subject Area 01: Product Catalog (PC-Q01 đến PC-Q06)
+
+| ID | Vấn đề thiết kế | Quyết định chốt chính thức | Tác động CSDL & Nghiệp vụ |
+| :---: | :--- | :--- | :--- |
+| **PC-Q01** | Bắt buộc Danh mục chính khi Published? | **Bắt buộc đúng một danh mục chính (`IsPrimary = 1`) khi Published.** | Cài đặt `UNIQUE FILTERED INDEX (ProductID) WHERE IsPrimary = 1`. Cần thiết để render Breadcrumb, SEO và báo cáo doanh thu không trùng lặp (DR-02). |
+| **PC-Q02** | Cấu trúc phân cấp Danh mục? | **Hỗ trợ nhiều cấp cha – con.** | Khóa ngoại đệ quy `Category.ParentCategoryID REFERENCES Category(CategoryID)` không tạo chu trình. |
+| **PC-Q03** | Sản phẩm không có biến thể thuộc tính (Simple Product)? | **Tạo 1 SKU mặc định, tổ hợp thuộc tính rỗng.** | Mọi sản phẩm đủ điều kiện kinh doanh đều có đơn vị bán và quản lý tồn kho ở cấp SKU. CSDL không bị Polymorphic Foreign Key. |
+| **PC-Q04** | Vai trò của thuộc tính khi gán cho sản phẩm? | **Một thuộc tính chỉ có duy nhất 1 vai trò: `DESCRIPTIVE` hoặc `VARIANT_DEFINING`.** | Cột `ProductAttribute.AttributeRole` phân định rạch ròi: mô tả chung (không sinh SKU) hoặc định nghĩa biến thể (sinh SKU). |
+| **PC-Q05** | Dùng chung định nghĩa `Attribute`? | **Dùng chung từ điển `Attribute` toàn cục.** | Chuẩn hóa danh mục thuộc tính toàn hệ thống, phục vụ bộ lọc Faceted Filter trên Website. |
+| **PC-Q06** | Bảo toàn SKU khi đổi thuộc tính? | **Bảo toàn tuyệt đối SKU và dữ liệu lịch sử.** | Không sửa đổi ngữ nghĩa hoặc xóa vật lý SKU đã phát sinh giao dịch. Áp dụng `IsActive = 0` (Soft Delete). |

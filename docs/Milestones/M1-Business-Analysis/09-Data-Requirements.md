@@ -35,9 +35,11 @@ Nếu `Functional Requirements` mô tả hệ thống cần làm gì, thì `Data
 | ID | Data Requirement | Dữ liệu cần quản lý |
 | :--- | :--- | :--- |
 | **DR-11** | Product–Category Assignment | Sản phẩm, danh mục được gán và cờ `IsPrimary`. |
-| **DR-12** | Product Attribute Definition | Các thuộc tính biến thể được định nghĩa cho từng sản phẩm. |
+| **DR-12** | Product Attribute Definition | Các thuộc tính được định nghĩa cho từng sản phẩm và vai trò của nó (`AttributeRole`: `DESCRIPTIVE` hoặc `VARIANT_DEFINING`). |
 | **DR-13** | Attribute Value | Các giá trị hợp lệ của từng thuộc tính, ví dụ: Size = M, Color = Black, Material = Denim. |
 | **DR-14** | Variant Attribute Combination | Tổ hợp giá trị thuộc tính xác định từng SKU duy nhất trong sản phẩm. |
+| **DR-25** | Stock Count & Variance | Phiếu kiểm kê, chi tiết kiểm đếm từng SKU (`SystemQty`, `CountedQty`, `VarianceQty`) và trạng thái phê duyệt. |
+| **DR-26** | Inventory Transaction Ledger | Chứng từ và dòng biến động tồn kho chi tiết gồm `OnHandDelta` và `ReservedDelta` để đối soát số dư. |
 
 ### 9.2.2. Order & Warehouse Fulfillment
 | ID | Data Requirement | Dữ liệu cần quản lý |
