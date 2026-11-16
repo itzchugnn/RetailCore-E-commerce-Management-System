@@ -114,18 +114,3 @@ Dự án được đánh giá dưới góc nhìn của một **Database Engineer
 - [ ] Có bộ tài liệu kỹ thuật đầy đủ và kịch bản kiểm thử (Test Cases) có thể tái lập.
 
 ---
-
-## 6. Trạng thái Hiện tại & Bước Tiếp theo
-
-* **Trạng thái hiện tại:** `Blueprint Completed` (Đã hoàn tất định hướng, phạm vi, kiến trúc tổng thể, công nghệ, nhóm thực thể và roadmap).
-* **Nguyên tắc xuyên suốt:** Không nhảy sang giai đoạn tiếp theo khi giai đoạn hiện tại chưa có deliverable đủ tốt. Đặc biệt, không vẽ ERD chỉ dựa trên danh sách tính năng, và không tạo bảng SQL chỉ dựa trên ERD chưa được kiểm chứng.
-
-### Việc đầu tiên cần triển khai: M1 – Khảo sát và phân tích nghiệp vụ RetailCore
-Tại Milestone M1, chúng ta sẽ làm rõ:
-1. Mô hình kinh doanh và phạm vi hệ thống.
-2. Danh sách Stakeholder và Actor.
-3. Sơ đồ Use Case tổng thể.
-4. Đặc tả chi tiết từng Use Case (Main flow, Alternative flow, Exception flow).
-5. Bộ Business Rules hoàn chỉnh có mã định danh.
-6. Functional Requirements và Non-functional Requirements.
-7. Các tình huống ngoại lệ và nghiệp vụ phức tạp.
