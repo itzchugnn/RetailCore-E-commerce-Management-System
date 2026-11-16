@@ -23,54 +23,92 @@ Dự án không được tiếp cận như một bài tập quản lý bán hàn
 
 ## 2. Cấu trúc Danh mục Tài liệu Thiết kế (Documentation Index)
 
-Toàn bộ Blueprint 10 phần của dự án được tổ chức thành các tài liệu chuyên biệt trong thư mục `docs/`:
+Toàn bộ tài liệu kiến trúc và đặc tả triển khai được tổ chức chuyên biệt trong thư mục `docs/`:
 
-| STT | File Tài liệu | Nội dung chính | Phần tương ứng trong Blueprint |
+### 2.1. Blueprints Thiết kế Tổng thể (`docs/Blueprints/`)
+| STT | File Tài liệu | Nội dung chính | Phần tương ứng |
 | :--- | :--- | :--- | :--- |
-| **01** | `docs/01_scope_and_business_analysis.md` | Phạm vi hệ thống, Bối cảnh bài toán, Actors (RBAC), 5 Quy trình nghiệp vụ cốt lõi & Danh mục tài liệu phân tích | Phần I & Phần II |
-| **02** | `docs/02_business_rules.md` | Bộ quy tắc nghiệp vụ (Business Rules v1.0) cho Sản phẩm, Kho hàng, Đơn hàng, Khuyến mãi và Thanh toán | Phần III |
-| **03** | `docs/03_conceptual_and_logical_design.md` | Thiết kế CSDL Quan niệm (ERD/EER - Deliverable 01) và Thiết kế CSDL Logic (Relational Schema, Chuẩn hóa - Deliverable 02) | Phần IV & Phần V |
-| **04** | `docs/04_physical_database_sqlserver.md` | Thiết kế CSDL Vật lý trên SQL Server (Deliverable 03): Quy ước kiểu dữ liệu, DDL mẫu, Stored Procedures, Concurrency & Indexing | Phần VI |
-| **05** | `docs/05_backend_frontend_and_testing.md` | Kiến trúc Backend Spring Boot (Deliverable 04), Frontend React + TypeScript (Deliverable 05) và Chiến lược Kiểm thử & Triển khai | Phần VII, VIII & IX |
+| **01** | `docs/Blueprints/01_scope_and_business_analysis.md` | Phạm vi hệ thống, Bối cảnh bài toán, Actors (RBAC), 5 Quy trình cốt lõi | Phần I & II |
+| **02** | `docs/Blueprints/02_business_rules.md` | Bộ quy tắc nghiệp vụ (Business Rules v1.0) cho Sản phẩm, Kho, Đơn, Khuyến mãi | Phần III |
+| **03** | `docs/Blueprints/03_conceptual_and_logical_design.md` | Thiết kế CSDL Quan niệm (ERD/EER) & Thiết kế CSDL Logic (Relational Schema, 3NF/BCNF) | Phần IV & V |
+| **04** | `docs/Blueprints/04_physical_database_sqlserver.md` | Thiết kế CSDL Vật lý SQL Server: DDL mẫu, Stored Procedures, Concurrency & Indexing | Phần VI |
+| **05** | `docs/Blueprints/05_backend_frontend_and_testing.md` | Kiến trúc Backend Spring Boot, Frontend React + TypeScript & Chiến lược Kiểm thử | Phần VII, VIII & IX |
+
+### 2.2. Tài liệu Thực thi Chi tiết theo Milestone (`docs/Milestones/`)
+* **Milestone M1 – Business Analysis (`docs/Milestones/M1-Business-Analysis/`):**
+  * `01-Project-Charter.md`: Tuyên ngôn dự án, bối cảnh, phạm vi và mục tiêu.
+  * `02-Stakeholder-Register.md`: Danh mục bên liên quan, tác nhân hệ thống (Actors) và ma trận RBAC.
+  * `03-Use-Case-Diagram.md`: Sơ đồ Use Case tổng thể và phân rã các quan hệ include/extend.
+  * `04-Use-Case-Specifications.md`: Đặc tả chi tiết từng Use Case trọng tâm và kịch bản luồng xử lý.
+  * `05-Business-Processes.md`: Sơ đồ quy trình nghiệp vụ cốt lõi (Đặt hàng, Giữ kho, Xử lý đơn).
+  * `06-Business-Rules.md`: Danh mục quy tắc nghiệp vụ chi tiết có mã định danh (BR-PRD, BR-INV, BR-ORD...).
+  * `07-Functional-Requirements.md`: Danh sách yêu cầu chức năng theo từng phân hệ.
+  * `08-Non-Functional-Requirements.md`: Yêu cầu phi chức năng (Hiệu năng, ACID, Bảo mật, Sao lưu).
+  * `09-Data-Requirements.md`: Phân tích nhóm thực thể cốt lõi, yêu cầu Snapshot và Soft Delete.
+  * `10-Traceability-Matrix.md`: Ma trận truy vết (RTM) liên kết Objective -> Use Case -> FR -> BR -> DB Entity.
+  * `11-Business-Decision-Register.md`: Bảng chốt 7 quyết định nghiệp vụ (BD-01 đến BD-07) và tác động CSDL M2.
 
 ---
 
 ## 3. Cấu trúc Thư mục Dự án (Repository Structure)
 
-~~~text
+```text
 RetailCore/
 ├── database/
-│   ├── 01_database/
-│   ├── 02_tables/
-│   ├── 03_constraints/
-│   ├── 04_indexes/
-│   ├── 05_views/
-│   ├── 06_procedures/
-│   ├── 07_triggers/
-│   ├── 08_seed_data/
-│   └── 09_test_scripts/
+│   ├── 01_database/            # DDL tạo database, collation, encoding
+│   ├── 02_tables/              # DDL khởi tạo bảng và kiểu dữ liệu
+│   ├── 03_constraints/         # Khóa ngoại, CHECK, UNIQUE constraints
+│   ├── 04_indexes/             # Clustered, Non-clustered & Filtered Indexes
+│   ├── 05_views/               # Views phục vụ báo cáo và giao diện
+│   ├── 06_procedures/          # Stored Procedures xử lý transaction cốt lõi
+│   ├── 07_triggers/            # Triggers phục vụ audit trail và data integrity
+│   ├── 08_seed_data/           # Dữ liệu mẫu (Master data & Mock data)
+│   └── 09_test_scripts/        # Kịch bản kiểm thử SQL & Concurrency test
 │
-├── backend/
+├── backend/                    # Mã nguồn Backend (Java Spring Boot REST API)
 │
-├── frontend/
+├── frontend/                   # Mã nguồn Frontend (React + TypeScript)
 │
-├── docs/
-│   ├── 01_scope_and_business_analysis.md
-│   ├── 02_business_rules.md
-│   ├── 03_conceptual_and_logical_design.md
-│   ├── 04_physical_database_sqlserver.md
-│   ├── 05_backend_frontend_and_testing.md
-│   ├── requirements/
-│   ├── business-rules/
-│   ├── erd/
-│   ├── logical-design/
-│   ├── data-dictionary/
-│   ├── api/
-│   └── test-cases/
+├── docs/                       # Toàn bộ tài liệu kỹ thuật & nghiệp vụ
+│   ├── Blueprints/             # Bộ blueprint kiến trúc 10 phần tổng thể
+│   │   ├── 01_scope_and_business_analysis.md
+│   │   ├── 02_business_rules.md
+│   │   ├── 03_conceptual_and_logical_design.md
+│   │   ├── 04_physical_database_sqlserver.md
+│   │   └── 05_backend_frontend_and_testing.md
+│   │
+│   ├── Milestones/             # Chi tiết sản phẩm bàn giao theo 8 Milestones
+│   │   ├── M1-Business-Analysis/       # [COMPLETED] 11 tài liệu phân tích nghiệp vụ
+│   │   │   ├── 01-Project-Charter.md
+│   │   │   ├── 02-Stakeholder-Register.md
+│   │   │   ├── 03-Use-Case-Diagram.md
+│   │   │   ├── 04-Use-Case-Specifications.md
+│   │   │   ├── 05-Business-Processes.md
+│   │   │   ├── 06-Business-Rules.md
+│   │   │   ├── 07-Functional-Requirements.md
+│   │   │   ├── 08-Non-Functional-Requirements.md
+│   │   │   ├── 09-Data-Requirements.md
+│   │   │   ├── 10-Traceability-Matrix.md
+│   │   │   └── 11-Business-Decision-Register.md
+│   │   ├── M2-Conceptual-Design/       # [UPCOMING] Sơ đồ ERD/EER quan niệm
+│   │   ├── M3-Logical-Design/          # Relational Schema & Chuẩn hóa 3NF/BCNF
+│   │   ├── M4-Physical-Design/         # Thiết kế vật lý SQL Server
+│   │   ├── M5-Backend/                 # Thiết kế kiến trúc Backend Spring Boot
+│   │   ├── M6-Frontend/                # Thiết kế UI/UX & Luồng ứng dụng
+│   │   ├── M7-Testing-Debugging/       # Kế hoạch & Báo cáo kiểm thử
+│   │   └── M8-Deployment/              # Tài liệu đóng gói & Triển khai Docker
+│   │
+│   ├── api/                    # Đặc tả OpenAPI / Postman collection
+│   ├── business-rules/         # Tham chiếu quy tắc nghiệp vụ mở rộng
+│   ├── data-dictionary/        # Từ điển dữ liệu chi tiết từng cột/bảng
+│   ├── erd/                    # File thiết kế sơ đồ ERD (Draw.io / DBML / PlantUML)
+│   ├── logical-design/         # Tài liệu chứng minh phụ thuộc hàm & chuẩn hóa
+│   ├── requirements/           # SRS & Đặc tả yêu cầu người dùng
+│   └── test-cases/             # Kịch bản kiểm thử nghiệp vụ
 │
-├── docker-compose.yml
-└── README.md
-~~~
+├── docker-compose.yml          # Cấu hình khởi chạy môi trường CSDL & Dịch vụ
+└── README.md                   # Tổng quan dự án & Hướng dẫn tra cứu
+```
 
 > **Lưu ý quan trọng về Quản lý Schema:** Các thay đổi schema cần được quản lý bằng công cụ migration (ví dụ: **Flyway**), thay vì mỗi lần chỉnh sửa lại chạy thủ công một file SQL tùy ý trên Database.
 
@@ -80,16 +118,16 @@ RetailCore/
 
 Dự án được chia thành **8 Milestones** thực hiện tuần tự (dự kiến khoảng $10 - 12$ tuần làm việc đều đặn). Nguyên tắc cốt lõi: **Không vội xây dựng Web khi Database còn chưa ổn định.**
 
-| Milestone | Công việc | Sản phẩm bàn giao (Deliverables) |
-| :--- | :--- | :--- |
-| **M1** | Khảo sát nghiệp vụ (Business Analysis) | SRS, Use Case, Business Rules (BR) |
-| **M2** | Thiết kế quan niệm (Conceptual Design) | ERD / EER Diagram |
-| **M3** | Thiết kế logic (Logical Design) | Relational Schema, Functional Dependencies (FD), Normalization |
-| **M4** | Thiết kế vật lý (Physical Design) | SQL Server Database |
-| **M5** | Phát triển Backend | REST API (Java Spring Boot) |
-| **M6** | Phát triển Frontend | Website (React + TypeScript) |
-| **M7** | Kiểm thử (Testing) | Test Report & Test Scripts |
-| **M8** | Triển khai (Deployment) | Sản phẩm chạy thực tế (Docker / Environment) |
+| Milestone | Công việc | Sản phẩm bàn giao (Deliverables) | Trạng thái |
+| :---: | :--- | :--- | :---: |
+| **M1** | Khảo sát nghiệp vụ (Business Analysis) | SRS, Use Case, Business Rules, Decision Register | **Completed** |
+| **M2** | Thiết kế quan niệm (Conceptual Design) | ERD / EER Diagram | **In Progress** |
+| **M3** | Thiết kế logic (Logical Design) | Relational Schema, Functional Dependencies, Normalization | Pending |
+| **M4** | Thiết kế vật lý (Physical Design) | SQL Server Database, DDL, Stored Procedures, Indexes | Pending |
+| **M5** | Phát triển Backend | REST API (Java Spring Boot, Data JPA / JDBC) | Pending |
+| **M6** | Phát triển Frontend | Website Storefront & Admin Portal (React + TypeScript) | Pending |
+| **M7** | Kiểm thử (Testing) | Test Report, Test Scripts, Concurrency & Query Optimization | Pending |
+| **M8** | Triển khai (Deployment) | Sản phẩm chạy thực tế (Docker Compose / Cloud Hosting) | Pending |
 
 ---
 
@@ -104,13 +142,25 @@ Dự án được đánh giá dưới góc nhìn của một **Database Engineer
 * **Testing & Deployment:** $10\%$
 
 ### Tiêu chuẩn hoàn thành tốt (Definition of Done):
-- [ ] Giải thích được toàn bộ ERD và các quyết định mô hình hóa dữ liệu.
-- [ ] Chứng minh được tính đúng đắn của thiết kế logic (phụ thuộc hàm, khóa, dạng chuẩn, bảo toàn thông tin).
-- [ ] Triển khai được Database hoàn chỉnh trên SQL Server.
+- [x] Làm rõ mô hình kinh doanh, phạm vi hệ thống, tác nhân và quy trình nghiệp vụ cốt lõi (M1).
+- [x] Thống nhất bộ Business Rules và chốt 7 quyết định kiến trúc CSDL BD-01 đến BD-07 (M1).
+- [ ] Giải thích được toàn bộ ERD và các quyết định mô hình hóa dữ liệu (M2).
+- [ ] Chứng minh được tính đúng đắn của thiết kế logic (phụ thuộc hàm, khóa, dạng chuẩn, bảo toàn thông tin) (M3).
+- [ ] Triển khai được Database hoàn chỉnh trên SQL Server với Stored Procedures và Triggers (M4).
 - [ ] Xử lý được các giao dịch (Transactions) có nhiều thao tác và kiểm soát truy cập đồng thời (Concurrency Control).
 - [ ] Đọc hiểu được Execution Plan và giải thích được lý do đằng sau từng quyết định tạo Index.
-- [ ] Xây dựng REST API sử dụng Database đúng chuẩn và an toàn.
-- [ ] Xây dựng ứng dụng Web thực sự sử dụng được cho cả Khách hàng và Admin.
-- [ ] Có bộ tài liệu kỹ thuật đầy đủ và kịch bản kiểm thử (Test Cases) có thể tái lập.
+- [ ] Xây dựng REST API sử dụng Database đúng chuẩn và an toàn (M5).
+- [ ] Xây dựng ứng dụng Web thực sự sử dụng được cho cả Khách hàng và Admin (M6).
+- [ ] Có bộ tài liệu kỹ thuật đầy đủ và kịch bản kiểm thử (Test Cases) có thể tái lập (M7).
 
 ---
+
+## 6. Trạng thái Hiện tại & Bước Tiếp theo
+
+* **Trạng thái hiện tại:** `Milestone M1 Completed` (Đã hoàn tất phân tích nghiệp vụ, đặc tả Use Case, quy tắc nghiệp vụ và chốt 7 quyết định kỹ thuật BD-01 đến BD-07).
+* **Bước tiếp theo:** **Milestone M2 – Thiết kế CSDL Quan niệm (Conceptual Design - ERD/EER)**.
+  1. Xác định danh sách thực thể mạnh (Strong Entities), thực thể yếu (Weak Entities) và thực thể liên kết (Associative Entities).
+  2. Xác định các thuộc tính đơn, thuộc tính phức hợp, thuộc tính đa trị và thuộc tính dẫn xuất.
+  3. Mô hình hóa mối quan hệ và bản số (Cardinality & Participation Constraints: $1-1, 1-N, N-N$, Total/Partial).
+  4. Áp dụng kỹ thuật kế thừa/chuyên biệt hóa EER Diagram (Generalization / Specialization) nếu cần thiết.
+  5. Xây dựng sơ đồ ERD hoàn chỉnh phản ánh đúng 7 quyết định nghiệp vụ đã chốt.
