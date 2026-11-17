@@ -108,3 +108,99 @@
    * Trả hàng sau khi đã nhập kho (`AcceptedQty` lỗi sau) sẽ sinh chứng từ `SUPPLIER_RETURN_OUT` làm giảm `OnHandQty` tại kho xuất trả. Tổng số lượng trả cộng dồn không được vượt quá số lượng thực tế còn có thể trả của dòng `GoodsReceiptLine`.
 5. **Phân tách trách nhiệm phê duyệt PO (PR-Q06):**
    * PO bắt buộc phải được phê duyệt (`ApprovedBy`, `ApprovedAt`) trước khi gửi nhà cung cấp (`SENT`). Chỉ PO ở trạng thái hợp lệ mới được phép tạo `GoodsReceipt`.
+
+---
+
+## 5. Subject Area 04: Customer & Identity (Baseline đã khóa)
+
+### 5.1. Danh mục 9 Thực thể Chuẩn hóa
+
+| Mã | Thực thể (Entity) | Phân loại | Ý nghĩa nghiệp vụ | Danh mục Thuộc tính Chuẩn hóa | Định danh chính (PK / UK) |
+| :---: | :--- | :--- | :--- | :--- | :--- |
+| **E29** | `Account` | Strong Entity | Tài khoản xác thực danh tính dùng chung để truy cập hệ thống. | `AccountID`, `Email`, `Phone`, `PasswordHash`, `AccountStatus`, `CreatedAt`, `LastLoginAt` | **PK:** `AccountID`<br>**UK:** `Email` *(Filtered)*, `Phone` *(Filtered)* |
+| **E30** | `Customer` | Subtype / Profile | Hồ sơ nghiệp vụ của khách hàng mua sắm B2C. | `CustomerID`, `AccountID`, `FullName`, `DateOfBirth`, `Gender`, `CustomerStatus`, `CreatedAt` | **PK:** `CustomerID`<br>**UK:** `AccountID` |
+| **E31** | `Employee` | Subtype / Profile | Hồ sơ nhân sự nội bộ vận hành hệ thống RetailCore. | `EmployeeID`, `AccountID`, `EmployeeCode`, `FullName`, `Department`, `EmployeeStatus`, `CreatedAt` | **PK:** `EmployeeID`<br>**UK:** `AccountID`, `EmployeeCode` |
+| **E32** | `Role` | Strong / Master | Danh mục vai trò trong hệ thống (RBAC). | `RoleID`, `RoleName`, `RoleDescription` | **PK:** `RoleID`<br>**UK:** `RoleName` |
+| **E33** | `Permission` | Strong / Master | Danh mục quyền hạn cụ thể trên từng tài nguyên/hành động. | `PermissionID`, `PermissionCode`, `PermissionName`, `Description` | **PK:** `PermissionID`<br>**UK:** `PermissionCode` |
+| **E34** | `AccountRole` | Associative Entity | Gán một hoặc nhiều vai trò cho tài khoản người dùng. | `AccountID`, `RoleID`, `AssignedAt`, `AssignedBy` | **PK:** `(AccountID, RoleID)` |
+| **E35** | `RolePermission` | Associative Entity | Ma trận phân quyền chi tiết cho từng vai trò. | `RoleID`, `PermissionID` | **PK:** `(RoleID, PermissionID)` |
+| **E36** | `CustomerAddress` | Weak Entity | Sổ địa chỉ giao hàng / liên hệ của khách hàng. | `AddressID`, `CustomerID`, `RecipientName`, `RecipientPhone`, `Province`, `District`, `Ward`, `StreetAddress`, `IsDefault`, `AddressStatus`, `CreatedAt` | **PK:** `AddressID` |
+| **E37** | `AccountVerification` | Weak / Event | Ghi nhận lịch sử và trạng thái yêu cầu xác minh Email / Phone. | `VerificationID`, `AccountID`, `VerificationType`, `VerificationTarget`, `VerificationStatus`, `CreatedAt`, `ExpiresAt`, `VerifiedAt` | **PK:** `VerificationID` |
+
+### 5.2. Các quy ước và Bất biến Nghiệp vụ Customer & Identity đã chốt
+1. **Nguyên tắc loại trừ hồ sơ (CID-Q01, BR-ID04):**
+   * Một `Account` chỉ được liên kết với một loại hồ sơ duy nhất: hoặc `Customer`, hoặc `Employee` (Ràng buộc XOR). Không bao giờ tồn tại một tài khoản vừa là khách hàng vừa là nhân viên trên cùng định danh.
+2. **Phân quyền RBAC linh hoạt (CID-Q02, BR-ID05..07):**
+   * Một tài khoản có thể được cấp nhiều `Role` qua `AccountRole`. Không cấp trùng lặp vai trò cho cùng một tài khoản.
+   * Quyền hiệu lực của tài khoản là hợp (Union) các `Permission` của tất cả các `Role` mà tài khoản đó sở hữu.
+3. **Quy ước định danh đăng nhập (CID-Q03, CID-Q04, BR-ID01..03):**
+   * Bắt buộc có ít nhất một trong hai thông tin `Email` hoặc `Phone` (`CHECK (Email IS NOT NULL OR Phone IS NOT NULL)`).
+   * Cả `Email` và `Phone` nếu được cung cấp phải là duy nhất toàn hệ thống (`Filtered Unique Index`).
+   * Mật khẩu lưu dưới dạng giá trị băm bảo mật (`PasswordHash`), tuyệt đối không lưu văn bản gốc.
+4. **Quản lý địa chỉ mặc định (CID-Q06, BR-ID08..11):**
+   * Mỗi khách hàng có tối đa đúng một địa chỉ mặc định (`IsDefault = 1`). Cài đặt bằng `UNIQUE FILTERED INDEX (CustomerID) WHERE IsDefault = 1`.
+   * Địa chỉ đầu tiên của khách hàng tự động được đặt làm mặc định. Khi địa chỉ mặc định bị vô hiệu hóa, phải chỉ định địa chỉ hợp lệ khác làm mặc định.
+5. **Lịch sử xác minh bảo mật (CID-Q05, BR-ID12..14):**
+   * `AccountVerification` lưu vết mọi yêu cầu xác thực (`EMAIL`, `PHONE`) kèm thời hạn `ExpiresAt`. Không sử dụng lại yêu cầu đã hết hạn hoặc đã xác minh thành công. Mã xác minh không lưu dạng thô (lưu hash).
+
+---
+
+## 6. Subject Area 05: Shopping (Baseline đã khóa)
+
+### 6.1. Danh mục 2 Thực thể Chuẩn hóa
+
+| Mã | Thực thể (Entity) | Phân loại | Ý nghĩa nghiệp vụ | Danh mục Thuộc tính Chuẩn hóa | Định danh chính (PK / UK) |
+| :---: | :--- | :--- | :--- | :--- | :--- |
+| **E38** | `ShoppingCart` | Strong / Document Entity | Giỏ hàng thuộc về khách hàng, lưu trạng thái mua sắm hiện tại. | `CartID`, `CustomerID`, `CartStatus`, `CreatedAt`, `UpdatedAt`, `LastActivityAt` | **PK:** `CartID`<br>**UK:** `CustomerID` *(Filtered: CartStatus = 'ACTIVE')* |
+| **E39** | `CartItem` | Weak / Detail Entity | Dòng sản phẩm/SKU cụ thể được khách hàng thêm vào giỏ. | `CartItemID`, `CartID`, `VariantID`, `Quantity`, `AddedAt`, `UpdatedAt` | **PK:** `CartItemID`<br>**UK:** `(CartID, VariantID)` |
+
+### 6.2. Các quy ước và Bất biến Nghiệp vụ Shopping đã chốt
+1. **Một giỏ hàng Active duy nhất (SHOP-Q01, BR-SH01, BR-SH02):**
+   * Mỗi khách hàng có thể có nhiều giỏ hàng trong lịch sử, nhưng tại một thời điểm chỉ có tối đa một giỏ hàng ở trạng thái `ACTIVE`.
+   * CSDL cài đặt: `UNIQUE FILTERED INDEX (CustomerID) WHERE CartStatus = 'ACTIVE'`.
+2. **Cộng dồn số lượng cho cùng SKU (SHOP-Q02, BR-SH05, BR-SH06):**
+   * Trong cùng một giỏ hàng, một `VariantID` chỉ xuất hiện tối đa một dòng (`UQ_CartItem_Cart_Variant`).
+   * Khi khách hàng thêm cùng một SKU nhiều lần, hệ thống tự động cộng dồn `Quantity = Quantity + @AddedQty`.
+   * Số lượng trong dòng giỏ hàng bắt buộc lớn hơn không (`Quantity > 0`, `BR-SH07`).
+3. **Cảnh báo và xử lý SKU không khả dụng (SHOP-Q03, BR-SH08):**
+   * Khi SKU bị hết hàng hoặc ngừng kinh doanh, dòng `CartItem` vẫn được giữ lại để lưu vết và hệ thống hiển thị cảnh báo cho khách.
+   * Chặn không cho phép tiến hành Checkout nếu giỏ hàng còn chứa SKU không khả dụng.
+4. **Không khóa giá và không giữ hàng (SHOP-Q04, BR-SH09, BR-SH10, BR-SH14):**
+   * Không lưu giá bán chính thức trong `CartItem`. Khi hiển thị giỏ hàng, hệ thống lấy giá hiện hành từ `ProductVariant.SellingPrice`.
+   * Giá bán chỉ được kiểm tra lại và snapshot bất biến khi tạo `OrderLine`.
+   * Thao tác thêm hàng vào giỏ **tuyệt đối không làm thay đổi `OnHandQty` và không giữ tồn kho `ReservedQty`**.
+5. **Đồng bộ đa thiết bị và bảo toàn lịch sử chuyển đổi (SHOP-Q05, SHOP-Q06, BR-SH11..13, BR-SH15):**
+   * Giỏ hàng được lưu tập trung trên Database Server theo `CustomerID`, tự động đồng bộ giữa các thiết bị (Web, Mobile App).
+   * Khi chuyển đổi thành đơn hàng thành công, giỏ hàng chuyển trạng thái sang `CONVERTED` và được đóng băng bất biến (`BR-SH15`).
+   * Khi khách hàng tiếp tục mua sắm sau khi giỏ hàng đã chuyển đổi, hệ thống tự động sinh một `ShoppingCart` mới (`BR-SH13`).
+
+---
+
+## 7. Subject Area 06: Sales (Baseline đã khóa)
+
+### 7.1. Danh mục 4 Thực thể Chuẩn hóa
+
+| Mã | Thực thể (Entity) | Phân loại | Ý nghĩa nghiệp vụ | Danh mục Thuộc tính Chuẩn hóa | Định danh chính (PK / UK) |
+| :---: | :--- | :--- | :--- | :--- | :--- |
+| **E40** | `SalesOrder` | Strong / Document Entity | Hợp đồng mua bán chính thức giữa khách hàng và RetailCore (Header). | `OrderID`, `OrderNumber`, `CustomerID`, `CartID`, `OrderStatus`, `OrderDate`, `SubtotalAmount`, `DiscountAmount`, `ShippingFee`, `TotalAmount`, `CustomerNote`, `CreatedAt`, `UpdatedAt` | **PK:** `OrderID`<br>**UK:** `OrderNumber`, `CartID` |
+| **E41** | `OrderLine` | Weak / Detail Entity | Chi tiết mặt hàng SKU và số lượng cam kết bán trong đơn (Line). | `OrderLineID`, `OrderID`, `VariantID`, `SKU`, `ProductName`, `VariantName`, `VariantAttributesSnapshot`, `UnitPrice`, `OrderedQty`, `LineSubtotal` | **PK:** `OrderLineID` |
+| **E42** | `OrderAddress` | Weak / Snapshot Entity | Bản sao bất biến địa chỉ giao hàng tại thời điểm tạo đơn. | `OrderAddressID`, `OrderID`, `RecipientName`, `RecipientPhone`, `Province`, `District`, `Ward`, `StreetAddress` | **PK:** `OrderAddressID`<br>**UK:** `OrderID` |
+| **E43** | `OrderStatusHistory` | Weak / Event Entity | Nhật ký lưu vết mọi lần chuyển đổi trạng thái của đơn hàng. | `StatusHistoryID`, `OrderID`, `PreviousStatus`, `NewStatus`, `ChangedAt`, `ChangedBy`, `ChangeReason` | **PK:** `StatusHistoryID` |
+
+### 7.2. Các quy ước và Bất biến Nghiệp vụ Sales đã chốt
+1. **Tạo đơn và giữ hàng nguyên tử (SALES-Q01, BR-SA07, BR-SA17):**
+   * Quá trình tạo đơn và giữ hàng là một giao dịch nguyên tử (All-or-nothing): Chỉ khi hệ thống phân bổ và khóa giữ đủ 100% số lượng hàng cần thiết (`StockReservation`) thì đơn hàng mới được tạo chính thức và giỏ hàng mới chuyển sang `CONVERTED`.
+   * Nếu thiếu hàng, toàn bộ giao dịch bị rollback và giỏ hàng giữ nguyên `ACTIVE`.
+2. **Máy trạng thái đơn hàng (SALES-Q02, BR-SA08, BR-SA09):**
+   * Vòng đời chuẩn: `PENDING_PAYMENT` $\to$ `CONFIRMED` $\to$ `PROCESSING` $\to$ `PARTIALLY_SHIPPED` $\to$ `SHIPPED` $\to$ `COMPLETED` (nhánh kết thúc bất thường: `CANCELLED`).
+   * Trạng thái ban đầu luôn là `PENDING_PAYMENT`. Đơn chỉ chuyển sang `CONFIRMED` khi điều kiện thanh toán được thỏa mãn (COD hợp lệ hoặc cổng thanh toán xác nhận `PAID`).
+3. **Bảo toàn bất biến thông tin dòng hàng (SALES-Q04, SALES-Q05, BR-SA10, BR-SA11):**
+   * Sau khi đơn hàng được xác nhận, tuyệt đối cấm chỉnh sửa dòng hàng `OrderLine` (không sửa SKU, không đổi số lượng). Muốn thay đổi, khách hàng phải hủy đơn và đặt lại.
+   * `OrderLine` lưu snapshot toàn bộ: `SKU`, `ProductName`, `VariantName`, `UnitPrice`, và `VariantAttributesSnapshot` (JSON) để độc lập hoàn toàn với các biến động của Catalog trong tương lai.
+4. **Snapshot địa chỉ giao hàng duy nhất (SALES-Q06, BR-SA12, BR-SA13):**
+   * Mỗi đơn hàng có đúng một địa chỉ giao hàng snapshot (`OrderAddress`, quan hệ $1:1$).
+   * Tách lô giao hàng từ nhiều kho (Split Shipment) không làm phát sinh nhiều địa chỉ nhận; mọi kiện hàng đều hướng về địa chỉ của đơn.
+   * Thay đổi địa chỉ trong sổ địa chỉ cá nhân (`CustomerAddress`) không làm ảnh hưởng đến đơn hàng cũ.
+5. **Lưu trữ kiểm toán bất biến (SALES-Q07, BR-SA14, BR-SA15):**
+   * Tuyệt đối không xóa vật lý (`No Hard Delete`) đơn hàng và dòng hàng đã phát sinh. Đơn hủy vẫn giữ nguyên trạng thái `CANCELLED`.
+   * Mọi lần chuyển trạng thái đều sinh một bản ghi mới trong `OrderStatusHistory` kèm thời điểm `ChangedAt`, tác nhân `ChangedBy`, và lý do `ChangeReason`.

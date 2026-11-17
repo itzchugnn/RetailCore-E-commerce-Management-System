@@ -177,15 +177,15 @@ Bộ quy tắc nghiệp vụ dưới đây được chuẩn hóa theo 10 nhóm c
 
 ---
 
-## 6.9. Shipping (`BR-SH`)
+## 6.9. Shipping & Fulfillment (`BR-SHIP`)
 
 | ID | Quy tắc nghiệp vụ |
 | :--- | :--- |
-| **BR-SH01** | Một đơn hàng có thể được chia thành nhiều đợt giao (từ nhiều kho hoặc nhiều đợt đóng gói). |
-| **BR-SH02** | Mỗi vận đơn phải có mã theo dõi phù hợp. |
-| **BR-SH03** | Số lượng giao không được vượt số lượng đặt mua còn lại. |
-| **BR-SH04** | Lịch sử trạng thái vận chuyển phải được bảo toàn. |
-| **BR-SH05** | Một đơn hàng chỉ được hoàn tất khi đáp ứng điều kiện giao hàng và thanh toán theo phương thức tương ứng. |
+| **BR-SHIP01** | Một đơn hàng có thể được chia thành nhiều đợt giao (từ nhiều kho hoặc nhiều đợt đóng gói). |
+| **BR-SHIP02** | Mỗi vận đơn phải có mã theo dõi phù hợp. |
+| **BR-SHIP03** | Số lượng giao không được vượt số lượng đặt mua còn lại. |
+| **BR-SHIP04** | Lịch sử trạng thái vận chuyển phải được bảo toàn. |
+| **BR-SHIP05** | Một đơn hàng chỉ được hoàn tất khi đáp ứng điều kiện giao hàng và thanh toán theo phương thức tương ứng. |
 
 ---
 
@@ -199,3 +199,71 @@ Bộ quy tắc nghiệp vụ dưới đây được chuẩn hóa theo 10 nhóm c
 | **BR-RT04** | Hàng hoàn chỉ được nhập lại tồn kho khi được kiểm tra và chấp nhận. |
 | **BR-RT05** | Hoàn tiền phải tuân thủ số tiền thực thu và chính sách hoàn tiền. |
 | **BR-RT06** | Lịch sử xử lý yêu cầu trả hàng phải được bảo toàn. |
+
+---
+
+## 6.11. Identity & Access Control (`BR-ID`)
+
+| ID | Quy tắc nghiệp vụ |
+| :--- | :--- |
+| **BR-ID01** | `Account` phải có ít nhất một trong hai thông tin `Email` hoặc `Phone`. |
+| **BR-ID02** | `Email` nếu được cung cấp phải duy nhất toàn hệ thống. |
+| **BR-ID03** | `Phone` nếu được cung cấp phải duy nhất toàn hệ thống. |
+| **BR-ID04** | Mỗi `Account` chỉ được liên kết với `Customer` hoặc `Employee`, không được đồng thời cả hai (Ràng buộc loại trừ XOR). |
+| **BR-ID05** | Một `Account` có thể được cấp nhiều `Role`. |
+| **BR-ID06** | Không được cấp trùng lặp một `Role` cho cùng một `Account`. |
+| **BR-ID07** | Một `Role` có thể bao gồm nhiều `Permission` và không được cấu hình trùng lặp. |
+| **BR-ID08** | `Customer` có thể sở hữu nhiều địa chỉ giao hàng (`CustomerAddress`). |
+| **BR-ID09** | Mỗi `Customer` có tối đa một địa chỉ mặc định (`IsDefault = 1`). |
+| **BR-ID10** | Địa chỉ đầu tiên của `Customer` tự động được đặt làm địa chỉ mặc định. |
+| **BR-ID11** | Khi địa chỉ mặc định bị vô hiệu hóa, phải chọn địa chỉ mặc định mới nếu còn địa chỉ sử dụng được. |
+| **BR-ID12** | Mọi yêu cầu xác minh (`AccountVerification`) phải gắn với một `Account` và có thời hạn hiệu lực `ExpiresAt`. |
+| **BR-ID13** | Không được sử dụng lại yêu cầu xác minh đã hết hạn hoặc đã hoàn thành. |
+| **BR-ID14** | Thay đổi `Email` hoặc `Phone` cần thực hiện quy trình xác minh thông tin mới trước khi sử dụng làm thông tin đăng nhập đã xác minh. |
+
+---
+
+## 6.12. Shopping (`BR-SH`)
+
+| ID | Quy tắc nghiệp vụ |
+| :--- | :--- |
+| **BR-SH01** | Một Customer có thể có nhiều ShoppingCart trong lịch sử nhưng tối đa một giỏ ACTIVE tại một thời điểm. |
+| **BR-SH02** | Mỗi ShoppingCart thuộc đúng một Customer. |
+| **BR-SH03** | Một ShoppingCart có thể chứa nhiều CartItem. |
+| **BR-SH04** | Một CartItem tham chiếu đúng một ProductVariant. |
+| **BR-SH05** | Một SKU chỉ xuất hiện tối đa một lần trong cùng một ShoppingCart. |
+| **BR-SH06** | Khi thêm SKU đã tồn tại, hệ thống cộng dồn Quantity. |
+| **BR-SH07** | Quantity của CartItem phải lớn hơn 0. |
+| **BR-SH08** | SKU không khả dụng vẫn được giữ trong CartItem và hệ thống phải cảnh báo khách hàng. |
+| **BR-SH09** | Không lưu giá bán chính thức trong CartItem; lấy giá hiện hành khi hiển thị giỏ hàng. |
+| **BR-SH10** | Giá bán được kiểm tra lại và snapshot khi tạo đơn hàng. |
+| **BR-SH11** | ShoppingCart được lưu tập trung trên server và đồng bộ giữa các thiết bị của cùng khách hàng. |
+| **BR-SH12** | Khi chuyển đổi thành đơn hàng thành công, ShoppingCart chuyển sang CONVERTED và được bảo toàn. |
+| **BR-SH13** | Khi khách hàng tiếp tục mua sắm sau khi giỏ hàng đã CONVERTED, hệ thống tạo ShoppingCart mới. |
+| **BR-SH14** | Thêm sản phẩm vào giỏ không làm thay đổi OnHandQty hoặc ReservedQty. |
+| **BR-SH15** | Không cho phép chỉnh sửa CartItem thuộc ShoppingCart đã CONVERTED. |
+
+---
+
+## 6.13. Sales Order (`BR-SA`)
+
+| ID | Quy tắc nghiệp vụ |
+| :--- | :--- |
+| **BR-SA01** | Mỗi đơn hàng phải thuộc về đúng một khách hàng đã đăng nhập (`CustomerID` NOT NULL, BD-02: cấm Guest Checkout). |
+| **BR-SA02** | Mỗi đơn hàng được tạo từ đúng một giỏ hàng (`CartID` NOT NULL). |
+| **BR-SA03** | Một giỏ hàng chỉ được chuyển đổi thành tối đa một đơn hàng (`CartID` UNIQUE trong `SalesOrder`). |
+| **BR-SA04** | Một đơn hàng phải có ít nhất một dòng hàng (cấm tạo đơn hàng rỗng). |
+| **BR-SA05** | Mỗi dòng hàng phải tham chiếu đúng một SKU (`ProductVariant`). |
+| **BR-SA06** | Số lượng đặt mua (`OrderedQty`) của mỗi dòng hàng phải lớn hơn 0. |
+| **BR-SA07** | Khi tạo đơn, hệ thống phải giữ đủ toàn bộ hàng trong một giao dịch nguyên tử (Atomic); nếu giữ hàng thất bại, không tạo đơn chính thức. |
+| **BR-SA08** | Trạng thái ban đầu của đơn hàng là `PENDING_PAYMENT`. |
+| **BR-SA09** | Đơn hàng chỉ chuyển sang `CONFIRMED` khi đáp ứng điều kiện xác nhận thanh toán (thanh toán online thành công hoặc COD hợp lệ). |
+| **BR-SA10** | Sau khi đơn hàng được xác nhận (`CONFIRMED`), tuyệt đối không cho phép sửa trực tiếp các dòng hàng (`OrderLine`). |
+| **BR-SA11** | Thông tin sản phẩm, SKU, đơn giá và toàn bộ thuộc tính biến thể phải được snapshot tại thời điểm đặt hàng. |
+| **BR-SA12** | Đơn hàng phải lưu snapshot đầy đủ địa chỉ giao hàng tại thời điểm tạo đơn (`OrderAddress`), độc lập với sổ địa chỉ `CustomerAddress`. |
+| **BR-SA13** | Mỗi đơn hàng có đúng một địa chỉ giao hàng snapshot (`SalesOrder 1 ─── 1 OrderAddress`). |
+| **BR-SA14** | Mỗi lần thay đổi trạng thái đơn hàng phải được ghi nhận vào lịch sử trạng thái (`OrderStatusHistory`) kèm thời điểm, tác nhân và lý do. |
+| **BR-SA15** | Tuyệt đối không xóa vật lý (`No Hard Delete`) đơn hàng và dòng hàng đã phát sinh. |
+| **BR-SA16** | Việc hủy đơn phải tuân thủ chính sách thời gian tự hủy (khi chưa đóng gói) và quy trình xử lý của nhân viên (khi đã đóng gói/giao vận). |
+| **BR-SA17** | Không được chuyển giỏ hàng sang `CONVERTED` nếu quá trình tạo đơn và giữ hàng thất bại. |
+| **BR-SA18** | Tổng tiền đơn hàng phải nhất quán với tiền hàng, giảm giá và phí vận chuyển đã snapshot: $TotalAmount = SubtotalAmount - DiscountAmount + ShippingFee$. |

@@ -321,3 +321,99 @@ erDiagram
     GOODS_RECEIPT_LINE ||--o{ SUPPLIER_RETURN_LINE : "returns_from (1..1 : 0..N)"
     PRODUCT_VARIANT ||--o{ SUPPLIER_RETURN_LINE : "returned_sku (1..1 : 0..N)"
 ```
+
+---
+
+## 7. Subject Area 04: Customer & Identity – Phân tích Quan hệ & Bản số
+
+### 7.1. Bảng Quan hệ và Bản số Crow's Foot
+
+| Quan hệ | Bản số (Cardinality) | Ký hiệu Crow's Foot | Ý nghĩa nghiệp vụ & Ràng buộc |
+| :--- | :---: | :---: | :--- |
+| `Account` – `Customer` | $1:0..1$ | `|| ─── o|` | Một Account có tối đa 1 hồ sơ Customer; mỗi Customer thuộc đúng 1 Account (CID-Q01, Ràng buộc XOR loại trừ với Employee). |
+| `Account` – `Employee` | $1:0..1$ | `|| ─── o|` | Một Account có tối đa 1 hồ sơ Employee; mỗi Employee thuộc đúng 1 Account (CID-Q01, Ràng buộc XOR loại trừ với Customer). |
+| `Account` – `AccountRole` | $1:N$ | `|| ─── }o` | Một Account có thể được cấp nhiều vai trò; mỗi dòng gán vai trò thuộc đúng 1 Account (CID-Q02). |
+| `Role` – `AccountRole` | $1:N$ | `|| ─── }o` | Một vai trò có thể được gán cho nhiều Account; mỗi dòng trỏ về đúng 1 Role. |
+| `Role` – `RolePermission` | $1:N$ | `|| ─── }o` | Một vai trò bao gồm nhiều quyền hạn; mỗi dòng cấu hình thuộc đúng 1 Role. |
+| `Permission` – `RolePermission` | $1:N$ | `|| ─── }o` | Một quyền hạn có thể xuất hiện trong nhiều Role; mỗi dòng trỏ về đúng 1 Permission. |
+| `Customer` – `CustomerAddress` | $1:N$ | `|| ─── }o` | Một Customer có thể có 0 hoặc nhiều địa chỉ nhận hàng; mỗi địa chỉ thuộc đúng 1 Customer (tối đa 1 địa chỉ mặc định, CID-Q06). |
+| `Account` – `AccountVerification` | $1:N$ | `|| ─── }o` | Một Account có thể phát sinh nhiều yêu cầu xác thực Email/OTP; mỗi yêu cầu thuộc đúng 1 Account (CID-Q05). |
+
+### 7.2. Sơ đồ Quan hệ Khái niệm (Subject Area 04: Customer & Identity)
+
+```mermaid
+erDiagram
+    %% Định danh & Hồ sơ chuyên biệt (Disjoint Subtypes)
+    ACCOUNT ||--o| CUSTOMER : "profile_of (1..1 : 0..1)"
+    ACCOUNT ||--o| EMPLOYEE : "employed_as (1..1 : 0..1)"
+
+    %% Sổ địa chỉ khách hàng
+    CUSTOMER ||--o{ CUSTOMER_ADDRESS : "owns_address (1..1 : 0..N)"
+
+    %% Phân quyền RBAC động
+    ACCOUNT ||--o{ ACCOUNT_ROLE : "assigned_role (1..1 : 0..N)"
+    ROLE ||--o{ ACCOUNT_ROLE : "granted_to (1..1 : 0..N)"
+
+    ROLE ||--o{ ROLE_PERMISSION : "contains (1..1 : 0..N)"
+    PERMISSION ||--o{ ROLE_PERMISSION : "configured_in (1..1 : 0..N)"
+
+    %% Lịch sử xác thực
+    ACCOUNT ||--o{ ACCOUNT_VERIFICATION : "requests_verification (1..1 : 0..N)"
+```
+
+---
+
+## 8. Subject Area 05: Shopping – Phân tích Quan hệ & Bản số
+
+### 8.1. Bảng Quan hệ và Bản số Crow's Foot
+
+| Quan hệ | Bản số (Cardinality) | Ký hiệu Crow's Foot | Ý nghĩa nghiệp vụ & Ràng buộc |
+| :--- | :---: | :---: | :--- |
+| `Customer` – `ShoppingCart` | $1 : 0..N$ | `|| ─── }o` | Một Customer có thể có nhiều giỏ hàng trong lịch sử (`CONVERTED`, `ABANDONED`); mỗi giỏ hàng bắt buộc thuộc đúng 1 Customer (tối đa 1 giỏ `ACTIVE`, SHOP-Q01). |
+| `ShoppingCart` – `CartItem` | $1 : 0..N$ | `|| ─── }o` | Một giỏ hàng có thể rỗng hoặc chứa nhiều dòng sản phẩm; mỗi dòng `CartItem` thuộc đúng 1 giỏ hàng cha (SHOP-Q02). |
+| `ProductVariant` – `CartItem` | $1 : 0..N$ | `|| ─── }o` | Một SKU có thể xuất hiện trong nhiều giỏ hàng; mỗi dòng `CartItem` tham chiếu chính xác đúng 1 SKU (SHOP-Q03, SHOP-Q04). |
+
+### 8.2. Sơ đồ Quan hệ Khái niệm (Subject Area 05: Shopping)
+
+```mermaid
+erDiagram
+    CUSTOMER ||--o{ SHOPPING_CART : "owns (1..1 : 0..N)"
+    SHOPPING_CART ||--o{ CART_ITEM : "contains (1..1 : 0..N)"
+    PRODUCT_VARIANT ||--o{ CART_ITEM : "selected_as (1..1 : 0..N)"
+```
+
+---
+
+## 9. Subject Area 06: Sales – Phân tích Quan hệ & Bản số
+
+### 9.1. Bảng Quan hệ và Bản số Crow's Foot
+
+| Quan hệ | Bản số (Cardinality) | Ký hiệu Crow's Foot | Ý nghĩa nghiệp vụ & Ràng buộc |
+| :--- | :---: | :---: | :--- |
+| `Customer` – `SalesOrder` | $1 : 0..N$ | `|| ─── }o` | Một Customer có thể đặt nhiều đơn hàng; mỗi đơn hàng bắt buộc gắn với đúng 1 Customer (BD-02: Cấm Guest Checkout, BR-SA01). |
+| `ShoppingCart` – `SalesOrder` | $1 : 0..1$ | `|| ─── o|` | Một giỏ hàng chuyển đổi thành tối đa 1 đơn hàng; mỗi đơn hàng tạo từ đúng 1 giỏ hàng (`CartID` Unique, BR-SA02, BR-SA03). |
+| `SalesOrder` – `OrderLine` | $1 : 1..N$ | `|| ─── }|` | Một đơn hàng bắt buộc có ít nhất 1 dòng hàng (cấm đơn rỗng); mỗi dòng thuộc đúng 1 đơn hàng (BR-SA04). |
+| `ProductVariant` – `OrderLine` | $1 : 0..N$ | `|| ─── }o` | Một SKU có thể xuất hiện trong nhiều đơn hàng; dòng đơn hàng lưu snapshot để độc lập với Catalog sau này (BR-SA05, BR-SA11). |
+| `SalesOrder` – `OrderAddress` | $1 : 1$ | `|| ─── ||` | Mỗi đơn hàng có đúng 1 địa chỉ giao hàng snapshot; mỗi bản ghi địa chỉ thuộc duy nhất 1 đơn hàng (`OrderID` Unique, BR-SA12, BR-SA13). |
+| `SalesOrder` – `OrderStatusHistory` | $1 : 1..N$ | `|| ─── }|` | Ngay khi tạo, đơn hàng có ít nhất 1 bản ghi lịch sử trạng thái đầu tiên (`PENDING_PAYMENT`); lưu vết bất biến mọi lần chuyển trạng thái (BR-SA14). |
+| `OrderLine` – `OrderWarehouseAllocation` | $1 : 1..N$ | `|| ─── }|` | Một dòng đơn hàng được phân bổ cho 1 hoặc nhiều kho vật lý xuất hàng (Split Shipment theo BD-03, WI-Q03). |
+| `SalesOrder` – `StockReservation` | $1 : 0..N$ | `|| ─── }o` | Một đơn hàng liên kết với các phiếu giữ tồn kho vật lý tại các kho đã phân bổ (BD-04, WI-Q02). |
+
+### 9.2. Sơ đồ Quan hệ Khái niệm (Subject Area 06: Sales)
+
+```mermaid
+erDiagram
+    %% Quan hệ nội bộ Subject Area 06
+    CUSTOMER ||--o{ SALES_ORDER : "places (1..1 : 0..N)"
+    SHOPPING_CART ||--o| SALES_ORDER : "converted_to (1..1 : 0..1)"
+    
+    SALES_ORDER ||--|{ ORDER_LINE : "contains (1..1 : 1..N)"
+    PRODUCT_VARIANT ||--o{ ORDER_LINE : "ordered_as (1..1 : 0..N)"
+
+    SALES_ORDER ||--|| ORDER_ADDRESS : "ships_to (1..1 : 1..1)"
+    SALES_ORDER ||--|{ ORDER_STATUS_HISTORY : "tracks_status (1..1 : 1..N)"
+
+    %% Liên kết sang Subject Area 02 (Warehouse & Inventory)
+    ORDER_LINE ||--|{ ORDER_WAREHOUSE_ALLOCATION : "splits_into (1..1 : 1..N)"
+    SALES_ORDER ||--o{ STOCK_RESERVATION : "reserves (1..1 : 0..N)"
+```

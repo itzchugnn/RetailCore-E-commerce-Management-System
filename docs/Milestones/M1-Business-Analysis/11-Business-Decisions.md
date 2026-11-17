@@ -88,3 +88,69 @@
 | **PC-Q04** | Vai trò của thuộc tính khi gán cho sản phẩm? | **Một thuộc tính chỉ có duy nhất 1 vai trò: `DESCRIPTIVE` hoặc `VARIANT_DEFINING`.** | Cột `ProductAttribute.AttributeRole` phân định rạch ròi: mô tả chung (không sinh SKU) hoặc định nghĩa biến thể (sinh SKU). |
 | **PC-Q05** | Dùng chung định nghĩa `Attribute`? | **Dùng chung từ điển `Attribute` toàn cục.** | Chuẩn hóa danh mục thuộc tính toàn hệ thống, phục vụ bộ lọc Faceted Filter trên Website. |
 | **PC-Q06** | Bảo toàn SKU khi đổi thuộc tính? | **Bảo toàn tuyệt đối SKU và dữ liệu lịch sử.** | Không sửa đổi ngữ nghĩa hoặc xóa vật lý SKU đã phát sinh giao dịch. Áp dụng `IsActive = 0` (Soft Delete). |
+
+---
+
+## 4. Chính thức hóa Quyết định Thiết kế Subject Area 02: Warehouse & Inventory (WI-Q01 đến WI-Q06)
+
+| ID | Vấn đề thiết kế | Quyết định chốt chính thức | Tác động CSDL & Nghiệp vụ |
+| :---: | :--- | :--- | :--- |
+| **WI-Q01** | Quản lý tồn kho theo vị trí kệ (`Location`)? | **Không, chỉ quản lý theo cấp Kho (`Warehouse`) ở phiên bản này.** | Giữ mô hình tinh gọn, sẵn sàng mở rộng sau mà không phá vỡ mô hình hiện tại. |
+| **WI-Q02** | Giữ hàng một phần khi thiếu tồn kho? | **Không, áp dụng nguyên tắc All-or-nothing cho toàn bộ đơn hàng.** | Đơn hàng chỉ được xác nhận khi hệ thống giữ đủ 100% số lượng cần thiết cho toàn bộ đơn hàng. |
+| **WI-Q03** | Phương thức phân bổ kho? | **Tự động phân bổ, cho phép nhân viên điều chỉnh thủ công.** | Tối ưu nguồn hàng và khoảng cách giao vận; hỗ trợ can thiệp khi kho gặp sự cố thực tế. |
+| **WI-Q04** | Theo dõi hàng chuyển kho (`In-Transit`)? | **Có, theo dõi quy trình chuyển kho 2 bước độc lập.** | Bổ sung thực thể `WarehouseTransfer` và `WarehouseTransferLine`. Giảm `OnHand` kho nguồn $\to$ trạng thái `IN_TRANSIT` $\to$ tăng `OnHand` kho đích theo thực nhận. |
+| **WI-Q05** | Phê duyệt phiếu kiểm kê trước khi cân chỉnh? | **Có, bắt buộc được cấp quản lý phê duyệt.** | Phiếu kiểm kê hoàn tất kiểm đếm (`COMPLETED`) không tự động sửa `InventoryBalance`. Chỉ sau khi phê duyệt mới sinh `InventoryTransaction`. |
+| **WI-Q06** | Cơ chế phê duyệt điều chỉnh tồn kho? | **Có, áp dụng cơ chế phê duyệt với các phiếu điều chỉnh tồn kho.** | Mọi giao dịch điều chỉnh tăng/giảm tồn kho phải lưu vết `ApprovedBy`, `ApprovedAt` và lý do điều chỉnh (`AdjustmentReason`). |
+
+---
+
+## 5. Chính thức hóa Quyết định Thiết kế Subject Area 03: Procurement (PR-Q01 đến PR-Q06)
+
+| ID | Vấn đề thiết kế | Quyết định chốt chính thức | Tác động CSDL & Nghiệp vụ |
+| :---: | :--- | :--- | :--- |
+| **PR-Q01** | Một PO có thể nhận hàng tại nhiều kho không? | **Không, một PO chỉ có đúng một kho nhận dự kiến.** | `PurchaseOrder.DestinationWarehouseID` xác định duy nhất kho nhận của PO; `GoodsReceipt.WarehouseID` bắt buộc trùng khớp. |
+| **PR-Q02** | Cho phép nhận hàng nhiều đợt (Partial Receipt)? | **Có, cho phép nhận hàng nhiều đợt qua nhiều `GoodsReceipt`.** | Quan hệ `PurchaseOrder` $1:N$ `GoodsReceipt` và `PurchaseOrderLine` $1:N$ `GoodsReceiptLine`. |
+| **PR-Q03** | Nhà cung cấp giao vượt số lượng đặt mua? | **Mặc định không cho phép nhận vượt số lượng đặt.** | Ràng buộc $\sum \text{GoodsReceiptLine.ReceivedQty} \le \text{PurchaseOrderLine.OrderedQty}$. |
+| **PR-Q04** | Hàng không đạt chất lượng (QC) khi tiếp nhận? | **Ghi nhận `RejectedQty` tại phiếu nhận và xử lý riêng.** | Phân tách $\text{ReceivedQty} = \text{AcceptedQty} + \text{RejectedQty}$. Chỉ `AcceptedQty` mới tạo `PURCHASE_RECEIPT` và tăng `OnHandQty`. |
+| **PR-Q05** | Có cần quản lý trả hàng cho nhà cung cấp? | **Có, quản lý qua cặp `SupplierReturn` và `SupplierReturnLine`.** | Trả hàng sau nhập kho sinh `SUPPLIER_RETURN_OUT` làm giảm `OnHandQty`. Dòng trả đối soát về `GoodsReceiptLineID` gốc. |
+| **PR-Q06** | PO có bắt buộc được phê duyệt trước khi gửi NCC? | **Có, bắt buộc phê duyệt (`ApprovedBy`, `ApprovedAt`).** | Tuân thủ nguyên tắc phân tách trách nhiệm (SoD). Chỉ PO ở trạng thái `APPROVED` hoặc `SENT` mới có hiệu lực pháp lý. |
+
+---
+
+## 6. Chính thức hóa Quyết định Thiết kế Subject Area 04: Customer & Identity (CID-Q01 đến CID-Q06)
+
+| ID | Vấn đề thiết kế | Quyết định chốt chính thức | Tác động CSDL & Nghiệp vụ |
+| :---: | :--- | :--- | :--- |
+| **CID-Q01** | Account có thể đồng thời là Customer và Employee? | **Không, phân tách loại trừ lẫn nhau (Disjoint Subtypes / Ràng buộc XOR).** | Ngăn chặn leo thang đặc quyền, cách ly tài khoản quản trị Back-office khỏi tài khoản mua sắm công cộng. |
+| **CID-Q02** | Một Account có thể có nhiều Role không? | **Có, hỗ trợ nhiều Role qua thực thể kết hợp `AccountRole` ($N:N$).** | Phục vụ nhân sự kiêm nhiệm nhiều vị trí và phân hạng khách hàng VIP. |
+| **CID-Q03** | Phương thức đăng nhập và định danh Account? | **Hỗ trợ Email hoặc Số điện thoại + Mật khẩu.** | Phù hợp thói quen mua sắm B2C di động. CSDL cài đặt Filtered Unique Index cho cả `Email` và `Phone`. |
+| **CID-Q04** | Thông tin liên hệ bắt buộc khi đăng ký? | **Ít nhất một trong hai (Email hoặc Phone).** | Giảm rào cản chuyển đổi khi đăng ký. Ràng buộc `CHECK (Email IS NOT NULL OR Phone IS NOT NULL)`. Khi Checkout bắt buộc có SĐT nhận hàng. |
+| **CID-Q05** | Có cần lưu lịch sử xác minh không? | **Có, lưu lịch sử bằng thực thể `AccountVerification`.** | Chống spam OTP (Rate Limiting), quản lý thời hạn `ExpiresAt`, phục vụ đổi SĐT/Email và điều tra an ninh. |
+| **CID-Q06** | Quy tắc quản lý địa chỉ giao hàng mặc định? | **Tối đa 1 địa chỉ mặc định; địa chỉ đầu tiên tự động làm mặc định.** | Cài đặt `UNIQUE FILTERED INDEX (CustomerID) WHERE IsDefault = 1` trên SQL Server. Khi xóa địa chỉ mặc định, buộc chọn địa chỉ mới nếu còn. |
+
+---
+
+## 7. Chính thức hóa Quyết định Thiết kế Subject Area 05: Shopping (SHOP-Q01 đến SHOP-Q06)
+
+| ID | Vấn đề thiết kế | Quyết định chốt chính thức | Tác động CSDL & Nghiệp vụ |
+| :---: | :--- | :--- | :--- |
+| **SHOP-Q01** | Số lượng giỏ hàng của một khách hàng? | **Một giỏ hàng ACTIVE, có thể có nhiều giỏ hàng lịch sử.** | Cài đặt `UNIQUE FILTERED INDEX (CustomerID) WHERE CartStatus = 'ACTIVE'`. Lưu vết lịch sử giỏ hàng chuyển đổi và bỏ rơi phục vụ Marketing. |
+| **SHOP-Q02** | Xử lý khi thêm cùng một SKU nhiều lần? | **Cộng dồn số lượng (`Quantity`) vào dòng `CartItem` hiện có.** | Ràng buộc duy nhất `UNIQUE (CartID, VariantID)`. Tránh phân mảnh dòng sản phẩm trong giỏ hàng. |
+| **SHOP-Q03** | Xử lý khi SKU hết hàng hoặc ngừng kinh doanh? | **Giữ `CartItem` và hiển thị cảnh báo; khóa nút Checkout.** | Khách hàng chủ động nắm được tình trạng sản phẩm; ngăn chặn tạo đơn hàng không thể đáp ứng giao vận. |
+| **SHOP-Q04** | Cơ chế lưu trữ và tính toán giá bán? | **Chỉ lấy giá hiện hành từ SKU; Snapshot giá khi tạo đơn hàng.** | Không lưu giá cố định trong `CartItem`. Giá bán chỉ được chốt bất biến tại `OrderLine.UnitPrice` khi tạo đơn hàng (`BR-CU06`, `BR-OR05`). |
+| **SHOP-Q05** | Đồng bộ giỏ hàng trên nhiều thiết bị? | **Đồng bộ tập trung trên Database Server theo `CustomerID`.** | Giỏ hàng lưu trữ bền vững trên CSDL, đồng bộ liền mạch giữa Web, Mobile App và Tablet khi khách hàng đăng nhập. |
+| **SHOP-Q06** | Trạng thái giỏ hàng sau khi chuyển đổi thành đơn hàng? | **Chuyển thành `CONVERTED`, đóng băng lịch sử và tạo giỏ mới khi mua tiếp.** | Khép kín vòng đời phễu chuyển đổi (Funnel Conversion Tracking), bảo toàn dữ liệu phục vụ đối soát và phân tích hành vi mua sắm. |
+
+---
+
+## 8. Chính thức hóa Quyết định Thiết kế Subject Area 06: Sales (SALES-Q01 đến SALES-Q07)
+
+| ID | Vấn đề thiết kế | Quyết định chốt chính thức | Tác động CSDL & Nghiệp vụ |
+| :---: | :--- | :--- | :--- |
+| **SALES-Q01** | Thời điểm tạo đơn hàng và giữ hàng tồn kho? | **Tạo đơn và giữ toàn bộ hàng nguyên tử (Atomic); thất bại thì không tạo đơn chính thức.** | Tuân thủ BD-04 và WI-Q02 (All-or-nothing). Ngăn chặn tình trạng tạo đơn thiếu hàng. Giỏ hàng giữ nguyên `ACTIVE` nếu giữ hàng thất bại. |
+| **SALES-Q02** | Vòng đời trạng thái đơn hàng (Order State Machine)? | **`PENDING_PAYMENT` $\to$ `CONFIRMED` $\to$ `PROCESSING` $\to$ `PARTIALLY_SHIPPED` $\to$ `SHIPPED` $\to$ `COMPLETED` (có `CANCELLED`).** | Trạng thái ban đầu là `PENDING_PAYMENT`. Chỉ chuyển sang `CONFIRMED` khi thanh toán thành công (hoặc COD hợp lệ). Kho chỉ đóng gói đơn `CONFIRMED`. |
+| **SALES-Q03** | Chính sách hủy đơn hàng? | **Kết hợp: Khách tự hủy khi chưa đóng gói (`PENDING_PAYMENT`, `CONFIRMED`); sau đó cần nhân viên xử lý.** | Bảo vệ vận hành kho khỏi việc hủy đơn khi hàng đã đóng gói hoặc đã lên xe giao vận. Hủy đơn tự động kích hoạt nhả tồn kho giữ. |
+| **SALES-Q04** | Thay đổi dòng hàng sau khi xác nhận đơn? | **Tuyệt đối không cho phép sửa trực tiếp `OrderLine` sau khi đơn đã xác nhận.** | Tránh vỡ thuật toán phân bổ kho, vỡ logic voucher khuyến mãi và tính toán lại công nợ. Khách muốn đổi món buộc phải hủy đơn cũ và đặt lại. |
+| **SALES-Q05** | Mức độ snapshot thông tin sản phẩm trên `OrderLine`? | **Snapshot toàn bộ: SKU, tên sản phẩm, tên biến thể, đơn giá và `VariantAttributesSnapshot` (JSON).** | Bảo toàn 100% hợp đồng thương mại và hóa đơn theo luật thuế. Đơn hàng cũ hiển thị độc lập hoàn toàn với các biến động của Catalog sau này. |
+| **SALES-Q06** | Quản lý địa chỉ giao hàng trong đơn? | **Mỗi đơn hàng có ĐÚNG MỘT địa chỉ giao hàng snapshot (`SalesOrder 1 ─── 1 OrderAddress`).** | Split shipment chỉ là chia nguồn xuất kho, toàn bộ kiện hàng đều giao về cùng 1 địa chỉ nhận của đơn. Độc lập với sổ địa chỉ `CustomerAddress`. |
+| **SALES-Q07** | Chính sách lưu trữ đơn hàng và dòng hàng? | **Tuyệt đối không xóa vật lý (`No Hard Delete`) đơn hàng và dòng hàng đã phát sinh.** | Đơn hàng là chứng từ kế toán, pháp lý. Đơn hủy giữ nguyên trạng thái `CANCELLED` cùng nhật ký `OrderStatusHistory` phục vụ kiểm toán và báo cáo tỷ lệ hủy. |
