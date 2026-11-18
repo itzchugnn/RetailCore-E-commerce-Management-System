@@ -136,69 +136,128 @@ Bộ quy tắc nghiệp vụ dưới đây được chuẩn hóa theo 10 nhóm c
 
 ---
 
-## 6.7. Promotion (`BR-PM`)
+## 6.7. Promotion (`BR-PM` / `BR-PRM`)
 
 | ID | Quy tắc nghiệp vụ |
 | :--- | :--- |
-| **BR-PM01** | Chương trình khuyến mãi phải có thời gian hiệu lực hợp lệ. |
-| **BR-PM02** | Voucher phải có mã duy nhất. |
-| **BR-PM03** | Voucher không được sử dụng trước thời gian bắt đầu. |
-| **BR-PM04** | Voucher không được sử dụng sau thời gian kết thúc. |
-| **BR-PM05** | Voucher phải tuân thủ giới hạn lượt sử dụng. |
-| **BR-PM06** | Voucher phải thỏa mãn điều kiện áp dụng của chương trình. |
-| **BR-PM07** | Mức giảm giá không được vượt giới hạn quy định. |
-| **BR-PM08** | Phải có quy tắc xử lý khi nhiều chương trình cùng áp dụng. |
-| **BR-PM09** | Việc sử dụng voucher phải được ghi nhận để tránh sử dụng trùng. |
-| **BR-PM10** | Một đơn hàng có thể áp dụng tối đa một chương trình khuyến mãi giảm giá trực tiếp trên dòng sản phẩm, nếu chương trình đáp ứng điều kiện áp dụng. |
-| **BR-PM11** | Một đơn hàng có thể áp dụng tối đa một voucher cấp đơn hàng. |
-| **BR-PM12** | Khuyến mãi cấp sản phẩm và voucher cấp đơn hàng chỉ được kết hợp khi các chương trình liên quan cho phép cộng dồn (`IsStackable = 1`) và không vi phạm quy tắc ưu tiên. |
-| **BR-PM13** | Hệ thống phải lưu lại các chương trình khuyến mãi thực tế đã được áp dụng, phạm vi áp dụng, mức giảm và giá trị giảm tại thời điểm đặt hàng. |
-| **BR-PM14** | Không được áp dụng nhiều chương trình cùng tầng vượt quá giới hạn đã quy định, kể cả khi các chương trình riêng lẻ đều thỏa điều kiện. |
+| **BR-PRM01** | Mỗi Promotion phải có mã chương trình, tên, phạm vi (`PRODUCT`/`ORDER`), thời gian hiệu lực và trạng thái. |
+| **BR-PRM02** | Promotion có phạm vi `PRODUCT` (giảm giá trên dòng SKU) hoặc `ORDER` (voucher cấp đơn hàng). |
+| **BR-PRM03** | Promotion cấp sản phẩm chỉ áp dụng theo SKU (`ProductVariant`, PROMO-Q01). |
+| **BR-PRM04** | Promotion cấp sản phẩm chỉ được áp dụng cho SKU nằm trong danh sách `PromotionProduct` được chỉ định. |
+| **BR-PRM05** | Promotion phải thỏa mãn các điều kiện cấu hình sẵn trước khi được áp dụng. |
+| **BR-PRM06** | Điều kiện khuyến mãi chỉ sử dụng các loại điều kiện (`ConditionType`) và toán tử được hệ thống hỗ trợ, cấm biểu thức tự do (PROMO-Q02). |
+| **BR-PRM07** | Promotion có thể có nhiều điều kiện áp dụng kết hợp (`PromotionCondition`). |
+| **BR-PRM08** | Một Promotion cấp đơn hàng có thể phát hành một hoặc nhiều mã Voucher. |
+| **BR-PRM09** | Voucher dùng chung không gắn với Customer cụ thể (`AssignedCustomerID IS NULL`). |
+| **BR-PRM10** | Voucher riêng chỉ được sử dụng bởi Customer được chỉ định (`AssignedCustomerID NOT NULL`, PROMO-Q03). |
+| **BR-PRM11** | Promotion có thể giới hạn đối tượng khách hàng bằng danh sách `PromotionTargetCustomer` (PROMO-Q07). |
+| **BR-PRM12** | Tổng lượt sử dụng thành công toàn sàn không vượt `MaxUsage`. |
+| **BR-PRM13** | Lượt sử dụng của mỗi Customer không vượt giới hạn mỗi khách hàng `MaxUsagePerCustomer` (PROMO-Q04). |
+| **BR-PRM14** | Chỉ ghi nhận lượt sử dụng chính thức (`CONSUMED`, tăng `UsedCount`) khi thanh toán thành công (PROMO-Q05). |
+| **BR-PRM15** | Mỗi `OrderLine` chỉ được áp dụng tối đa một Promotion cấp sản phẩm (BD-05). |
+| **BR-PRM16** | Mỗi `SalesOrder` chỉ được áp dụng tối đa một Voucher cấp đơn hàng (BD-05). |
+| **BR-PRM17** | Ưu đãi cấp sản phẩm và cấp đơn hàng chỉ được kết hợp khi đáp ứng quy tắc cộng dồn (`IsStackable = 1`) và thứ tự ưu tiên `Priority` (BD-05). |
+| **BR-PRM18** | Số tiền giảm thực tế phải được snapshot bất biến vào `PromotionUsage.DiscountAmount`. |
+| **BR-PRM19** | Khi đơn bị hủy hoặc hoàn trả, lượt sử dụng được hoàn lại (`REVERSED`) nếu voucher còn trong thời hạn hiệu lực (PROMO-Q06). |
+| **BR-PRM20** | Không được vượt giới hạn sử dụng khi có nhiều yêu cầu áp dụng ưu đãi đồng thời (kiểm tra nguyên tử trong giao dịch). |
+| **BR-PRM21** | Tuyệt đối không được sửa thông tin ảnh hưởng kết quả ưu đãi của Promotion đã có lượt sử dụng. |
+| **BR-PRM22** | Khi cần thay đổi logic ưu đãi, phải tạo Promotion mới hoặc phiên bản mới (`VersionNumber += 1`, PROMO-Q08). |
+| **BR-PRM23** | `PromotionUsage` phải tham chiếu đúng chương trình và phiên bản đã áp dụng tại thời điểm giao dịch. |
+| **BR-PRM24** | Tuyệt đối không được xóa vật lý lịch sử sử dụng ưu đãi đã phát sinh (`No Hard Delete` trên `PromotionUsage`). |
 
-> **Quy tắc tầng khuyến mãi:**
-> 1. **Tầng Product Promotion:** Tối đa một chương trình giảm giá trực tiếp trên mỗi dòng sản phẩm.
-> 2. **Tầng Order Voucher:** Tối đa một voucher cấp đơn hàng.
+> **Quy tắc tầng khuyến mãi (BD-05):**
+> 1. **Tầng Product Promotion:** Tối đa một chương trình giảm giá trực tiếp trên mỗi dòng sản phẩm (`OrderLine`).
+> 2. **Tầng Order Voucher:** Tối đa một voucher cấp đơn hàng (`SalesOrder`).
 > 3. **Cộng dồn:** Hai tầng có thể kết hợp nếu quy tắc cộng dồn cho phép (`IsStackable = 1`).
-> 4. **Kiểm toán:** Hệ thống phải xác định thứ tự tính giảm giá và lưu kết quả tính toán (`OrderPromotions`) để kiểm tra lại giao dịch.
+> 4. **Kiểm toán:** Hệ thống snapshot toàn bộ kết quả tính toán chiết khấu vào `PromotionUsage` để phục vụ đối soát và kiểm toán tài chính.
 
 ---
 
-## 6.8. Payment (`BR-PA`)
+## 6.8. Payment & Refund (`BR-PA` / `BR-PY`)
 
 | ID | Quy tắc nghiệp vụ |
 | :--- | :--- |
-| **BR-PA01** | Một đơn hàng có thể có nhiều lần thử thanh toán. |
-| **BR-PA02** | Mỗi giao dịch thanh toán phải có mã định danh riêng. |
-| **BR-PA03** | Một giao dịch thành công phải có thông tin đối soát. |
-| **BR-PA04** | Tổng tiền thu thành công không được vượt số tiền phải thanh toán, trừ nghiệp vụ điều chỉnh được phê duyệt. |
-| **BR-PA05** | Giao dịch hoàn tiền phải tham chiếu khoản thanh toán gốc. |
-| **BR-PA06** | Không được hoàn tiền vượt số tiền thực thu còn được phép hoàn. |
-| **BR-PA07** | Callback thanh toán trùng lặp không được tạo ra giao dịch thu tiền trùng. |
+| **BR-PY01** | Mỗi đơn hàng `SalesOrder` có đúng một hồ sơ thanh toán `Payment` (`OrderID` UNIQUE, PAY-Q01). |
+| **BR-PY02** | Mỗi `Payment` chỉ sử dụng một phương thức thanh toán `PaymentMethod` hợp lệ và đang hoạt động. |
+| **BR-PY03** | Hệ thống hỗ trợ song song thanh toán COD và thanh toán trực tuyến qua cổng thanh toán (PAY-Q02). |
+| **BR-PY04** | Mỗi lần thử thanh toán phải tạo một giao dịch `PaymentTransaction` mới độc lập (PAY-Q03). |
+| **BR-PY05** | Tuyệt đối không ghi đè hoặc xóa các giao dịch thanh toán đã phát sinh; lưu nhật ký bất biến để đối soát. |
+| **BR-PY06** | Giao dịch thanh toán phải lưu mã tham chiếu nội bộ `TransactionReference` và thông tin cổng để đối soát (PAY-Q07). |
+| **BR-PY07** | Lưu phí giao dịch `TransactionFee` nếu cổng thanh toán cung cấp để xác định số tiền thực nhận (PAY-Q09). |
+| **BR-PY08** | Chỉ ghi nhận thanh toán thành công khi có kết quả xác thực chữ ký/trạng thái hợp lệ từ cổng thanh toán. |
+| **BR-PY09** | Đơn hàng thanh toán trực tuyến chỉ chuyển sang `CONFIRMED` khi thanh toán thành công (`AmountPaid == AmountDue`, PAY-Q08). |
+| **BR-PY10** | Đơn hàng COD được xác nhận theo quy trình COD; việc xác nhận đơn không đồng nghĩa với việc đã thu tiền (tiền chỉ được thu khi giao hàng thành công). |
+| **BR-PY11** | Một hồ sơ `Payment` có thể có nhiều lần thử giao dịch `PaymentTransaction` (cho phép thử lại khi thất bại). |
+| **BR-PY12** | Tổng số tiền thanh toán thành công không được vượt số tiền phải thu của đơn hàng: `AmountPaid <= AmountDue`. |
+| **BR-PY13** | Mỗi yêu cầu hoàn tiền `Refund` phải thuộc một `Payment` đã phát sinh khoản tiền thực thu (`AmountPaid > 0`). |
+| **BR-PY14** | Yêu cầu hoàn tiền phải được nhân viên có thẩm quyền phê duyệt (`ApprovedBy NOT NULL`, PAY-Q05). |
+| **BR-PY15** | Hỗ trợ hoàn tiền toàn phần, một phần và hoàn nhiều lần theo đợt trả hàng (PAY-Q04). |
+| **BR-PY16** | Một hồ sơ `Payment` có thể phát sinh nhiều yêu cầu hoàn tiền `Refund`. |
+| **BR-PY17** | Một yêu cầu `Refund` có thể được thực hiện thông qua nhiều giao dịch hoàn tiền `RefundTransaction`. |
+| **BR-PY18** | Tổng số tiền hoàn thành công không vượt số tiền đã thu trừ đi số tiền đã hoàn trước đó: $\sum RefundAmount \le RemainingRefundable = AmountPaid - AmountRefunded$. |
+| **BR-PY19** | Chỉ các giao dịch hoàn tiền `RefundTransaction` thành công mới được cộng vào tổng số tiền đã hoàn `Payment.AmountRefunded`. |
+| **BR-PY20** | Hoàn tiền cho đơn COD được thực hiện qua chuyển khoản ngân hàng hoặc phương thức hoàn tiền riêng (PAY-Q06). |
+| **BR-PY21** | Giao dịch hoàn tiền phải lưu thông tin mã giao dịch cổng và chứng từ ủy nhiệm chi để đối soát. |
+| **BR-PY22** | Tuyệt đối không xóa vật lý (`No Hard Delete`) hồ sơ thanh toán, yêu cầu hoàn tiền và các giao dịch đã phát sinh. |
 
 ---
 
-## 6.9. Shipping & Fulfillment (`BR-SHIP`)
+## 6.9. Fulfillment & Shipping (`BR-FS` / `BR-SHIP`)
 
 | ID | Quy tắc nghiệp vụ |
 | :--- | :--- |
-| **BR-SHIP01** | Một đơn hàng có thể được chia thành nhiều đợt giao (từ nhiều kho hoặc nhiều đợt đóng gói). |
-| **BR-SHIP02** | Mỗi vận đơn phải có mã theo dõi phù hợp. |
-| **BR-SHIP03** | Số lượng giao không được vượt số lượng đặt mua còn lại. |
-| **BR-SHIP04** | Lịch sử trạng thái vận chuyển phải được bảo toàn. |
-| **BR-SHIP05** | Một đơn hàng chỉ được hoàn tất khi đáp ứng điều kiện giao hàng và thanh toán theo phương thức tương ứng. |
+| **BR-FS01** | Một `Shipment` thuộc về đúng một `SalesOrder`. |
+| **BR-FS02** | Một `Shipment` chỉ xuất phát từ đúng một `Warehouse` (`WarehouseID NOT NULL`, SHIP-Q01). |
+| **BR-FS03** | Một `SalesOrder` có thể được chia thành nhiều `Shipment` (Split Shipment theo kho theo BD-03). |
+| **BR-FS04** | Chỉ tạo `Shipment` khi đơn hàng đã được xác nhận (`CONFIRMED`) và đủ điều kiện xuất kho (`PROCESSING`). |
+| **BR-FS05** | Mỗi `Shipment` phải có ít nhất một dòng hàng `ShipmentLine`. |
+| **BR-FS06** | Mỗi `ShipmentLine` tham chiếu đúng một dòng đơn hàng `OrderLine` và một dòng phân bổ kho `OrderWarehouseAllocation`. |
+| **BR-FS07** | Tổng số lượng `ShipmentQty` thuộc một Allocation không được vượt quá `AllocatedQty`. |
+| **BR-FS08** | Tổng số lượng được đưa vào giao của một `OrderLine` không được vượt quá `OrderedQty`. |
+| **BR-FS09** | `Warehouse` của `Shipment` phải trùng với `Warehouse` của `OrderWarehouseAllocation` liên quan. |
+| **BR-FS10** | Mỗi `Shipment` được thực hiện bởi một đơn vị vận chuyển `Carrier` đã được xác nhận. |
+| **BR-FS11** | Hệ thống đề xuất `Carrier` tối ưu, nhân viên/điều phối viên xác nhận lựa chọn cuối cùng (SHIP-Q03). |
+| **BR-FS12** | Một `Shipment` có thể trải qua nhiều lần giao hàng `DeliveryAttempt`. |
+| **BR-FS13** | Số lần giao lại bị giới hạn theo chính sách vận hành (tối đa 3 lần, SHIP-Q04). |
+| **BR-FS14** | Khi vượt giới hạn giao lại thất bại, `Shipment` tự động chuyển sang quy trình chuyển hoàn (`RETURNING`). |
+| **BR-FS15** | Mỗi lần giao phải lưu thời gian và kết quả; giao thất bại phải ghi nhận lý do cụ thể (`FailureReason`). |
+| **BR-FS16** | Khi giao thành công, bắt buộc lưu người thực tế nhận hàng (`RecipientName`) và thời điểm giao (`DeliveredAt`). |
+| **BR-FS17** | Trạng thái vận chuyển có thể được cập nhật thủ công bởi nhân viên hoặc tự động qua tích hợp API/Webhook đối tác (SHIP-Q06). |
+| **BR-FS18** | Mỗi lần thay đổi trạng thái `Shipment` phải được ghi nhận vào lịch sử `ShipmentStatusHistory`. |
+| **BR-FS19** | `SalesOrder` lưu tổng phí vận chuyển tính cho khách; `Shipment` lưu phí vận chuyển thực tế phân bổ (SHIP-Q07). |
+| **BR-FS20** | Tổng phí phân bổ cho các Shipment phải nhất quán với phí vận chuyển của đơn hàng theo chính sách đối soát. |
+| **BR-FS21** | Bàn giao hàng cho `Carrier` (`DISPATCHED`) phải kích hoạt ghi nhận xuất kho sổ cái `InventoryTransaction` loại `SHIPMENT_OUT` (`OnHandDelta = -Qty`, `ReservedDelta = -Qty`). |
+| **BR-FS22** | Chỉ ghi nhận hàng chuyển hoàn vào tồn kho (`DELIVERY_RETURN_IN`) khi thủ kho thực tế nhận lại và kiểm đếm hàng tại kho xuất ban đầu (BD-07). |
 
 ---
 
-## 6.10. Return & Refund (`BR-RT`)
+## 6.10. Return & Exchange (`BR-RT`)
 
 | ID | Quy tắc nghiệp vụ |
 | :--- | :--- |
-| **BR-RT01** | Chỉ các đơn hàng đủ điều kiện mới được yêu cầu đổi trả. |
-| **BR-RT02** | Số lượng yêu cầu trả không được vượt số lượng còn đủ điều kiện trả. |
-| **BR-RT03** | Một yêu cầu trả hàng có thể chứa nhiều dòng sản phẩm. |
-| **BR-RT04** | Hàng hoàn chỉ được nhập lại tồn kho khi được kiểm tra và chấp nhận. |
-| **BR-RT05** | Hoàn tiền phải tuân thủ số tiền thực thu và chính sách hoàn tiền. |
-| **BR-RT06** | Lịch sử xử lý yêu cầu trả hàng phải được bảo toàn. |
+| **BR-RT01** | Yêu cầu trả hàng `ReturnRequest` phải thuộc một đơn hàng `SalesOrder` hợp lệ của một `Customer`. |
+| **BR-RT02** | Khách hàng hoặc nhân viên CSKH được phép tạo yêu cầu trả hàng thay cho khách hàng (RET-Q01). |
+| **BR-RT03** | Tài khoản tạo yêu cầu `CreatedByAccountID` phải được ghi nhận bất biến để phục vụ truy vết. |
+| **BR-RT04** | Chỉ được yêu cầu trả hàng trong thời hạn chính sách cấu hình kể từ khi đơn giao thành công (RET-Q02). |
+| **BR-RT05** | Một yêu cầu trả hàng bắt buộc phải có ít nhất một dòng chi tiết sản phẩm `ReturnRequestLine`. |
+| **BR-RT06** | Dòng hàng yêu cầu trả phải thuộc các dòng hàng `OrderLine` của đơn hàng gốc. |
+| **BR-RT07** | Số lượng yêu cầu trả `RequestedQty` không được vượt số lượng còn đủ điều kiện trả của dòng đơn hàng. |
+| **BR-RT08** | Cho phép khách hàng yêu cầu trả một phần số lượng của một dòng hàng (RET-Q03). |
+| **BR-RT09** | Cho phép tạo nhiều yêu cầu trả hàng cho cùng một dòng hàng nếu vẫn còn số lượng đủ điều kiện. |
+| **BR-RT10** | Nhân viên CSKH/Kiểm duyệt bắt buộc phải phê duyệt yêu cầu (`APPROVED`) trước khi khách gửi hàng (RET-Q04). |
+| **BR-RT11** | Mỗi yêu cầu trả hàng chỉ định ĐÚNG MỘT kho tiếp nhận `WarehouseID` (RET-Q06). |
+| **BR-RT12** | Tất cả các phiếu tiếp nhận `ReturnReceipt` của một yêu cầu phải xử lý tại đúng kho đã chỉ định. |
+| **BR-RT13** | Một yêu cầu trả hàng có thể được kho tiếp nhận qua nhiều đợt phiếu nhận. |
+| **BR-RT14** | Tổng số lượng tiếp nhận thực tế không được vượt quá số lượng đã được phê duyệt `ApprovedQty`. |
+| **BR-RT15** | Hàng nhận về kho bắt buộc phải được kiểm định và phân loại thành `SELLABLE`, `QUARANTINE` hoặc `DISPOSED` (RET-Q05). |
+| **BR-RT16** | Chỉ hàng đạt chuẩn `SELLABLE` và được ký duyệt (`PostedAt`) mới được tạo `CUSTOMER_RETURN_IN` nhập lại tồn kho bán. |
+| **BR-RT17** | Hàng phân loại `QUARANTINE` (chờ thẩm định) tuyệt đối không được tính vào tồn kho bán được. |
+| **BR-RT18** | Hàng phân loại `DISPOSED` (hư hỏng, loại bỏ) tuyệt đối không được tính vào tồn kho bán được. |
+| **BR-RT19** | Mọi biến động tồn kho do hàng trả về kho phải được ghi nhận bằng chứng từ sổ cái `InventoryTransaction`. |
+| **BR-RT20** | Chỉ xác định số tiền đủ điều kiện hoàn và kích hoạt tạo `Refund` sau khi kho tiếp nhận và kiểm định hàng (RET-Q07). |
+| **BR-RT21** | Yêu cầu hoàn tiền được thực thi thông qua phân hệ Subject Area 09 – Payment & Refund. |
+| **BR-RT22** | Mọi lần thay đổi trạng thái yêu cầu trả hàng phải được ghi nhận bất biến trong `ReturnStatusHistory` (RET-Q08). |
+| **BR-RT23** | Tuyệt đối không xóa vật lý (`No Hard Delete`) hồ sơ yêu cầu, phiếu tiếp nhận và kết quả kiểm tra hàng trả. |
 
 ---
 
@@ -267,3 +326,30 @@ Bộ quy tắc nghiệp vụ dưới đây được chuẩn hóa theo 10 nhóm c
 | **BR-SA16** | Việc hủy đơn phải tuân thủ chính sách thời gian tự hủy (khi chưa đóng gói) và quy trình xử lý của nhân viên (khi đã đóng gói/giao vận). |
 | **BR-SA17** | Không được chuyển giỏ hàng sang `CONVERTED` nếu quá trình tạo đơn và giữ hàng thất bại. |
 | **BR-SA18** | Tổng tiền đơn hàng phải nhất quán với tiền hàng, giảm giá và phí vận chuyển đã snapshot: $TotalAmount = SubtotalAmount - DiscountAmount + ShippingFee$. |
+
+---
+
+## 6.14. Audit & Reporting (`BR-AR`)
+
+| ID | Quy tắc nghiệp vụ |
+| :--- | :--- |
+| **BR-AR01** | Hệ thống chỉ ghi `AuditLog` đối với các thao tác quan trọng và nhạy cảm đã được xác định (AR-Q01). |
+| **BR-AR02** | Mỗi `AuditLog` phải ghi nhận loại hành động, đối tượng tác động (`EntityName`, `RecordID`) và thời điểm thực hiện. |
+| **BR-AR03** | `AuditLog` phải ghi nhận tài khoản thực hiện `AccountID` nếu hành động được thực hiện bởi người dùng. |
+| **BR-AR04** | Các thao tác do hệ thống tự động chạy ngầm có thể không có `AccountID` nhưng phải xác định được nguồn thực hiện. |
+| **BR-AR05** | Các trường thuộc danh sách theo dõi phải ghi nhận giá trị trước `OldValue` và giá trị sau `NewValue` trong `AuditLogDetail` khi có thay đổi (AR-Q02). |
+| **BR-AR06** | Tuyệt đối cấm ghi dữ liệu bí mật, mật khẩu, mã OTP, token hoặc thông tin thẻ ngân hàng vào `AuditLog` và `AuditLogDetail`. |
+| **BR-AR07** | Tuyệt đối cấm chỉnh sửa hoặc xóa `AuditLog` qua bất kỳ chức năng nghiệp vụ nào (`Append-Only / WORM`, AR-Q03). |
+| **BR-AR08** | `AuditLog` có thời hạn lưu trữ hoạt động được cấu hình qua `RetentionUntil` (AR-Q04). |
+| **BR-AR09** | `AuditLog` hết hạn được chuyển vào kho lưu trữ lạnh (Cold Archive) theo chính sách lưu trữ của doanh nghiệp. |
+| **BR-AR10** | Mỗi báo cáo được cung cấp cho người dùng phải có `ReportDefinition` tương ứng trong danh mục. |
+| **BR-AR11** | Mỗi lần chạy hoặc xuất báo cáo ra file bắt buộc phải tạo một bản ghi `ReportExecution` mới (AR-Q06). |
+| **BR-AR12** | `ReportExecution` phải lưu tài khoản yêu cầu, bộ tham số lọc và trạng thái thực thi. |
+| **BR-AR13** | Người dùng chỉ được chạy báo cáo khi có quyền phù hợp được cấu hình trong `ReportPermission` (AR-Q07). |
+| **BR-AR14** | Báo cáo vận hành hàng ngày được phép truy vấn trực tiếp từ dữ liệu nghiệp vụ qua các view/index tối ưu (AR-Q05). |
+| **BR-AR15** | Báo cáo tài chính/kế toán cần chốt số liệu kỳ phải sử dụng `ReportSnapshot` để bảo đảm số liệu cố định bất biến. |
+| **BR-AR16** | `ReportSnapshot` phải lưu kỳ báo cáo (`PeriodStart`, `PeriodEnd`) và thời điểm chốt số liệu. |
+| **BR-AR17** | Snapshot đã chốt tuyệt đối không được thay đổi dữ liệu trực tiếp. |
+| **BR-AR18** | Một báo cáo có thể được cấp quyền cho nhiều `Role` thông qua `ReportPermission`. |
+| **BR-AR19** | Quyền xem (`CanView`), quyền xuất file (`CanExport`), và quyền chốt kỳ (`CanCreateSnapshot`) được phân biệt độc lập. |
+| **BR-AR20** | Không tạo dữ liệu snapshot trùng lặp nếu không có nhu cầu nghiệp vụ hoặc tối ưu hiệu năng rõ ràng. |

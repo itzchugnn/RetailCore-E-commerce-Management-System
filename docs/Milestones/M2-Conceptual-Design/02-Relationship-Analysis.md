@@ -417,3 +417,190 @@ erDiagram
     ORDER_LINE ||--|{ ORDER_WAREHOUSE_ALLOCATION : "splits_into (1..1 : 1..N)"
     SALES_ORDER ||--o{ STOCK_RESERVATION : "reserves (1..1 : 0..N)"
 ```
+
+---
+
+## 10. Subject Area 07: Fulfillment & Shipping – Phân tích Quan hệ & Bản số
+
+### 10.1. Bảng Quan hệ và Bản số Crow's Foot
+
+| Quan hệ | Bản số (Cardinality) | Ký hiệu Crow's Foot | Ý nghĩa nghiệp vụ & Ràng buộc |
+| :--- | :---: | :---: | :--- |
+| `SalesOrder` – `Shipment` | $1 : 0..N$ | `|| ─── }o` | Một đơn hàng có thể có nhiều lô giao hàng do phân bổ từ nhiều kho (Split Shipment theo BD-03, BR-FS01, BR-FS03). Mỗi lô giao thuộc đúng một đơn hàng. |
+| `Warehouse` – `Shipment` | $1 : 0..N$ | `|| ─── }o` | Mỗi lô giao hàng chỉ xuất phát từ **duy nhất một kho vật lý** (`WarehouseID` NOT NULL, SHIP-Q01, BR-FS02). Một kho có thể xuất nhiều lô giao. |
+| `Carrier` – `Shipment` | $1 : 0..N$ | `|| ─── }o` | Mỗi lô giao hàng được vận chuyển bởi đúng một đơn vị vận chuyển đối tác (SHIP-Q03, BR-FS10). Một đơn vị vận chuyển có thể nhận nhiều lô giao. |
+| `Shipment` – `ShipmentLine` | $1 : 1..N$ | `|| ─── }|` | Mỗi lô giao hàng bắt buộc chứa ít nhất một dòng chi tiết sản phẩm đóng gói (BR-FS05). Mỗi chi tiết dòng giao thuộc duy nhất một lô giao. |
+| `OrderLine` – `ShipmentLine` | $1 : 0..N$ | `|| ─── }o` | Một dòng hàng trong đơn có thể được chia thành nhiều đợt giao hoặc xuất từ nhiều kho (BR-FS08). Ràng buộc: $\sum ShipmentQty \leq OrderedQty$. |
+| `OrderWarehouseAllocation` – `ShipmentLine` | $1 : 0..N$ | `|| ─── }o` | Mỗi dòng chi tiết lô giao phải tham chiếu đúng một dòng phân bổ kho (BR-FS06, BR-FS07). Kho của Shipment phải khớp kho của Allocation (BR-FS09). |
+| `Shipment` – `DeliveryAttempt` | $1 : 0..N$ | `|| ─── }o` | Một lô giao có thể trải qua nhiều lần giao hàng khi giao thất bại (SHIP-Q04, BR-FS12, BR-FS13). `AttemptNumber` tăng tuần tự (1..3); vượt hạn mức thì chuyển hoàn (BR-FS14). |
+| `Shipment` – `ShipmentStatusHistory` | $1 : 1..N$ | `|| ─── }|` | Ngay khi tạo, Shipment có bản ghi trạng thái ban đầu (`PREPARING`); lưu vết bất biến mọi lần chuyển trạng thái kế tiếp từ API Webhook hoặc nhân viên (BR-FS18). |
+
+### 10.2. Sơ đồ Quan hệ Khái niệm (Subject Area 07: Fulfillment & Shipping)
+
+```mermaid
+erDiagram
+    %% Quan hệ nội bộ Subject Area 07 và liên kết Sales, Warehouse
+    SALES_ORDER ||--o{ SHIPMENT : "fulfilled_by (1..1 : 0..N)"
+    WAREHOUSE ||--o{ SHIPMENT : "dispatched_from (1..1 : 0..N)"
+    CARRIER ||--o{ SHIPMENT : "carried_by (1..1 : 0..N)"
+
+    SHIPMENT ||--|{ SHIPMENT_LINE : "contains (1..1 : 1..N)"
+    ORDER_LINE ||--o{ SHIPMENT_LINE : "shipped_via (1..1 : 0..N)"
+    ORDER_WAREHOUSE_ALLOCATION ||--o{ SHIPMENT_LINE : "realizes (1..1 : 0..N)"
+
+    SHIPMENT ||--o{ DELIVERY_ATTEMPT : "attempted_via (1..1 : 0..N)"
+    SHIPMENT ||--|{ SHIPMENT_STATUS_HISTORY : "tracks_status (1..1 : 1..N)"
+```
+
+---
+
+## 11. Subject Area 08: Promotion – Phân tích Quan hệ & Bản số
+
+### 11.1. Bảng Quan hệ và Bản số Crow's Foot
+
+| Quan hệ | Bản số (Cardinality) | Ký hiệu Crow's Foot | Ý nghĩa nghiệp vụ & Ràng buộc |
+| :--- | :---: | :---: | :--- |
+| `Promotion` – `PromotionCondition` | $1 : 0..N$ | `|| ─── }o` | Một chương trình có thể có nhiều điều kiện cấu hình sẵn (`ConditionType`, BR-PRM07); mỗi điều kiện thuộc đúng một chương trình. |
+| `Promotion` – `PromotionProduct` | $1 : 0..N$ | `|| ─── }o` | Chương trình cấp sản phẩm (`PromotionScope = 'PRODUCT'`) liên kết với danh sách SKU được áp dụng (BR-PRM04). |
+| `ProductVariant` – `PromotionProduct` | $1 : 0..N$ | `|| ─── }o` | Một SKU có thể nằm trong danh sách áp dụng của nhiều chương trình khuyến mãi (quan hệ $N:N$). |
+| `Promotion` – `Voucher` | $1 : 0..N$ | `|| ─── }o` | Một chương trình cấp đơn hàng (`PromotionScope = 'ORDER'`) có thể phát hành một hoặc nhiều mã voucher (BR-PRM08). Mỗi voucher thuộc đúng 1 chương trình. |
+| `Promotion` – `PromotionUsage` | $1 : 0..N$ | `|| ─── }o` | Một chương trình có thể có nhiều lượt sử dụng thực tế. Ràng buộc: `UsedCount <= MaxUsage` (BR-PRM12). |
+| `SalesOrder` – `PromotionUsage` | $1 : 0..N$ | `|| ─── }o` | Một đơn hàng có thể ghi nhận nhiều ưu đãi (tối đa 1 voucher cấp đơn và các ưu đãi cấp sản phẩm theo từng dòng hàng, BD-05). |
+| `OrderLine` – `PromotionUsage` | $1 : 0..N$ | `|| ─── }o` | Khi ưu đãi là cấp sản phẩm, `OrderLineID` bắt buộc có giá trị. Mỗi `OrderLine` tối đa 1 ưu đãi cấp sản phẩm được tiêu thụ (BD-05, BR-PRM15). |
+| `Voucher` – `PromotionUsage` | $1 : 0..N$ | `|| ─── }o` | Khi ưu đãi áp dụng qua mã voucher, `VoucherID` được ghi nhận. Mỗi đơn hàng tối đa 1 voucher cấp đơn (BD-05, BR-PRM16). |
+| `Promotion` – `PromotionTargetCustomer` | $1 : 0..N$ | `|| ─── }o` | Chương trình ưu đãi riêng tư/VIP liên kết với danh sách khách hàng được chỉ định (BR-PRM11). |
+| `Customer` – `PromotionTargetCustomer` | $1 : 0..N$ | `|| ─── }o` | Một khách hàng có thể được chỉ định trong nhiều chương trình khuyến mãi riêng tư (quan hệ $N:N$). |
+
+### 11.2. Sơ đồ Quan hệ Khái niệm (Subject Area 08: Promotion)
+
+```mermaid
+erDiagram
+    %% Cấu hình chương trình và điều kiện
+    PROMOTION ||--o{ PROMOTION_CONDITION : "defines_rules (1..1 : 0..N)"
+    PROMOTION ||--o{ PROMOTION_PRODUCT : "applies_to_skus (1..1 : 0..N)"
+    PRODUCT_VARIANT ||--o{ PROMOTION_PRODUCT : "included_in (1..1 : 0..N)"
+    
+    PROMOTION ||--o{ VOUCHER : "issues (1..1 : 0..N)"
+    PROMOTION ||--o{ PROMOTION_TARGET_CUSTOMER : "targets (1..1 : 0..N)"
+    CUSTOMER ||--o{ PROMOTION_TARGET_CUSTOMER : "eligible_for (1..1 : 0..N)"
+
+    %% Ghi nhận tiêu thụ ưu đãi (Promotion Usage Ledger)
+    PROMOTION ||--o{ PROMOTION_USAGE : "consumed_via (1..1 : 0..N)"
+    VOUCHER ||--o{ PROMOTION_USAGE : "applied_via (1..1 : 0..N)"
+    SALES_ORDER ||--o{ PROMOTION_USAGE : "benefits_from (1..1 : 0..N)"
+    ORDER_LINE ||--o{ PROMOTION_USAGE : "discounts (1..1 : 0..N)"
+```
+
+---
+
+## 12. Subject Area 09: Payment & Refund – Phân tích Quan hệ & Bản số
+
+### 12.1. Bảng Quan hệ và Bản số Crow's Foot
+
+| Quan hệ | Bản số (Cardinality) | Ký hiệu Crow's Foot | Ý nghĩa nghiệp vụ & Ràng buộc |
+| :--- | :---: | :---: | :--- |
+| `SalesOrder` – `Payment` | $1 : 1$ | `|| ─── ||` | Mỗi đơn hàng chính thức bắt buộc có đúng một hồ sơ thanh toán (`Payment.OrderID` UNIQUE, BR-PY01). Khách hàng chọn phương thức thanh toán khi checkout. |
+| `PaymentMethod` – `Payment` | $1 : 0..N$ | `|| ─── }o` | Một phương thức thanh toán có thể được sử dụng trong nhiều hồ sơ thanh toán đơn hàng (BR-PY02). Mỗi `Payment` gắn với đúng một phương thức. |
+| `Payment` – `PaymentTransaction` | $1 : 0..N$ | `|| ─── }o` | Một hồ sơ thanh toán có thể có nhiều lần thử giao dịch qua cổng thanh toán khi khách hàng thanh toán lại (PAY-Q03, BR-PY04, BR-PY11). Đơn COD ghi nhận giao dịch thu tiền khi giao thành công. |
+| `Payment` – `Refund` | $1 : 0..N$ | `|| ─── }o` | Một hồ sơ thanh toán đã thu tiền có thể phát sinh nhiều yêu cầu hoàn tiền toàn phần hoặc một phần (PAY-Q04, BR-PY15, BR-PY16). Ràng buộc: $\sum RefundAmount \le RemainingRefundable$. |
+| `Refund` – `RefundTransaction` | $1 : 0..N$ | `|| ─── }o` | Một yêu cầu hoàn tiền có thể trải qua nhiều lần thực hiện chuyển tiền nếu lần trước thất bại hoặc hoàn nhiều đợt (BR-PY17, BR-PY19). |
+
+### 12.2. Sơ đồ Quan hệ Khái niệm (Subject Area 09: Payment & Refund)
+
+```mermaid
+erDiagram
+    %% Quan hệ nội bộ Subject Area 09 và liên kết Sales
+    SALES_ORDER ||--|| PAYMENT : "settled_via (1..1 : 1..1)"
+    PAYMENT_METHOD ||--o{ PAYMENT : "categorized_as (1..1 : 0..N)"
+
+    %% Nhật ký giao dịch và hoàn tiền
+    PAYMENT ||--o{ PAYMENT_TRANSACTION : "executes_attempts (1..1 : 0..N)"
+    PAYMENT ||--o{ REFUND : "requests_refund (1..1 : 0..N)"
+    
+    REFUND ||--o{ REFUND_TRANSACTION : "processed_via (1..1 : 0..N)"
+```
+
+---
+
+## 13. Subject Area 10: Return & Exchange – Phân tích Quan hệ & Bản số
+
+### 13.1. Bảng Quan hệ và Bản số Crow's Foot
+
+| Quan hệ | Bản số (Cardinality) | Ký hiệu Crow's Foot | Ý nghĩa nghiệp vụ & Ràng buộc |
+| :--- | :---: | :---: | :--- |
+| `SalesOrder` – `ReturnRequest` | $1 : 0..N$ | `|| ─── }o` | Một đơn hàng đã giao thành công có thể phát sinh nhiều yêu cầu đổi trả hàng từng phần (BR-RT01). Mỗi RMA thuộc đúng một đơn hàng gốc. |
+| `Customer` – `ReturnRequest` | $1 : 0..N$ | `|| ─── }o` | Một khách hàng có thể tạo nhiều yêu cầu trả hàng trong lịch sử mua sắm. Mỗi RMA phải thuộc đúng khách hàng sở hữu đơn. |
+| `Account` – `ReturnRequest` (CreatedBy) | $1 : 0..N$ | `|| ─── }o` | Một tài khoản (khách hàng hoặc nhân viên CSKH tạo hộ) có thể khởi tạo nhiều yêu cầu RMA (RET-Q01, BR-RT02). |
+| `Warehouse` – `ReturnRequest` | $1 : 0..N$ | `|| ─── }o` | Mỗi yêu cầu trả hàng chỉ định duy nhất một kho tiếp nhận (`WarehouseID` NOT NULL, RET-Q06, BR-RT11). Một kho có thể được chỉ định cho nhiều RMA. |
+| `ReturnRequest` – `ReturnRequestLine` | $1 : 1..N$ | `|| ─── }|` | Mỗi yêu cầu trả hàng bắt buộc có ít nhất một dòng hàng yêu cầu trả (BR-RT05). Mỗi dòng chi tiết thuộc duy nhất một RMA. |
+| `OrderLine` – `ReturnRequestLine` | $1 : 0..N$ | `|| ─── }o` | Một dòng hàng trong đơn có thể xuất hiện trong nhiều yêu cầu trả hàng nếu còn số lượng đủ điều kiện (BR-RT08, BR-RT09). |
+| `ReturnRequest` – `ReturnReceipt` | $1 : 0..N$ | `|| ─── }o` | Một yêu cầu trả hàng có thể được kho tiếp nhận thành nhiều phiếu nhận nếu khách gửi nhiều kiện (BR-RT13). |
+| `Warehouse` – `ReturnReceipt` | $1 : 0..N$ | `|| ─── }o` | Mỗi phiếu tiếp nhận thuộc duy nhất một kho vật lý và phải khớp với kho đã chỉ định trên `ReturnRequest` (BR-RT12). |
+| `ReturnReceipt` – `ReturnReceiptLine` | $1 : 1..N$ | `|| ─── }|` | Mỗi phiếu tiếp nhận bắt buộc có ít nhất một dòng kiểm đếm thực tế (BR-RT14). |
+| `ReturnRequestLine` – `ReturnReceiptLine` | $1 : 0..N$ | `|| ─── }o` | Một dòng yêu cầu trả hàng có thể được tiếp nhận qua nhiều dòng phiếu nhận (do nhận nhiều đợt hoặc có nhiều kết quả phân loại `Disposition`). |
+| `ReturnRequest` – `ReturnStatusHistory` | $1 : 1..N$ | `|| ─── }|` | Ngay khi tạo, RMA có bản ghi trạng thái đầu tiên (`PENDING_APPROVAL`); lưu vết bất biến mọi lần chuyển đổi trạng thái (RET-Q08, BR-RT22). |
+| `Account` – `ReturnStatusHistory` | $1 : 0..N$ | `|| ─── }o` | Một tài khoản nhân viên hoặc khách hàng có thể thực hiện nhiều lần chuyển trạng thái trong các yêu cầu trả hàng. |
+| `ReturnRequest` – `Refund` | $1 : 0..N$ | `|| ─── }o` | Sau khi hàng trả được kho tiếp nhận kiểm định đạt chuẩn, RMA kích hoạt phát sinh yêu cầu hoàn tiền bên Subject Area 09 (BR-RT20, BR-RT21). |
+
+### 13.2. Sơ đồ Quan hệ Khái niệm (Subject Area 10: Return & Exchange)
+
+```mermaid
+erDiagram
+    %% Liên kết từ SalesOrder, Customer, Account và Warehouse
+    SALES_ORDER ||--o{ RETURN_REQUEST : "initiates (1..1 : 0..N)"
+    CUSTOMER ||--o{ RETURN_REQUEST : "submits (1..1 : 0..N)"
+    ACCOUNT ||--o{ RETURN_REQUEST : "created_by (1..1 : 0..N)"
+    WAREHOUSE ||--o{ RETURN_REQUEST : "designated_to (1..1 : 0..N)"
+
+    %% Cấu trúc Yêu cầu đổi trả (RMA)
+    RETURN_REQUEST ||--|{ RETURN_REQUEST_LINE : "specifies (1..1 : 1..N)"
+    ORDER_LINE ||--o{ RETURN_REQUEST_LINE : "returns_item (1..1 : 0..N)"
+    RETURN_REQUEST ||--|{ RETURN_STATUS_HISTORY : "tracks_status (1..1 : 1..N)"
+    ACCOUNT ||--o{ RETURN_STATUS_HISTORY : "changed_by (1..1 : 0..N)"
+
+    %% Phiếu tiếp nhận và kiểm định tại kho
+    RETURN_REQUEST ||--o{ RETURN_RECEIPT : "received_by (1..1 : 0..N)"
+    WAREHOUSE ||--o{ RETURN_RECEIPT : "processed_at (1..1 : 0..N)"
+    RETURN_RECEIPT ||--|{ RETURN_RECEIPT_LINE : "inspects (1..1 : 1..N)"
+    RETURN_REQUEST_LINE ||--o{ RETURN_RECEIPT_LINE : "reconciles (1..1 : 0..N)"
+
+    %% Liên kết sang Payment & Refund
+    RETURN_REQUEST ||--o{ REFUND : "triggers_refund (1..1 : 0..N)"
+```
+
+---
+
+## 14. Subject Area 11: Audit & Reporting – Phân tích Quan hệ & Bản số
+
+### 14.1. Bảng Quan hệ và Bản số Crow's Foot
+
+| Quan hệ | Bản số (Cardinality) | Ký hiệu Crow's Foot | Ý nghĩa nghiệp vụ & Ràng buộc |
+| :--- | :---: | :---: | :--- |
+| `Account` – `AuditLog` | $1 : 0..N$ | `o| ─── }o` | Một tài khoản người dùng có thể thực hiện nhiều hành động được ghi audit log. Sự kiện hệ thống tự động chạy ngầm có thể để trống `AccountID` (BR-AR03, BR-AR04). |
+| `AuditLog` – `AuditLogDetail` | $1 : 0..N$ | `|| ─── }o` | Một sự kiện audit có thể ghi nhận chi tiết nhiều thuộc tính bị thay đổi (BR-AR05). Các hành động không thay đổi dữ liệu (như LOGIN) không có detail. |
+| `ReportDefinition` – `ReportExecution` | $1 : 0..N$ | `|| ─── }o` | Một mẫu báo cáo có thể được người dùng thực thi chạy nhiều lần với các tham số lọc khác nhau (BR-AR10, BR-AR11). |
+| `Account` – `ReportExecution` | $1 : 0..N$ | `|| ─── }o` | Một tài khoản nhân viên có thể yêu cầu chạy hoặc xuất file nhiều báo cáo trong quá trình làm việc (BR-AR12). |
+| `ReportDefinition` – `ReportSnapshot` | $1 : 0..N$ | `|| ─── }o` | Một mẫu báo cáo có thể có nhiều snapshot chốt số liệu theo các kỳ kế toán/thời điểm khác nhau (BR-AR15, BR-AR16). |
+| `Account` – `ReportSnapshot` | $1 : 0..N$ | `o| ─── }o` | Một tài khoản hoặc tiến trình định kỳ có thể tạo ra nhiều bản chụp số liệu báo cáo. |
+| `ReportDefinition` – `ReportPermission` | $1 : 0..N$ | `|| ─── }o` | Một báo cáo có thể được cấu hình phân quyền cho nhiều vai trò (`Role`) khác nhau (BR-AR18). |
+| `Role` – `ReportPermission` | $1 : 0..N$ | `|| ─── }o` | Một vai trò trong hệ thống có thể được cấp quyền trên nhiều mẫu báo cáo (quan hệ $N:N$, BR-AR18, BR-AR19). |
+
+### 14.2. Sơ đồ Quan hệ Khái niệm (Subject Area 11: Audit & Reporting)
+
+```mermaid
+erDiagram
+    %% Phân hệ Kiểm toán an ninh (Audit Trail)
+    ACCOUNT ||--o{ AUDIT_LOG : "performs (0..1 : 0..N)"
+    AUDIT_LOG ||--o{ AUDIT_LOG_DETAIL : "details_changes (1..1 : 0..N)"
+
+    %% Phân hệ Báo cáo quản trị (Reporting & Snapshot)
+    REPORT_DEFINITION ||--o{ REPORT_EXECUTION : "defines_template (1..1 : 0..N)"
+    ACCOUNT ||--o{ REPORT_EXECUTION : "requests_run (1..1 : 0..N)"
+
+    REPORT_DEFINITION ||--o{ REPORT_SNAPSHOT : "captures_period (1..1 : 0..N)"
+    ACCOUNT ||--o{ REPORT_SNAPSHOT : "created_by (0..1 : 0..N)"
+
+    %% Phân quyền báo cáo với Subject Area 04
+    REPORT_DEFINITION ||--o{ REPORT_PERMISSION : "grants_access (1..1 : 0..N)"
+    ROLE ||--o{ REPORT_PERMISSION : "holds_permission (1..1 : 0..N)"
+```

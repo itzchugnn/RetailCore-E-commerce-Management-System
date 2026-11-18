@@ -154,3 +154,77 @@
 | **SALES-Q05** | Mức độ snapshot thông tin sản phẩm trên `OrderLine`? | **Snapshot toàn bộ: SKU, tên sản phẩm, tên biến thể, đơn giá và `VariantAttributesSnapshot` (JSON).** | Bảo toàn 100% hợp đồng thương mại và hóa đơn theo luật thuế. Đơn hàng cũ hiển thị độc lập hoàn toàn với các biến động của Catalog sau này. |
 | **SALES-Q06** | Quản lý địa chỉ giao hàng trong đơn? | **Mỗi đơn hàng có ĐÚNG MỘT địa chỉ giao hàng snapshot (`SalesOrder 1 ─── 1 OrderAddress`).** | Split shipment chỉ là chia nguồn xuất kho, toàn bộ kiện hàng đều giao về cùng 1 địa chỉ nhận của đơn. Độc lập với sổ địa chỉ `CustomerAddress`. |
 | **SALES-Q07** | Chính sách lưu trữ đơn hàng và dòng hàng? | **Tuyệt đối không xóa vật lý (`No Hard Delete`) đơn hàng và dòng hàng đã phát sinh.** | Đơn hàng là chứng từ kế toán, pháp lý. Đơn hủy giữ nguyên trạng thái `CANCELLED` cùng nhật ký `OrderStatusHistory` phục vụ kiểm toán và báo cáo tỷ lệ hủy. |
+
+---
+
+## 9. Chính thức hóa Quyết định Thiết kế Subject Area 07: Fulfillment & Shipping (SHIP-Q01 đến SHIP-Q07)
+
+| ID | Vấn đề thiết kế | Quyết định chốt chính thức | Tác động CSDL & Nghiệp vụ |
+| :---: | :--- | :--- | :--- |
+| **SHIP-Q01** | Số lượng kho xuất hàng cho một Shipment? | **Đúng một kho (`WarehouseID NOT NULL`).** | Tuân thủ BD-03 (Split Shipment theo kho). Mỗi kiện hàng vật lý có 1 mã vận đơn (`TrackingNumber`) xuất phát từ duy nhất 1 kho. Không gom hàng từ nhiều kho vào chung 1 Shipment. |
+| **SHIP-Q02** | Thời điểm tạo lô giao hàng (Shipment)? | **Sau khi đơn được xác nhận (`CONFIRMED`) và kho chuẩn bị xuất hàng (`PROCESSING`).** | Không tạo Shipment khi đơn đang `PENDING_PAYMENT` hoặc đã bị hủy. Chỉ tạo khi kho bắt đầu nhặt hàng (Picking) để in Pick-list và Pack-slip. |
+| **SHIP-Q03** | Cách chọn đơn vị vận chuyển (Carrier)? | **Hệ thống đề xuất dựa trên cấu hình, nhân viên/điều phối viên xác nhận.** | Tầng ứng dụng gợi ý Carrier tối ưu theo vùng miền, cước phí và SLA. CSDL lưu `Shipment.CarrierID` (FK), hỗ trợ linh hoạt cả tự động và điều chỉnh thủ công. |
+| **SHIP-Q04** | Xử lý khi giao hàng thất bại? | **Cho phép giao lại tối đa $N$ lần (chuẩn là 3 lần); vượt giới hạn thì chuyển hoàn (`RETURNING`).** | Chuẩn hóa theo ngành bưu chính viễn thông Việt Nam. Ghi nhận chi tiết từng lần thử vào `DeliveryAttempt`. Vượt quá hạn mức tự động kích hoạt luồng chuyển hoàn. |
+| **SHIP-Q05** | Lưu trữ bằng chứng giao hàng (Proof of Delivery)? | **Lưu người nhận, thời gian và ghi chú giao hàng; mở rộng ảnh/chữ ký sau.** | Mức khái niệm lưu `RecipientName`, `AttemptedAt`, `DeliveryNote` trong `DeliveryAttempt`. Mức Logical/Physical có thể mở rộng cột `ProofOfDeliveryURL` mà không vỡ schema. |
+| **SHIP-Q06** | Cơ chế cập nhật trạng thái vận chuyển? | **Hỗ trợ cả thủ công và tích hợp tự động qua API/Webhook đối tác.** | `ShipmentStatusHistory` ghi nhận cả sự kiện webhook tự động từ Carrier API (GHTK/GHN) và các thao tác cập nhật của điều phối viên (`ChangedBy` ghi rõ nguồn cập nhật). |
+| **SHIP-Q07** | Phí vận chuyển được quản lý như thế nào? | **`SalesOrder` lưu tổng phí tính cho khách; `Shipment` lưu phần phí phân bổ thực tế.** | Phân định ranh giới doanh thu vận chuyển (`SalesOrder.ShippingFee`) và chi phí logistics thực tế trả cho đối tác (`Shipment.ShippingFee`), phục vụ đối soát công nợ. |
+
+---
+
+## 10. Chính thức hóa Quyết định Thiết kế Subject Area 08: Promotion (PROMO-Q01 đến PROMO-Q08)
+
+| ID | Vấn đề thiết kế | Quyết định chốt chính thức | Tác động CSDL & Nghiệp vụ |
+| :---: | :--- | :--- | :--- |
+| **PROMO-Q01** | Phạm vi ưu đãi cấp sản phẩm? | **Áp dụng theo SKU (`ProductVariant`) qua bảng liên kết `PromotionProduct`.** | Chuẩn hóa CSDL cao nhất, kiểm soát chính xác chiết khấu từng biến thể, tránh nhập nhằng định giá giữa các biến thể của sản phẩm. |
+| **PROMO-Q02** | Biểu diễn điều kiện khuyến mãi? | **Sử dụng các loại điều kiện cấu hình sẵn (`ConditionType`), cấm biểu thức tự do.** | Tối ưu hóa tốc độ đánh giá bằng Index SQL Server, loại bỏ rủi ro bảo mật injection và nghẽn hiệu năng của bộ dynamic expression parsing. |
+| **PROMO-Q03** | Cơ chế cấp voucher cấp đơn hàng? | **Hỗ trợ cả Voucher dùng chung toàn sàn và Voucher riêng cho từng khách hàng.** | CSDL linh hoạt: Voucher dùng chung để trống `AssignedCustomerID`; Voucher cá nhân gán `AssignedCustomerID` bắt buộc. |
+| **PROMO-Q04** | Giới hạn lượt sử dụng voucher? | **Giới hạn ở cả cấp tổng chương trình (`MaxUsage`) và cấp mỗi khách hàng (`MaxUsagePerCustomer`).** | Ngăn chặn gian lận (Voucher Abuse) và tài khoản bot gom vét sạch mã ưu đãi của chương trình. |
+| **PROMO-Q05** | Thời điểm ghi nhận lượt sử dụng? | **Chỉ ghi nhận chính thức (`CONSUMED`, tăng `UsedCount`) khi thanh toán thành công.** | Giữ chỗ tạm thời (`PENDING`) khi đơn ở `PENDING_PAYMENT` để tránh bán vượt mã. Chỉ chốt tiêu thụ khi đơn sang `CONFIRMED`. |
+| **PROMO-Q06** | Xử lý voucher khi đơn hủy/hoàn? | **Hoàn lại lượt sử dụng (`UsageStatus = 'REVERSED'`) nếu voucher còn trong thời hạn.** | Bảo vệ quyền lợi khách hàng khi đơn bị hủy hợp lệ trước khi đóng gói hoặc hoàn trả toàn bộ. Hết hạn chương trình thì không hoàn lại. |
+| **PROMO-Q07** | Chương trình dành riêng cho khách? | **Hỗ trợ qua thực thể kết hợp `PromotionTargetCustomer` ($N:N$).** | Phục vụ các chiến dịch chăm sóc khách hàng VIP, ưu đãi ngày sinh nhật, hoặc phát voucher đền bù dịch vụ cho từng tài khoản. |
+| **PROMO-Q08** | Chính sách sửa chương trình đã dùng? | **Tuyệt đối không sửa thông tin ảnh hưởng ưu đãi; quản trị viên tạo phiên bản mới.** | Bảo toàn bất biến kiểm toán tài chính (Financial Auditability). CSDL quản lý qua `VersionNumber` và `SupersedesPromotionID`. |
+
+---
+
+## 11. Chính thức hóa Quyết định Thiết kế Subject Area 09: Payment & Refund (PAY-Q01 đến PAY-Q09)
+
+| ID | Vấn đề thiết kế | Quyết định chốt chính thức | Tác động CSDL & Nghiệp vụ |
+| :---: | :--- | :--- | :--- |
+| **PAY-Q01** | Số lượng phương thức thanh toán trên một đơn? | **Một phương thức duy nhất cho mỗi đơn hàng.** | Đơn giản hóa đối soát công nợ, chuẩn hóa quan hệ $1:1$ giữa `SalesOrder` và `Payment`. Tránh chia nhỏ dòng tiền gây phân mảnh và phức tạp đối soát. |
+| **PAY-Q02** | Có hỗ trợ phương thức COD không? | **Có, hỗ trợ song song COD và cổng thanh toán trực tuyến.** | Phù hợp thói quen TMĐT Việt Nam; phân định luồng thanh toán trước (Online) và thanh toán sau (COD). |
+| **PAY-Q03** | Cơ chế thanh toán lại khi giao dịch thất bại? | **Cho phép thanh toán lại; mỗi lần thử tạo một `PaymentTransaction` mới.** | Đơn giữ `PENDING_PAYMENT` trong thời gian timeout, không bắt khách đặt lại đơn mới khi rớt mạng hoặc sai OTP. Giao dịch cũ lưu vết phục vụ đối soát. |
+| **PAY-Q04** | Hỗ trợ hoàn tiền một phần (Partial Refund)? | **Có, hỗ trợ hoàn tiền toàn phần, một phần và hoàn nhiều lần.** | Ràng buộc bất biến: $\sum RefundAmount \le RemainingRefundable = AmountPaid - AmountRefunded$. Phục vụ đổi trả từng món trong đơn nhiều sản phẩm. |
+| **PAY-Q05** | Thẩm quyền phê duyệt yêu cầu hoàn tiền? | **Nhân viên có thẩm quyền phê duyệt (`ApprovedBy NOT NULL`).** | Kiểm soát nội bộ (Internal Control), chống thất thoát dòng tiền ra khỏi doanh nghiệp. Không tự động hoàn tiền khi chưa thẩm định. |
+| **PAY-Q06** | Quy trình hoàn tiền cho đơn hàng COD? | **Hoàn qua chuyển khoản ngân hàng (Bank Transfer).** | Thu thập thông tin STK khách hàng, thực hiện lệnh chi và lưu mã giao dịch đối soát tại `RefundTransaction`. |
+| **PAY-Q07** | Lưu trữ phản hồi từ cổng thanh toán? | **Lưu chi tiết mã phản hồi, mã tham chiếu và thông điệp cổng.** | Làm bằng chứng pháp lý đối soát cuối ngày và giải quyết khiếu nại/tra soát (Chargeback). CSDL lưu `GatewayTransactionID`, `GatewayResponseCode`. |
+| **PAY-Q08** | Điều kiện chuyển đơn sang `CONFIRMED`? | **Đơn online: khi thanh toán thành công; Đơn COD: khi duyệt hợp lệ.** | Đồng bộ triệt để với `SALES-Q02`. Đảm bảo kho chỉ xuất hàng khi tiền đã thu chắc chắn hoặc đơn COD tin cậy. Xác nhận đơn COD không đồng nghĩa với đã thu tiền. |
+| **PAY-Q09** | Ghi nhận phí dịch vụ của cổng thanh toán? | **Có, lưu trường `TransactionFee` trên `PaymentTransaction`.** | Hỗ trợ đối soát số tiền thực nhận (Net Settlement) và tính toán chính xác biên lợi nhuận ròng của đơn hàng. |
+
+---
+
+## 12. Chính thức hóa Quyết định Thiết kế Subject Area 10: Return & Exchange (RET-Q01 đến RET-Q08)
+
+| ID | Vấn đề thiết kế | Quyết định chốt chính thức | Tác động CSDL & Nghiệp vụ |
+| :---: | :--- | :--- | :--- |
+| **RET-Q01** | Đối tượng được phép tạo yêu cầu trả hàng? | **Khách hàng tự tạo hoặc Nhân viên (CSKH) tạo thay khách hàng.** | CSDL lưu `CustomerID` (chủ đơn) và `CreatedByAccountID` (tài khoản người tạo), hỗ trợ tiếp nhận RMA đa kênh từ tổng đài. |
+| **RET-Q02** | Thời hạn được phép gửi yêu cầu trả hàng? | **Cấu hình theo số ngày kể từ thời điểm giao hàng thành công (`DeliveredAt`).** | Ràng buộc ứng dụng: `DATEDIFF(day, SalesOrder.DeliveredAt, ReturnRequest.RequestedAt) <= PolicyDays`. Quá hạn hệ thống khóa tạo RMA. |
+| **RET-Q03** | Có cho phép trả một phần số lượng dòng hàng? | **Có, cho phép trả một phần và trả nhiều lần cho cùng dòng hàng.** | Ràng buộc bất biến: $\sum ApprovedQty \le OrderedQty - AlreadyReturnedQty$. Phục vụ trường hợp đơn mua nhiều cái nhưng chỉ trả một vài cái. |
+| **RET-Q04** | Quy trình phê duyệt yêu cầu trả hàng? | **Nhân viên CSKH/Kiểm duyệt phải phê duyệt trước khi khách gửi hàng.** | Ngăn chặn việc gửi trả hàng sai chính sách, lãng phí chi phí logistics ngược. Trạng thái bắt buộc: `REQUESTED` $\to$ `APPROVED`. |
+| **RET-Q05** | Phân loại hàng trả về sau kiểm định tại kho? | **Phân loại thành 3 hướng: `SELLABLE`, `QUARANTINE`, hoặc `DISPOSED`.** | Chỉ hàng `SELLABLE` mới ghi nhận `CUSTOMER_RETURN_IN` tăng tồn kho bán được. Hàng `QUARANTINE` và `DISPOSED` tuyệt đối không cộng vào tồn khả dụng. |
+| **RET-Q06** | Số lượng kho tiếp nhận cho một yêu cầu? | **Mỗi yêu cầu RMA chỉ định ĐÚNG MỘT kho tiếp nhận (`WarehouseID NOT NULL`).** | Tránh chia tách phân tán hàng hoàn. Mọi phiếu `ReturnReceipt` của yêu cầu phải tiếp nhận tại đúng kho đã chỉ định. |
+| **RET-Q07** | Thời điểm tạo yêu cầu hoàn tiền (`Refund`)? | **Sau khi kho tiếp nhận và kiểm tra hàng, xác định số lượng đạt chuẩn.** | Chống gian lận hoàn tiền khống. Chỉ kích hoạt tạo `Refund` bên Subject Area 09 khi phiếu `ReturnReceipt` được chốt (`POSTED`) với `SELLABLE > 0`. |
+| **RET-Q08** | Lưu trữ lịch sử trạng thái yêu cầu trả hàng? | **Có, lưu vết toàn diện qua thực thể `ReturnStatusHistory`.** | Đảm bảo tính kiểm toán và đo lường SLA xử lý RMA: lưu `PreviousStatus`, `NewStatus`, `ChangedAt`, `ChangedByAccountID` và `ChangeReason`. |
+
+---
+
+## 13. Chính thức hóa Quyết định Thiết kế Subject Area 11: Audit & Reporting (AR-Q01 đến AR-Q07)
+
+| ID | Vấn đề thiết kế | Quyết định chốt chính thức | Tác động CSDL & Nghiệp vụ |
+| :---: | :--- | :--- | :--- |
+| **AR-Q01** | Phạm vi ghi nhật ký kiểm toán (AuditLog)? | **Chỉ ghi các thao tác quan trọng và nhạy cảm; không ghi log mọi CRUD/đọc.** | Bảo vệ hiệu năng I/O cho OLTP. Các hành động theo dõi: Duyệt đơn, hủy đơn, kiểm kê kho, chỉnh tồn, duyệt hoàn tiền, đổi giá SKU, cấp quyền Role/Permission. |
+| **AR-Q02** | Mức độ lưu chi tiết thay đổi dữ liệu? | **Lưu OldValue và NewValue cho các trường được theo dõi (`AuditLogDetail`).** | Tối ưu hóa dung lượng lưu trữ, phục vụ hiển thị so sánh (Diff Viewer). Tuyệt đối cấm lưu mật khẩu, OTP, token bảo mật vào nội dung log. |
+| **AR-Q03** | Có cho phép chỉnh sửa hoặc xóa AuditLog? | **Tuyệt đối cấm chỉnh sửa/xóa qua chức năng nghiệp vụ (`Append-Only / WORM`).** | Tuân thủ nguyên tắc an ninh kiểm toán SOX/PCI-DSS/ISO 27001. Dữ liệu chỉ ghi, cấm sửa, cấm xóa bởi bất kỳ người dùng hay quản trị viên nào. |
+| **AR-Q04** | Thời gian lưu trữ AuditLog? | **Cấu hình thời hạn lưu trữ hoạt động (12–24 tháng), sau đó chuyển vào Cold Archive.** | Sử dụng Table Partitioning trên SQL Server để duy trì hiệu năng chỉ mục tra cứu nhanh, sau đó di chuyển log cũ sang kho lưu trữ lạnh. |
+| **AR-Q05** | Cơ chế xây dựng báo cáo quản trị? | **Kết hợp: Báo cáo vận hành truy vấn trực tiếp; Báo cáo tài chính dùng `ReportSnapshot`.** | Báo cáo vận hành đọc trực tiếp từ Views tối ưu; báo cáo tài chính/kế toán dùng snapshot để chốt cố định số liệu kỳ kế toán, tránh biến động hồi tố. |
+| **AR-Q06** | Lưu vết lịch sử chạy và xuất báo cáo? | **Có, ghi nhận lịch sử qua thực thể `ReportExecution`.** | Phục vụ kiểm toán an ninh dữ liệu (ai đã trích xuất dữ liệu ra file) và hỗ trợ tác vụ xuất file dung lượng lớn bất đồng bộ lưu tại `ResultLocation`. |
+| **AR-Q07** | Phân quyền truy cập và sử dụng báo cáo? | **Phân quyền ma trận qua thực thể kết hợp `ReportPermission` (Role - Report).** | Tích hợp trực tiếp với RBAC của Subject Area 04, phân tách rõ 3 quyền hạn: `CanView` (xem), `CanExport` (xuất file) và `CanCreateSnapshot` (chốt kỳ). |
