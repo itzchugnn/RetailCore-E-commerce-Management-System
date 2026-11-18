@@ -6,9 +6,9 @@
 
 ---
 
-## 10.1. Ma trận Truy vết Toàn diện (Full Requirements Traceability Matrix)
+## 10.1. Full Requirements Traceability Matrix
 
-Ma trận này kết nối xuyên suốt giữa **Miền nghiệp vụ**, **Use Cases**, **Business Rules (v1.1)**, **Functional Requirements**, **Data Requirements (v1.1)**, **Quyết định nghiệp vụ (BD-01 đến BD-07)** và **Thực thể CSDL dự kiến ở M2**:
+Ma trận này kết nối xuyên suốt giữa **Miền nghiệp vụ**, **Use Cases**, **Business Rules (v1.1)**, **Functional Requirements**, **Data Requirements (v1.1)**, **Business Decisions (BD-01 đến BD-07)** và **Thực thể CSDL dự kiến ở M2**:
 
 | Miền nghiệp vụ | Use Case liên quan | Business Rules (v1.1) | Functional Requirements | Data Requirements (v1.1) | Business Decisions | Thực thể CSDL dự kiến (M2) |
 | :--- | :--- | :--- | :--- | :--- | :---: | :--- |
@@ -28,19 +28,19 @@ Ma trận này kết nối xuyên suốt giữa **Miền nghiệp vụ**, **Use 
 
 ## 10.2. M1 Exit Criteria – Điều kiện Nghiệm thu Hoàn thành Milestone M1
 
-| ID | Tiêu chí nghiệm thu | Kiểm chứng thực tế | Đánh giá |
+| ID | Tiêu chí nghiệm thu | File | Đánh giá |
 | :--- | :--- | :--- | :---: |
-| **EC-01** | Project Charter xác định rõ mục tiêu và phạm vi | Đã hoàn thiện [01-Project-Charter.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M1-Business-Analysis/01-Project-Charter.md) | **Đạt** |
-| **EC-02** | Xác định Stakeholder và ma trận phân quyền RBAC | Đã hoàn thiện [02-Stakeholder-Register.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M1-Business-Analysis/02-Stakeholder-Register.md) | **Đạt** |
-| **EC-03** | Use Case Diagram tổng thể và phân rã chi tiết | Đã hoàn thiện [03-Use-Case-Diagram.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M1-Business-Analysis/03-Use-Case-Diagram.md) | **Đạt** |
-| **EC-04** | Đặc tả các Use Case cốt lõi (Checkout, Giữ kho, Nhập kho) | Đã hoàn thiện [04-Use-Case-Specifications.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M1-Business-Analysis/04-Use-Case-Specifications.md) | **Đạt** |
-| **EC-05** | Sơ đồ Business Process (Sequence & State Machine) | Đã hoàn thiện [05-Business-Processes.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M1-Business-Analysis/05-Business-Processes.md) | **Đạt** |
-| **EC-06** | Business Rules chuẩn hóa có mã định danh (v1.1) | Đã cập nhật [06-Business-Rules.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M1-Business-Analysis/06-Business-Rules.md) gồm BR-PR10..12, BR-CU07, BR-OR11..12, BR-IN13..21, BR-PM10..14 | **Đạt** |
-| **EC-07** | Functional Requirements chi tiết theo phân hệ | Đã hoàn thiện [07-Functional-Requirements.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M1-Business-Analysis/07-Functional-Requirements.md) | **Đạt** |
-| **EC-08** | Non-Functional Requirements (ACID, Concurrency, Security) | Đã hoàn thiện [08-Non-Functional-Requirements.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M1-Business-Analysis/08-Non-Functional-Requirements.md) | **Đạt** |
-| **EC-09** | Data Requirements (v1.1) & Constraints Baseline | Đã cập nhật [09-Data-Requirements.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M1-Business-Analysis/09-Data-Requirements.md) gồm DR-11..24, HDR-13..18 | **Đạt** |
-| **EC-10** | Traceability Matrix kết nối toàn diện | Đã cập nhật ánh xạ 2 chiều đầy đủ tại tài liệu này | **Đạt** |
-| **EC-11** | Business Decisions Register (BD-01 đến BD-07) | Đã chính thức hóa tại [11-Business-Decisions.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M1-Business-Analysis/11-Business-Decisions.md) với phân tích sâu BD-05 & BD-07 | **Đạt** |
+| **EC-01** | Project Charter xác định rõ mục tiêu và phạm vi | 01-Project-Charter.md| **Đạt** |
+| **EC-02** | Xác định Stakeholder và ma trận phân quyền RBAC | 02-Stakeholder-Register.md | **Đạt** |
+| **EC-03** | Use Case Diagram tổng thể và phân rã chi tiết | 03-Use-Case-Diagram.md | **Đạt** |
+| **EC-04** | Đặc tả các Use Case cốt lõi (Checkout, Giữ kho, Nhập kho) | 04-Use-Case-Specifications.md | **Đạt** |
+| **EC-05** | Sơ đồ Business Process (Sequence & State Machine) | 05-Business-Processes.md | **Đạt** |
+| **EC-06** | Business Rules chuẩn hóa có mã định danh (v1.1) | 06-Business-Rules.md | **Đạt** |
+| **EC-07** | Functional Requirements chi tiết theo phân hệ | 07-Functional-Requirements.md | **Đạt** |
+| **EC-08** | Non-Functional Requirements (ACID, Concurrency, Security) | 08-Non-Functional-Requirements.md | **Đạt** |
+| **EC-09** | Data Requirements (v1.1) & Constraints Baseline | 09-Data-Requirements.md | **Đạt** |
+| **EC-10** | Traceability Matrix kết nối toàn diện | 10-Traceability-Matrix.md | **Đạt** |
+| **EC-11** | Business Decisions Register (BD-01 đến BD-07) | 11-Business-Decisions.md | **Đạt** |
 
 ---
 
