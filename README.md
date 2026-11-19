@@ -24,9 +24,9 @@ Hệ thống được thiết kế bao phủ toàn diện 11 phân hệ nghiệp
 
 ---
 
-## 2. Công Nghệ Sử Dụng (Tech Stack)
+## 2. Tech Stack
 
-* **Hệ quản trị CSDL chính:** Microsoft SQL Server (T-SQL, Stored Procedures, Triggers, Table Partitioning, Filtered Indexes)
+* **DBMS:** Microsoft SQL Server
 * **Quản lý Schema Migration:** Flyway
 * **Backend:** Java Spring Boot (RESTful API, Spring Security, Spring Data JPA / JDBC Client)
 * **Frontend:** React, TypeScript, Tailwind CSS
@@ -34,7 +34,7 @@ Hệ thống được thiết kế bao phủ toàn diện 11 phân hệ nghiệp
 
 ---
 
-## 3. Cấu Trúc Thư Mục (Directory Structure)
+## 3. Directory Structure
 
 ```text
 RetailCore/
@@ -69,28 +69,3 @@ RetailCore/
 │   └── test-cases/
 └── frontend/
 ```
-
----
-
-## 4. Lộ Trình Triển Khai (Milestones Roadmap)
-
-Dự án được thực hiện tuần tự qua 8 cột mốc kỹ thuật:
-
-| Milestone | Tên giai đoạn | Trọng tâm công việc | Trạng thái |
-| :---: | :--- | :--- | :---: |
-| **M1** | Business Analysis | Khảo sát nghiệp vụ, Use Cases, Business Rules, Business Decisions | **Hoàn thành** |
-| **M2** | Conceptual Design | Danh mục thực thể (70 thực thể), Bản số, Sơ đồ Master Conceptual ERD | **Đang thực hiện** |
-| **M3** | Logical Design | Ánh xạ Relational Schema, Chuẩn hóa 3NF/BCNF, Kiểu dữ liệu & Ràng buộc | Chưa bắt đầu |
-| **M4** | Physical Design | T-SQL Scripts (DDL), Stored Procedures, Triggers, Chỉ mục & Phân vùng | Chưa bắt đầu |
-| **M5** | Backend Engineering | Triển khai RESTful API (Java Spring Boot), Xử lý Transaction nghiệp vụ | Chưa bắt đầu |
-| **M6** | Frontend Engineering | Xây dựng giao diện Storefront & Admin Portal (React + TypeScript) | Chưa bắt đầu |
-| **M7** | Testing & Optimization | Kiểm thử tích hợp, Kiểm thử đồng thời (Concurrency Test) & Tối ưu truy vấn | Chưa bắt đầu |
-| **M8** | Deployment | Đóng gói Container hóa với Docker Compose & Triển khai môi trường thực tế | Chưa bắt đầu |
-
----
-
-## 5. Tài Liệu Dự Án (Documentation)
-
-Hệ thống tài liệu hoàn chỉnh được lưu trữ tập trung tại thư mục `docs/`:
-* **`docs/Blueprints/`**: Bộ 5 tài liệu khung chỉ đạo kiến trúc tổng thể.
-* **`docs/Milestones/`**: Hồ sơ bàn giao chi tiết theo từng Milestone của dự án.
