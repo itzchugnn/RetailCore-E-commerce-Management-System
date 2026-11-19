@@ -104,99 +104,12 @@
 
 ## 3. Sơ đồ Quan hệ Khái niệm (Conceptual ERD – Subject Area 01)
 
-```mermaid
-erDiagram
-    PRODUCT ||--o{ PRODUCT_CATEGORY : "assigned_as"
-    CATEGORY ||--o{ PRODUCT_CATEGORY : "contains"
-    
-    PRODUCT ||--o{ PRODUCT_VARIANT : "has_variants"
-    
-    PRODUCT ||--o{ PRODUCT_ATTRIBUTE : "defines"
-    ATTRIBUTE ||--o{ PRODUCT_ATTRIBUTE : "used_by"
-    
-    ATTRIBUTE ||--o{ ATTRIBUTE_VALUE : "provides"
-    
-    PRODUCT_ATTRIBUTE ||--o{ PRODUCT_ATTRIBUTE_VALUE : "allows_whitelist"
-    ATTRIBUTE_VALUE ||--o{ PRODUCT_ATTRIBUTE_VALUE : "permitted_in"
-    
-    PRODUCT_VARIANT ||--o{ VARIANT_ATTRIBUTE_VALUE : "composed_of"
-    PRODUCT_ATTRIBUTE_VALUE ||--o{ VARIANT_ATTRIBUTE_VALUE : "selected_for"
+> [!NOTE]
+> **Tham chiếu Sơ đồ & Mã nguồn:**  
+> * **Mã nguồn Mermaid:** [Product-Catalog.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Product-Catalog.md)  
+> * **Sơ đồ ảnh Render:** [Product-Catalog.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Product-Catalog.png)
 
-    CATEGORY ||--o{ CATEGORY : "parent_of"
-
-    PRODUCT {
-        bigint ProductID PK
-        varchar ProductCode UK
-        nvarchar ProductName
-        nvarchar Description
-        bigint BrandID
-        decimal BasePrice
-        varchar ProductStatus
-        bit IsActive
-    }
-
-    CATEGORY {
-        bigint CategoryID PK
-        nvarchar CategoryName
-        varchar Slug UK
-        bigint ParentCategoryID FK
-        int Level
-        bit IsActive
-    }
-
-    PRODUCT_CATEGORY {
-        bigint ProductID PK
-        bigint CategoryID PK
-        bit IsPrimary
-        datetime AssignedAt
-    }
-
-    PRODUCT_VARIANT {
-        bigint VariantID PK
-        bigint ProductID FK
-        varchar SKU UK
-        varchar Barcode
-        nvarchar VariantName
-        decimal SellingPrice
-        varchar VariantStatus
-        bit IsActive
-    }
-
-    ATTRIBUTE {
-        bigint AttributeID PK
-        varchar AttributeCode UK
-        nvarchar AttributeName
-        varchar DataType
-    }
-
-    ATTRIBUTE_VALUE {
-        bigint AttributeValueID PK
-        bigint AttributeID FK
-        nvarchar Value
-        nvarchar DisplayValue
-        int DisplayOrder
-    }
-
-    PRODUCT_ATTRIBUTE {
-        bigint ProductID PK
-        bigint AttributeID PK
-        varchar AttributeRole
-        bit IsRequired
-        int DisplayOrder
-    }
-
-    PRODUCT_ATTRIBUTE_VALUE {
-        bigint ProductID PK
-        bigint AttributeID PK
-        bigint AttributeValueID PK
-    }
-
-    VARIANT_ATTRIBUTE_VALUE {
-        bigint VariantID PK
-        bigint AttributeID PK
-        bigint AttributeValueID FK
-    }
-```
+![Product Catalog ERD](ERD/images/Product-Catalog.png)
 
 ---
 
@@ -205,8 +118,6 @@ erDiagram
 * [x] **BD-01:** Phản ánh qua thực thể liên kết `ProductCategory` với cờ `IsPrimary`.
 * [x] **BD-06:** Mô hình 6 thực thể thuộc tính động có kiểm soát (`Attribute`, `AttributeValue`, `ProductAttribute`, `ProductAttributeValue`, `VariantAttributeValue`), hoàn toàn không bị trôi nổi EAV mất kiểm soát.
 * [x] **BR-PR02 & BR-PR12:** Bảo đảm tính duy nhất của `SKU` toàn hệ thống và cấm trùng lặp tổ hợp thuộc tính biến thể trong cùng một `Product`.
-
-
 
 ---
 
@@ -239,34 +150,12 @@ erDiagram
 
 ### 5.2. Sơ đồ Quan hệ Khái niệm (Subject Area 02: Warehouse & Inventory)
 
-```mermaid
-erDiagram
-    WAREHOUSE ||--o{ INVENTORY_BALANCE : "holds_balance (1..1 : 0..N)"
-    PRODUCT_VARIANT ||--o{ INVENTORY_BALANCE : "has_balance (1..1 : 0..N)"
+> [!NOTE]
+> **Tham chiếu Sơ đồ & Mã nguồn:**  
+> * **Mã nguồn Mermaid:** [Warehouse-Inventory.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Warehouse-Inventory.md)  
+> * **Sơ đồ ảnh Render:** [Warehouse-Inventory.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Warehouse-Inventory.png)
 
-    ORDER_LINE ||--|{ ORDER_WAREHOUSE_ALLOCATION : "allocated_to (1..1 : 1..N)"
-    WAREHOUSE ||--o{ ORDER_WAREHOUSE_ALLOCATION : "fulfills (1..1 : 0..N)"
-    PRODUCT_VARIANT ||--o{ ORDER_WAREHOUSE_ALLOCATION : "allocated_item (1..1 : 0..N)"
-
-    ORDER ||--o{ STOCK_RESERVATION : "reserves (1..1 : 0..N)"
-    STOCK_RESERVATION ||--|{ STOCK_RESERVATION_LINE : "contains (1..1 : 1..N)"
-    ORDER_WAREHOUSE_ALLOCATION ||--o| STOCK_RESERVATION_LINE : "secures (1..1 : 0..1)"
-    WAREHOUSE ||--o{ STOCK_RESERVATION_LINE : "stores_hold (1..1 : 0..N)"
-    PRODUCT_VARIANT ||--o{ STOCK_RESERVATION_LINE : "reserved_sku (1..1 : 0..N)"
-
-    INVENTORY_TRANSACTION ||--|{ INVENTORY_TRANSACTION_LINE : "details (1..1 : 1..N)"
-    WAREHOUSE ||--o{ INVENTORY_TRANSACTION_LINE : "impacts_wh (1..1 : 0..N)"
-    PRODUCT_VARIANT ||--o{ INVENTORY_TRANSACTION_LINE : "impacts_sku (1..1 : 0..N)"
-
-    WAREHOUSE ||--o{ STOCK_COUNT : "audited_in (1..1 : 0..N)"
-    STOCK_COUNT ||--|{ STOCK_COUNT_LINE : "counts (1..1 : 1..N)"
-    PRODUCT_VARIANT ||--o{ STOCK_COUNT_LINE : "counted_sku (1..1 : 0..N)"
-
-    WAREHOUSE ||--o{ WAREHOUSE_TRANSFER : "dispatches_transfer (1..1 : 0..N)"
-    WAREHOUSE ||--o{ WAREHOUSE_TRANSFER : "receives_transfer (1..1 : 0..N)"
-    WAREHOUSE_TRANSFER ||--|{ WAREHOUSE_TRANSFER_LINE : "transfers (1..1 : 1..N)"
-    PRODUCT_VARIANT ||--o{ WAREHOUSE_TRANSFER_LINE : "transferred_sku (1..1 : 0..N)"
-```
+![Warehouse & Inventory ERD](ERD/images/Warehouse-Inventory.png)
 
 ---
 
@@ -295,32 +184,12 @@ erDiagram
 
 ### 6.2. Sơ đồ Quan hệ Khái niệm (Subject Area 03: Procurement)
 
-```mermaid
-erDiagram
-    %% Liên kết Nhà cung cấp & SKU
-    SUPPLIER ||--o{ SUPPLIER_PRODUCT : "supplies (1..1 : 0..N)"
-    PRODUCT_VARIANT ||--o{ SUPPLIER_PRODUCT : "supplied_by (1..1 : 0..N)"
+> [!NOTE]
+> **Tham chiếu Sơ đồ & Mã nguồn:**  
+> * **Mã nguồn Mermaid:** [Procurement.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Procurement.md)  
+> * **Sơ đồ ảnh Render:** [Procurement.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Procurement.png)
 
-    %% Đơn đặt hàng mua (PO)
-    SUPPLIER ||--o{ PURCHASE_ORDER : "receives_po (1..1 : 0..N)"
-    WAREHOUSE ||--o{ PURCHASE_ORDER : "destination_of (1..1 : 0..N)"
-    PURCHASE_ORDER ||--|{ PURCHASE_ORDER_LINE : "contains (1..1 : 1..N)"
-    PRODUCT_VARIANT ||--o{ PURCHASE_ORDER_LINE : "ordered_item (1..1 : 0..N)"
-
-    %% Tiếp nhận hàng (Goods Receipt)
-    PURCHASE_ORDER ||--o{ GOODS_RECEIPT : "fulfilled_by (1..1 : 0..N)"
-    WAREHOUSE ||--o{ GOODS_RECEIPT : "receives_at (1..1 : 0..N)"
-    GOODS_RECEIPT ||--|{ GOODS_RECEIPT_LINE : "details (1..1 : 1..N)"
-    PURCHASE_ORDER_LINE ||--o{ GOODS_RECEIPT_LINE : "received_as (1..1 : 0..N)"
-    PRODUCT_VARIANT ||--o{ GOODS_RECEIPT_LINE : "received_sku (1..1 : 0..N)"
-
-    %% Trả hàng nhà cung cấp (Supplier Return)
-    SUPPLIER ||--o{ SUPPLIER_RETURN : "returned_to (1..1 : 0..N)"
-    WAREHOUSE ||--o{ SUPPLIER_RETURN : "dispatched_from (1..1 : 0..N)"
-    SUPPLIER_RETURN ||--|{ SUPPLIER_RETURN_LINE : "contains (1..1 : 1..N)"
-    GOODS_RECEIPT_LINE ||--o{ SUPPLIER_RETURN_LINE : "returns_from (1..1 : 0..N)"
-    PRODUCT_VARIANT ||--o{ SUPPLIER_RETURN_LINE : "returned_sku (1..1 : 0..N)"
-```
+![Procurement ERD](ERD/images/Procurement.png)
 
 ---
 
@@ -341,25 +210,12 @@ erDiagram
 
 ### 7.2. Sơ đồ Quan hệ Khái niệm (Subject Area 04: Customer & Identity)
 
-```mermaid
-erDiagram
-    %% Định danh & Hồ sơ chuyên biệt (Disjoint Subtypes)
-    ACCOUNT ||--o| CUSTOMER : "profile_of (1..1 : 0..1)"
-    ACCOUNT ||--o| EMPLOYEE : "employed_as (1..1 : 0..1)"
+> [!NOTE]
+> **Tham chiếu Sơ đồ & Mã nguồn:**  
+> * **Mã nguồn Mermaid:** [Customer-Identity.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Customer-Identity.md)  
+> * **Sơ đồ ảnh Render:** [Customer-Identity.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Customer-Identity.png)
 
-    %% Sổ địa chỉ khách hàng
-    CUSTOMER ||--o{ CUSTOMER_ADDRESS : "owns_address (1..1 : 0..N)"
-
-    %% Phân quyền RBAC động
-    ACCOUNT ||--o{ ACCOUNT_ROLE : "assigned_role (1..1 : 0..N)"
-    ROLE ||--o{ ACCOUNT_ROLE : "granted_to (1..1 : 0..N)"
-
-    ROLE ||--o{ ROLE_PERMISSION : "contains (1..1 : 0..N)"
-    PERMISSION ||--o{ ROLE_PERMISSION : "configured_in (1..1 : 0..N)"
-
-    %% Lịch sử xác thực
-    ACCOUNT ||--o{ ACCOUNT_VERIFICATION : "requests_verification (1..1 : 0..N)"
-```
+![Customer & Identity ERD](ERD/images/Customer-Identity.png)
 
 ---
 
@@ -375,12 +231,12 @@ erDiagram
 
 ### 8.2. Sơ đồ Quan hệ Khái niệm (Subject Area 05: Shopping)
 
-```mermaid
-erDiagram
-    CUSTOMER ||--o{ SHOPPING_CART : "owns (1..1 : 0..N)"
-    SHOPPING_CART ||--o{ CART_ITEM : "contains (1..1 : 0..N)"
-    PRODUCT_VARIANT ||--o{ CART_ITEM : "selected_as (1..1 : 0..N)"
-```
+> [!NOTE]
+> **Tham chiếu Sơ đồ & Mã nguồn:**  
+> * **Mã nguồn Mermaid:** [Shopping.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Shopping.md)  
+> * **Sơ đồ ảnh Render:** [Shopping.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Shopping.png)
+
+![Shopping ERD](ERD/images/Shopping.png)
 
 ---
 
@@ -401,22 +257,12 @@ erDiagram
 
 ### 9.2. Sơ đồ Quan hệ Khái niệm (Subject Area 06: Sales)
 
-```mermaid
-erDiagram
-    %% Quan hệ nội bộ Subject Area 06
-    CUSTOMER ||--o{ SALES_ORDER : "places (1..1 : 0..N)"
-    SHOPPING_CART ||--o| SALES_ORDER : "converted_to (1..1 : 0..1)"
-    
-    SALES_ORDER ||--|{ ORDER_LINE : "contains (1..1 : 1..N)"
-    PRODUCT_VARIANT ||--o{ ORDER_LINE : "ordered_as (1..1 : 0..N)"
+> [!NOTE]
+> **Tham chiếu Sơ đồ & Mã nguồn:**  
+> * **Mã nguồn Mermaid:** [Sales.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Sales.md)  
+> * **Sơ đồ ảnh Render:** [Sales.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Sales.png)
 
-    SALES_ORDER ||--|| ORDER_ADDRESS : "ships_to (1..1 : 1..1)"
-    SALES_ORDER ||--|{ ORDER_STATUS_HISTORY : "tracks_status (1..1 : 1..N)"
-
-    %% Liên kết sang Subject Area 02 (Warehouse & Inventory)
-    ORDER_LINE ||--|{ ORDER_WAREHOUSE_ALLOCATION : "splits_into (1..1 : 1..N)"
-    SALES_ORDER ||--o{ STOCK_RESERVATION : "reserves (1..1 : 0..N)"
-```
+![Sales ERD](ERD/images/Sales.png)
 
 ---
 
@@ -437,20 +283,12 @@ erDiagram
 
 ### 10.2. Sơ đồ Quan hệ Khái niệm (Subject Area 07: Fulfillment & Shipping)
 
-```mermaid
-erDiagram
-    %% Quan hệ nội bộ Subject Area 07 và liên kết Sales, Warehouse
-    SALES_ORDER ||--o{ SHIPMENT : "fulfilled_by (1..1 : 0..N)"
-    WAREHOUSE ||--o{ SHIPMENT : "dispatched_from (1..1 : 0..N)"
-    CARRIER ||--o{ SHIPMENT : "carried_by (1..1 : 0..N)"
+> [!NOTE]
+> **Tham chiếu Sơ đồ & Mã nguồn:**  
+> * **Mã nguồn Mermaid:** [Fulfillment-Shipping.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Fulfillment-Shipping.md)  
+> * **Sơ đồ ảnh Render:** [Fulfillment-Shipping.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Fulfillment-Shipping.png)
 
-    SHIPMENT ||--|{ SHIPMENT_LINE : "contains (1..1 : 1..N)"
-    ORDER_LINE ||--o{ SHIPMENT_LINE : "shipped_via (1..1 : 0..N)"
-    ORDER_WAREHOUSE_ALLOCATION ||--o{ SHIPMENT_LINE : "realizes (1..1 : 0..N)"
-
-    SHIPMENT ||--o{ DELIVERY_ATTEMPT : "attempted_via (1..1 : 0..N)"
-    SHIPMENT ||--|{ SHIPMENT_STATUS_HISTORY : "tracks_status (1..1 : 1..N)"
-```
+![Fulfillment & Shipping ERD](ERD/images/Fulfillment-Shipping.png)
 
 ---
 
@@ -473,23 +311,12 @@ erDiagram
 
 ### 11.2. Sơ đồ Quan hệ Khái niệm (Subject Area 08: Promotion)
 
-```mermaid
-erDiagram
-    %% Cấu hình chương trình và điều kiện
-    PROMOTION ||--o{ PROMOTION_CONDITION : "defines_rules (1..1 : 0..N)"
-    PROMOTION ||--o{ PROMOTION_PRODUCT : "applies_to_skus (1..1 : 0..N)"
-    PRODUCT_VARIANT ||--o{ PROMOTION_PRODUCT : "included_in (1..1 : 0..N)"
-    
-    PROMOTION ||--o{ VOUCHER : "issues (1..1 : 0..N)"
-    PROMOTION ||--o{ PROMOTION_TARGET_CUSTOMER : "targets (1..1 : 0..N)"
-    CUSTOMER ||--o{ PROMOTION_TARGET_CUSTOMER : "eligible_for (1..1 : 0..N)"
+> [!NOTE]
+> **Tham chiếu Sơ đồ & Mã nguồn:**  
+> * **Mã nguồn Mermaid:** [Promotion-Voucher.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Promotion-Voucher.md)  
+> * **Sơ đồ ảnh Render:** [Promotion-Voucher.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Promotion-Voucher.png)
 
-    %% Ghi nhận tiêu thụ ưu đãi (Promotion Usage Ledger)
-    PROMOTION ||--o{ PROMOTION_USAGE : "consumed_via (1..1 : 0..N)"
-    VOUCHER ||--o{ PROMOTION_USAGE : "applied_via (1..1 : 0..N)"
-    SALES_ORDER ||--o{ PROMOTION_USAGE : "benefits_from (1..1 : 0..N)"
-    ORDER_LINE ||--o{ PROMOTION_USAGE : "discounts (1..1 : 0..N)"
-```
+![Promotion & Voucher ERD](ERD/images/Promotion-Voucher.png)
 
 ---
 
@@ -507,18 +334,12 @@ erDiagram
 
 ### 12.2. Sơ đồ Quan hệ Khái niệm (Subject Area 09: Payment & Refund)
 
-```mermaid
-erDiagram
-    %% Quan hệ nội bộ Subject Area 09 và liên kết Sales
-    SALES_ORDER ||--|| PAYMENT : "settled_via (1..1 : 1..1)"
-    PAYMENT_METHOD ||--o{ PAYMENT : "categorized_as (1..1 : 0..N)"
+> [!NOTE]
+> **Tham chiếu Sơ đồ & Mã nguồn:**  
+> * **Mã nguồn Mermaid:** [Payment-Refund.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Payment-Refund.md)  
+> * **Sơ đồ ảnh Render:** [Payment-Refund.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Payment-Refund.png)
 
-    %% Nhật ký giao dịch và hoàn tiền
-    PAYMENT ||--o{ PAYMENT_TRANSACTION : "executes_attempts (1..1 : 0..N)"
-    PAYMENT ||--o{ REFUND : "requests_refund (1..1 : 0..N)"
-    
-    REFUND ||--o{ REFUND_TRANSACTION : "processed_via (1..1 : 0..N)"
-```
+![Payment & Refund ERD](ERD/images/Payment-Refund.png)
 
 ---
 
@@ -544,29 +365,12 @@ erDiagram
 
 ### 13.2. Sơ đồ Quan hệ Khái niệm (Subject Area 10: Return & Exchange)
 
-```mermaid
-erDiagram
-    %% Liên kết từ SalesOrder, Customer, Account và Warehouse
-    SALES_ORDER ||--o{ RETURN_REQUEST : "initiates (1..1 : 0..N)"
-    CUSTOMER ||--o{ RETURN_REQUEST : "submits (1..1 : 0..N)"
-    ACCOUNT ||--o{ RETURN_REQUEST : "created_by (1..1 : 0..N)"
-    WAREHOUSE ||--o{ RETURN_REQUEST : "designated_to (1..1 : 0..N)"
+> [!NOTE]
+> **Tham chiếu Sơ đồ & Mã nguồn:**  
+> * **Mã nguồn Mermaid:** [Return-Exchange.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Return-Exchange.md)  
+> * **Sơ đồ ảnh Render:** [Return-Exchange.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Return-Exchange.png)
 
-    %% Cấu trúc Yêu cầu đổi trả (RMA)
-    RETURN_REQUEST ||--|{ RETURN_REQUEST_LINE : "specifies (1..1 : 1..N)"
-    ORDER_LINE ||--o{ RETURN_REQUEST_LINE : "returns_item (1..1 : 0..N)"
-    RETURN_REQUEST ||--|{ RETURN_STATUS_HISTORY : "tracks_status (1..1 : 1..N)"
-    ACCOUNT ||--o{ RETURN_STATUS_HISTORY : "changed_by (1..1 : 0..N)"
-
-    %% Phiếu tiếp nhận và kiểm định tại kho
-    RETURN_REQUEST ||--o{ RETURN_RECEIPT : "received_by (1..1 : 0..N)"
-    WAREHOUSE ||--o{ RETURN_RECEIPT : "processed_at (1..1 : 0..N)"
-    RETURN_RECEIPT ||--|{ RETURN_RECEIPT_LINE : "inspects (1..1 : 1..N)"
-    RETURN_REQUEST_LINE ||--o{ RETURN_RECEIPT_LINE : "reconciles (1..1 : 0..N)"
-
-    %% Liên kết sang Payment & Refund
-    RETURN_REQUEST ||--o{ REFUND : "triggers_refund (1..1 : 0..N)"
-```
+![Return & Exchange ERD](ERD/images/Return-Exchange.png)
 
 ---
 
@@ -587,20 +391,9 @@ erDiagram
 
 ### 14.2. Sơ đồ Quan hệ Khái niệm (Subject Area 11: Audit & Reporting)
 
-```mermaid
-erDiagram
-    %% Phân hệ Kiểm toán an ninh (Audit Trail)
-    ACCOUNT ||--o{ AUDIT_LOG : "performs (0..1 : 0..N)"
-    AUDIT_LOG ||--o{ AUDIT_LOG_DETAIL : "details_changes (1..1 : 0..N)"
+> [!NOTE]
+> **Tham chiếu Sơ đồ & Mã nguồn:**  
+> * **Mã nguồn Mermaid:** [Audit-Reporting.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Audit-Reporting.md)  
+> * **Sơ đồ ảnh Render:** [Audit-Reporting.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Audit-Reporting.png)
 
-    %% Phân hệ Báo cáo quản trị (Reporting & Snapshot)
-    REPORT_DEFINITION ||--o{ REPORT_EXECUTION : "defines_template (1..1 : 0..N)"
-    ACCOUNT ||--o{ REPORT_EXECUTION : "requests_run (1..1 : 0..N)"
-
-    REPORT_DEFINITION ||--o{ REPORT_SNAPSHOT : "captures_period (1..1 : 0..N)"
-    ACCOUNT ||--o{ REPORT_SNAPSHOT : "created_by (0..1 : 0..N)"
-
-    %% Phân quyền báo cáo với Subject Area 04
-    REPORT_DEFINITION ||--o{ REPORT_PERMISSION : "grants_access (1..1 : 0..N)"
-    ROLE ||--o{ REPORT_PERMISSION : "holds_permission (1..1 : 0..N)"
-```
+![Audit & Reporting ERD](ERD/images/Audit-Reporting.png)

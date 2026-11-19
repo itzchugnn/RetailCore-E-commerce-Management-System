@@ -54,128 +54,14 @@ Mọi mối quan hệ trong sơ đồ ERD tổng thể phải thỏa mãn tuyệ
 
 ## 3. MASTER CROSS-DOMAIN BACKBONE ERD (SƠ ĐỒ TRỤC XƯƠNG SỐNG LIÊN PHÂN HỆ)
 
-Sơ đồ Mermaid dưới đây biểu diễn **Trục xương sống liên kết liên miền (Cross-Domain Backbone)** kết nối các Thực thể Trung tâm (Hub Entities) đại diện cho 11 phân hệ:
+Sơ đồ biểu diễn **Trục xương sống liên kết liên miền (Cross-Domain Backbone)** kết nối các Thực thể Trung tâm (Hub Entities) đại diện cho 11 phân hệ:
 
-```mermaid
-erDiagram
-    %% =========================================================================
-    %% 1. HUB: PRODUCT CATALOG & CORE SKU
-    %% =========================================================================
-    PRODUCT ||--|{ PRODUCT_VARIANT : "specializes_into (1..1 : 1..N)"
-    
-    %% =========================================================================
-    %% 2. HUB: CUSTOMER & IDENTITY
-    %% =========================================================================
-    ACCOUNT ||--o| CUSTOMER : "profile_of (1..1 : 0..1)"
-    ACCOUNT ||--o| EMPLOYEE : "staff_of (1..1 : 0..1)"
-    
-    %% =========================================================================
-    %% 3. CROSS-DOMAIN: SHOPPING & CART
-    %% =========================================================================
-    CUSTOMER ||--o{ SHOPPING_CART : "owns_cart (1..1 : 0..N)"
-    SHOPPING_CART ||--o{ CART_ITEM : "contains_items (1..1 : 0..N)"
-    PRODUCT_VARIANT ||--o{ CART_ITEM : "selected_in_cart (1..1 : 0..N)"
-    
-    %% =========================================================================
-    %% 4. CROSS-DOMAIN: SALES CONVERSION & SNAPSHOT
-    %% =========================================================================
-    CUSTOMER ||--o{ SALES_ORDER : "places_order (1..1 : 0..N)"
-    SHOPPING_CART ||--o| SALES_ORDER : "converts_to_order (1..1 : 0..1)"
-    SALES_ORDER ||--|{ ORDER_LINE : "composed_of (1..1 : 1..N)"
-    PRODUCT_VARIANT ||--o{ ORDER_LINE : "sold_as_sku (1..1 : 0..N)"
-    SALES_ORDER ||--|| ORDER_ADDRESS : "delivered_to (1..1 : 1..1)"
-    
-    %% =========================================================================
-    %% 5. CROSS-DOMAIN: WAREHOUSE ALLOCATION & RESERVATION (SPLIT SHIPMENT)
-    %% =========================================================================
-    ORDER_LINE ||--|{ ORDER_WAREHOUSE_ALLOCATION : "splits_to_warehouse (1..1 : 1..N)"
-    WAREHOUSE ||--o{ ORDER_WAREHOUSE_ALLOCATION : "fulfills_allocation (1..1 : 0..N)"
-    PRODUCT_VARIANT ||--o{ ORDER_WAREHOUSE_ALLOCATION : "allocated_sku (1..1 : 0..N)"
-    
-    SALES_ORDER ||--o{ STOCK_RESERVATION : "reserves_stock (1..1 : 0..N)"
-    STOCK_RESERVATION ||--|{ STOCK_RESERVATION_LINE : "specifies_hold (1..1 : 1..N)"
-    ORDER_WAREHOUSE_ALLOCATION ||--o| STOCK_RESERVATION_LINE : "locks_allocation (1..1 : 0..1)"
-    WAREHOUSE ||--o{ STOCK_RESERVATION_LINE : "holds_in_wh (1..1 : 0..N)"
-    
-    %% Tồn kho vật lý tức thời
-    WAREHOUSE ||--o{ INVENTORY_BALANCE : "stores_balance (1..1 : 0..N)"
-    PRODUCT_VARIANT ||--o{ INVENTORY_BALANCE : "sku_balance (1..1 : 0..N)"
-    
-    %% Sổ cái biến động kho
-    INVENTORY_TRANSACTION ||--|{ INVENTORY_TRANSACTION_LINE : "records_movement (1..1 : 1..N)"
-    WAREHOUSE ||--o{ INVENTORY_TRANSACTION_LINE : "warehouse_impacted (1..1 : 0..N)"
-    PRODUCT_VARIANT ||--o{ INVENTORY_TRANSACTION_LINE : "sku_impacted (1..1 : 0..N)"
-    
-    %% =========================================================================
-    %% 6. CROSS-DOMAIN: FULFILLMENT & SHIPPING
-    %% =========================================================================
-    SALES_ORDER ||--o{ SHIPMENT : "fulfilled_through (1..1 : 0..N)"
-    WAREHOUSE ||--o{ SHIPMENT : "dispatched_from_wh (1..1 : 0..N)"
-    CARRIER ||--o{ SHIPMENT : "carried_by (1..1 : 0..N)"
-    SHIPMENT ||--|{ SHIPMENT_LINE : "packs_items (1..1 : 1..N)"
-    ORDER_LINE ||--o{ SHIPMENT_LINE : "line_dispatched (1..1 : 0..N)"
-    ORDER_WAREHOUSE_ALLOCATION ||--o{ SHIPMENT_LINE : "realizes_allocation (1..1 : 0..N)"
-    
-    %% =========================================================================
-    %% 7. CROSS-DOMAIN: PROCUREMENT & GOODS INWARD
-    %% =========================================================================
-    SUPPLIER ||--o{ PURCHASE_ORDER : "receives_po (1..1 : 0..N)"
-    WAREHOUSE ||--o{ PURCHASE_ORDER : "destined_to_wh (1..1 : 0..N)"
-    PURCHASE_ORDER ||--|{ PURCHASE_ORDER_LINE : "details_po (1..1 : 1..N)"
-    PRODUCT_VARIANT ||--o{ PURCHASE_ORDER_LINE : "ordered_po_sku (1..1 : 0..N)"
-    
-    PURCHASE_ORDER ||--o{ GOODS_RECEIPT : "received_by_receipt (1..1 : 0..N)"
-    WAREHOUSE ||--o{ GOODS_RECEIPT : "receipt_at_wh (1..1 : 0..N)"
-    GOODS_RECEIPT ||--|{ GOODS_RECEIPT_LINE : "verifies_goods (1..1 : 1..N)"
-    PURCHASE_ORDER_LINE ||--o{ GOODS_RECEIPT_LINE : "inward_from_po_line (1..1 : 0..N)"
-    PRODUCT_VARIANT ||--o{ GOODS_RECEIPT_LINE : "received_sku (1..1 : 0..N)"
-    
-    %% =========================================================================
-    %% 8. CROSS-DOMAIN: PROMOTIONS & VOUCHERS
-    %% =========================================================================
-    PROMOTION ||--o{ PROMOTION_PRODUCT : "includes_skus (1..1 : 0..N)"
-    PRODUCT_VARIANT ||--o{ PROMOTION_PRODUCT : "discounted_in (1..1 : 0..N)"
-    
-    PROMOTION ||--o{ VOUCHER : "emits_voucher (1..1 : 0..N)"
-    CUSTOMER ||--o{ VOUCHER : "assigned_customer (0..1 : 0..N)"
-    
-    SALES_ORDER ||--o{ PROMOTION_USAGE : "applies_voucher_usage (1..1 : 0..N)"
-    ORDER_LINE ||--o{ PROMOTION_USAGE : "applies_line_promo (1..1 : 0..N)"
-    PROMOTION ||--o{ PROMOTION_USAGE : "records_promo_use (1..1 : 0..N)"
-    VOUCHER ||--o{ PROMOTION_USAGE : "records_voucher_use (1..1 : 0..N)"
-    
-    %% =========================================================================
-    %% 9. CROSS-DOMAIN: PAYMENT & FINANCIAL SETTLEMENT
-    %% =========================================================================
-    SALES_ORDER ||--|| PAYMENT : "settled_by (1..1 : 1..1)"
-    PAYMENT_METHOD ||--o{ PAYMENT : "uses_method (1..1 : 0..N)"
-    PAYMENT ||--o{ PAYMENT_TRANSACTION : "executes_attempts (1..1 : 0..N)"
-    PAYMENT ||--o{ REFUND : "creates_refund (1..1 : 0..N)"
-    REFUND ||--o{ REFUND_TRANSACTION : "executes_refund_tx (1..1 : 0..N)"
-    
-    %% =========================================================================
-    %% 10. CROSS-DOMAIN: RETURN & EXCHANGE (RMA)
-    %% =========================================================================
-    SALES_ORDER ||--o{ RETURN_REQUEST : "originates_rma (1..1 : 0..N)"
-    CUSTOMER ||--o{ RETURN_REQUEST : "requested_by_customer (1..1 : 0..N)"
-    WAREHOUSE ||--o{ RETURN_REQUEST : "returned_to_warehouse (1..1 : 0..N)"
-    RETURN_REQUEST ||--|{ RETURN_REQUEST_LINE : "specifies_return (1..1 : 1..N)"
-    ORDER_LINE ||--o{ RETURN_REQUEST_LINE : "returns_order_line (1..1 : 0..N)"
-    
-    RETURN_REQUEST ||--o{ RETURN_RECEIPT : "received_by_dock (1..1 : 0..N)"
-    WAREHOUSE ||--o{ RETURN_RECEIPT : "dock_at_wh (1..1 : 0..N)"
-    RETURN_RECEIPT ||--|{ RETURN_RECEIPT_LINE : "inspects_items (1..1 : 1..N)"
-    RETURN_REQUEST_LINE ||--o{ RETURN_RECEIPT_LINE : "reconciles_rma_line (1..1 : 0..N)"
-    
-    RETURN_REQUEST ||--o{ REFUND : "triggers_settlement (1..1 : 0..N)"
-    
-    %% =========================================================================
-    %% 11. CROSS-DOMAIN: AUDIT & REPORTING GOVERNANCE
-    %% =========================================================================
-    ACCOUNT ||--o{ AUDIT_LOG : "operated_by_account (0..1 : 0..N)"
-    ACCOUNT ||--o{ REPORT_EXECUTION : "executed_by_account (1..1 : 0..N)"
-    ROLE ||--o{ REPORT_PERMISSION : "granted_report_perm (1..1 : 0..N)"
-```
+> [!NOTE]
+> **Tham chiếu Sơ đồ & Mã nguồn:**  
+> * **Mã nguồn Mermaid:** [Cross-Domain-Backbone.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Cross-Domain-Backbone.md)  
+> * **Sơ đồ ảnh Render:** [Cross-Domain-Backbone.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Cross-Domain-Backbone.png)
+
+![Cross-Domain Backbone](ERD/images/Cross-Domain-Backbone.png)
 
 ---
 
@@ -230,91 +116,16 @@ Bảng dưới đây chuẩn hóa toàn bộ các liên kết vượt biên gi�
 
 ## 5. SƠ ĐỒ CHI TIẾT CÁC PHÂN HỆ VÀ ĐIỂM TIẾP GIÁP LIÊN MIỀN (DOMAIN BOUNDARIES)
 
-Dưới đây là sơ đồ Mermaid chuẩn hóa của từng phân hệ kèm các giao diện tiếp giáp (Boundary Interfaces) tới các phân hệ khác:
+Toàn bộ mã nguồn Mermaid chi tiết và sơ đồ ảnh render chất lượng cao của 11 phân hệ đã được bóc tách và quản lý tập trung trong thư mục [ERD/](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/). Dưới đây là đặc tả ranh giới tiếp giáp liên miền (Boundary Interfaces) và liên kết tham chiếu trực tiếp:
 
 ### 5.1. Phân hệ 01: Product Catalog (E01 – E09)
 * **Giao diện liên miền:** 
   * `ProductVariant` (E04) là đầu mối kết nối đến: Inventory (02), Procurement (03), Shopping (05), Sales (06), Promotion (08).
+* **Tham chiếu sơ đồ:**
+  * **Mã nguồn Mermaid:** [Product-Catalog.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Product-Catalog.md)
+  * **Sơ đồ ảnh Render:** [Product-Catalog.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Product-Catalog.png)
 
-```mermaid
-erDiagram
-    PRODUCT ||--o{ PRODUCT_CATEGORY : "classified_in (1..1 : 0..N)"
-    CATEGORY ||--o{ PRODUCT_CATEGORY : "groups (1..1 : 0..N)"
-    CATEGORY ||--o{ CATEGORY : "parent_of (0..1 : 0..N)"
-
-    PRODUCT ||--|{ PRODUCT_VARIANT : "has_variants (1..1 : 1..N)"
-
-    PRODUCT ||--o{ PRODUCT_ATTRIBUTE : "declares_attr (1..1 : 0..N)"
-    ATTRIBUTE ||--o{ PRODUCT_ATTRIBUTE : "applied_to_product (1..1 : 0..N)"
-
-    ATTRIBUTE ||--|{ ATTRIBUTE_VALUE : "provides_values (1..1 : 1..N)"
-
-    PRODUCT_ATTRIBUTE ||--o{ PRODUCT_ATTRIBUTE_VALUE : "whitelists_val (1..1 : 0..N)"
-    ATTRIBUTE_VALUE ||--o{ PRODUCT_ATTRIBUTE_VALUE : "permitted_in (1..1 : 0..N)"
-
-    PRODUCT_VARIANT ||--o{ VARIANT_ATTRIBUTE_VALUE : "composed_by (1..1 : 0..N)"
-    PRODUCT_ATTRIBUTE_VALUE ||--o{ VARIANT_ATTRIBUTE_VALUE : "selected_for_sku (1..1 : 0..N)"
-
-    PRODUCT {
-        bigint ProductID PK
-        varchar ProductCode UK
-        nvarchar ProductName
-        nvarchar Description
-        varchar Brand
-        varchar ProductStatus
-        datetimeoffset CreatedAt
-    }
-    CATEGORY {
-        bigint CategoryID PK
-        nvarchar CategoryName
-        varchar Slug UK
-        bigint ParentCategoryID FK
-        varchar CategoryStatus
-    }
-    PRODUCT_CATEGORY {
-        bigint ProductID PK_FK
-        bigint CategoryID PK_FK
-        bit IsPrimary
-        datetimeoffset AssignedAt
-    }
-    PRODUCT_VARIANT {
-        bigint VariantID PK
-        bigint ProductID FK
-        varchar SKU UK
-        nvarchar VariantName
-        decimal SellingPrice
-        varchar VariantStatus
-    }
-    ATTRIBUTE {
-        bigint AttributeID PK
-        nvarchar AttributeName
-        varchar DataType
-        nvarchar AttributeDescription
-    }
-    ATTRIBUTE_VALUE {
-        bigint AttributeValueID PK
-        bigint AttributeID FK
-        nvarchar Value
-        nvarchar DisplayValue
-    }
-    PRODUCT_ATTRIBUTE {
-        bigint ProductID PK_FK
-        bigint AttributeID PK_FK
-        varchar AttributeRole
-        bit IsRequired
-        int DisplayOrder
-    }
-    PRODUCT_ATTRIBUTE_VALUE {
-        bigint ProductID PK_FK
-        bigint AttributeID PK_FK
-        bigint AttributeValueID PK_FK
-    }
-    VARIANT_ATTRIBUTE_VALUE {
-        bigint VariantID PK_FK
-        bigint AttributeID PK_FK
-        bigint AttributeValueID FK
-    }
-```
+![Product Catalog](ERD/images/Product-Catalog.png)
 
 ---
 
@@ -323,235 +134,21 @@ erDiagram
   * `Warehouse` (E10) nhận liên kết từ PO/GR (03), Shipment (07), RMA (10).
   * `OrderWarehouseAllocation` (E12) nhận từ `OrderLine` (06) và cấp cho `ShipmentLine` (07).
   * `StockReservation` (E13) nhận từ `SalesOrder` (06).
+* **Tham chiếu sơ đồ:**
+  * **Mã nguồn Mermaid:** [Warehouse-Inventory.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Warehouse-Inventory.md)
+  * **Sơ đồ ảnh Render:** [Warehouse-Inventory.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Warehouse-Inventory.png)
 
-```mermaid
-erDiagram
-    WAREHOUSE ||--o{ INVENTORY_BALANCE : "tracks_stock (1..1 : 0..N)"
-    PRODUCT_VARIANT ||--o{ INVENTORY_BALANCE : "stocked_as (1..1 : 0..N)"
-
-    ORDER_LINE ||--|{ ORDER_WAREHOUSE_ALLOCATION : "splits_to (1..1 : 1..N)"
-    WAREHOUSE ||--o{ ORDER_WAREHOUSE_ALLOCATION : "allocated_wh (1..1 : 0..N)"
-    PRODUCT_VARIANT ||--o{ ORDER_WAREHOUSE_ALLOCATION : "allocated_item (1..1 : 0..N)"
-
-    SALES_ORDER ||--o{ STOCK_RESERVATION : "reserves (1..1 : 0..N)"
-    STOCK_RESERVATION ||--|{ STOCK_RESERVATION_LINE : "contains (1..1 : 1..N)"
-    ORDER_WAREHOUSE_ALLOCATION ||--o| STOCK_RESERVATION_LINE : "secures (1..1 : 0..1)"
-    WAREHOUSE ||--o{ STOCK_RESERVATION_LINE : "reserved_at (1..1 : 0..N)"
-    PRODUCT_VARIANT ||--o{ STOCK_RESERVATION_LINE : "held_sku (1..1 : 0..N)"
-
-    INVENTORY_TRANSACTION ||--|{ INVENTORY_TRANSACTION_LINE : "logs (1..1 : 1..N)"
-    WAREHOUSE ||--o{ INVENTORY_TRANSACTION_LINE : "locates (1..1 : 0..N)"
-    PRODUCT_VARIANT ||--o{ INVENTORY_TRANSACTION_LINE : "affects_sku (1..1 : 0..N)"
-
-    WAREHOUSE ||--o{ STOCK_COUNT : "audited_in (1..1 : 0..N)"
-    STOCK_COUNT ||--|{ STOCK_COUNT_LINE : "counts (1..1 : 1..N)"
-    PRODUCT_VARIANT ||--o{ STOCK_COUNT_LINE : "counted_item (1..1 : 0..N)"
-
-    WAREHOUSE ||--o{ WAREHOUSE_TRANSFER : "dispatches_transfer (1..1 : 0..N)"
-    WAREHOUSE ||--o{ WAREHOUSE_TRANSFER : "receives_transfer (1..1 : 0..N)"
-    WAREHOUSE_TRANSFER ||--|{ WAREHOUSE_TRANSFER_LINE : "transfers (1..1 : 1..N)"
-    PRODUCT_VARIANT ||--o{ WAREHOUSE_TRANSFER_LINE : "transferred_item (1..1 : 0..N)"
-
-    WAREHOUSE {
-        bigint WarehouseID PK
-        varchar WarehouseCode UK
-        nvarchar WarehouseName
-        nvarchar Address
-        varchar WarehouseStatus
-        datetimeoffset CreatedAt
-    }
-    INVENTORY_BALANCE {
-        bigint WarehouseID PK_FK
-        bigint VariantID PK_FK
-        int OnHandQty
-        int ReservedQty
-        datetimeoffset LastUpdatedAt
-    }
-    ORDER_WAREHOUSE_ALLOCATION {
-        bigint AllocationID PK
-        bigint OrderLineID FK
-        bigint WarehouseID FK
-        bigint VariantID FK
-        int AllocatedQty
-        varchar AllocationStatus
-        datetimeoffset AllocatedAt
-    }
-    STOCK_RESERVATION {
-        bigint ReservationID PK
-        bigint OrderID FK
-        varchar ReservationStatus
-        datetimeoffset CreatedAt
-        datetimeoffset ExpiresAt
-        datetimeoffset ReleasedAt
-    }
-    STOCK_RESERVATION_LINE {
-        bigint ReservationLineID PK
-        bigint ReservationID FK
-        bigint AllocationID FK
-        bigint VariantID FK
-        bigint WarehouseID FK
-        int ReservedQty
-        varchar ReservationLineStatus
-    }
-    INVENTORY_TRANSACTION {
-        bigint TransactionID PK
-        varchar TransactionType
-        varchar TransactionStatus
-        varchar ReferenceType
-        bigint ReferenceID
-        datetimeoffset CreatedAt
-        datetimeoffset PostedAt
-    }
-    INVENTORY_TRANSACTION_LINE {
-        bigint TransactionLineID PK
-        bigint TransactionID FK
-        bigint VariantID FK
-        bigint WarehouseID FK
-        int OnHandDelta
-        int ReservedDelta
-    }
-    STOCK_COUNT {
-        bigint StockCountID PK
-        bigint WarehouseID FK
-        varchar CountStatus
-        datetimeoffset StartedAt
-        datetimeoffset CompletedAt
-        datetimeoffset ApprovedAt
-        bigint ApprovedBy
-    }
-    STOCK_COUNT_LINE {
-        bigint StockCountLineID PK
-        bigint StockCountID FK
-        bigint VariantID FK
-        int SystemQty
-        int CountedQty
-        int VarianceQty
-    }
-    WAREHOUSE_TRANSFER {
-        bigint TransferID PK
-        varchar TransferNumber UK
-        bigint SourceWarehouseID FK
-        bigint DestinationWarehouseID FK
-        varchar TransferStatus
-        datetimeoffset CreatedAt
-        datetimeoffset DispatchedAt
-        datetimeoffset ReceivedAt
-    }
-    WAREHOUSE_TRANSFER_LINE {
-        bigint TransferLineID PK
-        bigint TransferID FK
-        bigint VariantID FK
-        int TransferQty
-        int ReceivedQty
-        int VarianceQty
-    }
-```
+![Warehouse & Inventory](ERD/images/Warehouse-Inventory.png)
 
 ---
 
 ### 5.3. Phân hệ 03: Procurement (E21 – E28)
 * **Giao diện liên miền:** Nhận SKU từ Catalog (01) và chỉ định nhập/xuất kho tại Warehouse (02).
+* **Tham chiếu sơ đồ:**
+  * **Mã nguồn Mermaid:** [Procurement.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Procurement.md)
+  * **Sơ đồ ảnh Render:** [Procurement.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Procurement.png)
 
-```mermaid
-erDiagram
-    SUPPLIER ||--o{ SUPPLIER_PRODUCT : "supplies (1..1 : 0..N)"
-    PRODUCT_VARIANT ||--o{ SUPPLIER_PRODUCT : "sourced_from (1..1 : 0..N)"
-
-    SUPPLIER ||--o{ PURCHASE_ORDER : "receives_order (1..1 : 0..N)"
-    WAREHOUSE ||--o{ PURCHASE_ORDER : "destination_wh (1..1 : 0..N)"
-    PURCHASE_ORDER ||--|{ PURCHASE_ORDER_LINE : "contains (1..1 : 1..N)"
-    PRODUCT_VARIANT ||--o{ PURCHASE_ORDER_LINE : "ordered_item (1..1 : 0..N)"
-
-    PURCHASE_ORDER ||--o{ GOODS_RECEIPT : "fulfilled_by (1..1 : 0..N)"
-    WAREHOUSE ||--o{ GOODS_RECEIPT : "received_at_wh (1..1 : 0..N)"
-    GOODS_RECEIPT ||--|{ GOODS_RECEIPT_LINE : "details (1..1 : 1..N)"
-    PURCHASE_ORDER_LINE ||--o{ GOODS_RECEIPT_LINE : "received_as (1..1 : 0..N)"
-    PRODUCT_VARIANT ||--o{ GOODS_RECEIPT_LINE : "received_sku (1..1 : 0..N)"
-
-    SUPPLIER ||--o{ SUPPLIER_RETURN : "returned_to (1..1 : 0..N)"
-    WAREHOUSE ||--o{ SUPPLIER_RETURN : "dispatched_wh (1..1 : 0..N)"
-    SUPPLIER_RETURN ||--|{ SUPPLIER_RETURN_LINE : "contains (1..1 : 1..N)"
-    GOODS_RECEIPT_LINE ||--o{ SUPPLIER_RETURN_LINE : "returned_from_gr (1..1 : 0..N)"
-    PRODUCT_VARIANT ||--o{ SUPPLIER_RETURN_LINE : "returned_item (1..1 : 0..N)"
-
-    SUPPLIER {
-        bigint SupplierID PK
-        varchar SupplierCode UK
-        nvarchar SupplierName
-        varchar TaxCode
-        varchar Email
-        varchar Phone
-        nvarchar Address
-        varchar SupplierStatus
-        datetimeoffset CreatedAt
-    }
-    SUPPLIER_PRODUCT {
-        bigint SupplierID PK_FK
-        bigint VariantID PK_FK
-        varchar SupplierSKU
-        decimal PurchasePrice
-        int LeadTimeDays
-        bit IsPreferred
-    }
-    PURCHASE_ORDER {
-        bigint PurchaseOrderID PK
-        varchar PONumber UK
-        bigint SupplierID FK
-        bigint DestinationWarehouseID FK
-        datetimeoffset OrderDate
-        datetimeoffset ExpectedDeliveryDate
-        varchar PurchaseOrderStatus
-        bigint CreatedBy
-        bigint ApprovedBy
-        datetimeoffset ApprovedAt
-    }
-    PURCHASE_ORDER_LINE {
-        bigint PurchaseOrderLineID PK
-        bigint PurchaseOrderID FK
-        bigint VariantID FK
-        int OrderedQty
-        decimal UnitPrice
-        decimal LineAmount
-    }
-    GOODS_RECEIPT {
-        bigint GoodsReceiptID PK
-        varchar ReceiptNumber UK
-        bigint PurchaseOrderID FK
-        bigint WarehouseID FK
-        datetimeoffset ReceivedAt
-        varchar ReceiptStatus
-        bigint ReceivedBy
-        datetimeoffset PostedAt
-    }
-    GOODS_RECEIPT_LINE {
-        bigint GoodsReceiptLineID PK
-        bigint GoodsReceiptID FK
-        bigint PurchaseOrderLineID FK
-        int ReceivedQty
-        int AcceptedQty
-        int RejectedQty
-        decimal UnitCost
-        nvarchar RejectionReason
-    }
-    SUPPLIER_RETURN {
-        bigint SupplierReturnID PK
-        varchar ReturnNumber UK
-        bigint SupplierID FK
-        bigint WarehouseID FK
-        varchar ReturnStatus
-        datetimeoffset CreatedAt
-        nvarchar Reason
-        bigint ApprovedBy
-        datetimeoffset ApprovedAt
-    }
-    SUPPLIER_RETURN_LINE {
-        bigint SupplierReturnLineID PK
-        bigint SupplierReturnID FK
-        bigint GoodsReceiptLineID FK
-        int ReturnQty
-        nvarchar ReturnReason
-    }
-```
+![Procurement](ERD/images/Procurement.png)
 
 ---
 
@@ -559,123 +156,21 @@ erDiagram
 * **Giao diện liên miền:** 
   * `Customer` (E30) liên kết với Shopping (05), Sales (06), Promotion (08), RMA (10).
   * `Account` (E29) và `Role` (E32) liên kết với Audit & Reporting (11).
+* **Tham chiếu sơ đồ:**
+  * **Mã nguồn Mermaid:** [Customer-Identity.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Customer-Identity.md)
+  * **Sơ đồ ảnh Render:** [Customer-Identity.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Customer-Identity.png)
 
-```mermaid
-erDiagram
-    ACCOUNT ||--o| CUSTOMER : "profile_customer (1..1 : 0..1)"
-    ACCOUNT ||--o| EMPLOYEE : "profile_employee (1..1 : 0..1)"
-
-    CUSTOMER ||--o{ CUSTOMER_ADDRESS : "has_addresses (1..1 : 0..N)"
-
-    ACCOUNT ||--o{ ACCOUNT_ROLE : "assigned (1..1 : 0..N)"
-    ROLE ||--o{ ACCOUNT_ROLE : "grants (1..1 : 0..N)"
-
-    ROLE ||--o{ ROLE_PERMISSION : "contains (1..1 : 0..N)"
-    PERMISSION ||--o{ ROLE_PERMISSION : "granted_in (1..1 : 0..N)"
-
-    ACCOUNT ||--o{ ACCOUNT_VERIFICATION : "verifies (1..1 : 0..N)"
-
-    ACCOUNT {
-        bigint AccountID PK
-        varchar Email UK_Filtered
-        varchar Phone UK_Filtered
-        varchar PasswordHash
-        varchar AccountStatus
-        datetimeoffset CreatedAt
-        datetimeoffset LastLoginAt
-    }
-    CUSTOMER {
-        bigint CustomerID PK
-        bigint AccountID UK_FK
-        nvarchar FullName
-        date DateOfBirth
-        varchar Gender
-        varchar CustomerStatus
-        datetimeoffset CreatedAt
-    }
-    EMPLOYEE {
-        bigint EmployeeID PK
-        bigint AccountID UK_FK
-        varchar EmployeeCode UK
-        nvarchar FullName
-        varchar Department
-        varchar EmployeeStatus
-        datetimeoffset CreatedAt
-    }
-    ROLE {
-        bigint RoleID PK
-        varchar RoleName UK
-        nvarchar RoleDescription
-    }
-    PERMISSION {
-        bigint PermissionID PK
-        varchar PermissionCode UK
-        nvarchar PermissionName
-        nvarchar Description
-    }
-    ACCOUNT_ROLE {
-        bigint AccountID PK_FK
-        bigint RoleID PK_FK
-        datetimeoffset AssignedAt
-        bigint AssignedBy
-    }
-    ROLE_PERMISSION {
-        bigint RoleID PK_FK
-        bigint PermissionID PK_FK
-    }
-    CUSTOMER_ADDRESS {
-        bigint AddressID PK
-        bigint CustomerID FK
-        nvarchar RecipientName
-        varchar RecipientPhone
-        nvarchar Province
-        nvarchar District
-        nvarchar Ward
-        nvarchar StreetAddress
-        bit IsDefault
-        varchar AddressStatus
-        datetimeoffset CreatedAt
-    }
-    ACCOUNT_VERIFICATION {
-        bigint VerificationID PK
-        bigint AccountID FK
-        varchar VerificationType
-        varchar VerificationTarget
-        varchar VerificationStatus
-        datetimeoffset CreatedAt
-        datetimeoffset ExpiresAt
-        datetimeoffset VerifiedAt
-    }
-```
+![Customer & Identity](ERD/images/Customer-Identity.png)
 
 ---
 
 ### 5.5. Phân hệ 05: Shopping (E38 – E39)
 * **Giao diện liên miền:** Nhận `CustomerID` từ (04), `VariantID` từ (01); Chuyển đổi thành `SalesOrder` (06).
+* **Tham chiếu sơ đồ:**
+  * **Mã nguồn Mermaid:** [Shopping.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Shopping.md)
+  * **Sơ đồ ảnh Render:** [Shopping.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Shopping.png)
 
-```mermaid
-erDiagram
-    CUSTOMER ||--o{ SHOPPING_CART : "owns (1..1 : 0..N)"
-    SHOPPING_CART ||--o{ CART_ITEM : "contains (1..1 : 0..N)"
-    PRODUCT_VARIANT ||--o{ CART_ITEM : "references_sku (1..1 : 0..N)"
-
-    SHOPPING_CART {
-        bigint CartID PK
-        bigint CustomerID FK_Filtered_UK
-        varchar CartStatus
-        datetimeoffset CreatedAt
-        datetimeoffset UpdatedAt
-        datetimeoffset LastActivityAt
-    }
-    CART_ITEM {
-        bigint CartItemID PK
-        bigint CartID FK
-        bigint VariantID FK
-        int Quantity
-        datetimeoffset AddedAt
-        datetimeoffset UpdatedAt
-    }
-```
+![Shopping](ERD/images/Shopping.png)
 
 ---
 
@@ -683,134 +178,21 @@ erDiagram
 * **Giao diện liên miền:** 
   * Trung tâm điều phối toàn bộ chuỗi giá trị: Nhận `CartID` (05), `CustomerID` (04), `VariantID` (01).
   * Phát sinh phân bổ chia kho (02), giữ tồn kho (02), giao hàng (07), thanh toán (09), chiết khấu (08), khiếu nại RMA (10).
+* **Tham chiếu sơ đồ:**
+  * **Mã nguồn Mermaid:** [Sales.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Sales.md)
+  * **Sơ đồ ảnh Render:** [Sales.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Sales.png)
 
-```mermaid
-erDiagram
-    CUSTOMER ||--o{ SALES_ORDER : "places (1..1 : 0..N)"
-    SHOPPING_CART ||--o| SALES_ORDER : "converted_from (1..1 : 0..1)"
-
-    SALES_ORDER ||--|{ ORDER_LINE : "contains (1..1 : 1..N)"
-    PRODUCT_VARIANT ||--o{ ORDER_LINE : "sold_sku (1..1 : 0..N)"
-
-    SALES_ORDER ||--|| ORDER_ADDRESS : "ships_to (1..1 : 1..1)"
-    SALES_ORDER ||--|{ ORDER_STATUS_HISTORY : "tracks_status (1..1 : 1..N)"
-
-    SALES_ORDER {
-        bigint OrderID PK
-        varchar OrderNumber UK
-        bigint CustomerID FK
-        bigint CartID UK_FK
-        varchar OrderStatus
-        datetimeoffset OrderDate
-        decimal SubtotalAmount
-        decimal DiscountAmount
-        decimal ShippingFee
-        decimal TotalAmount
-        nvarchar CustomerNote
-        datetimeoffset CreatedAt
-        datetimeoffset UpdatedAt
-    }
-    ORDER_LINE {
-        bigint OrderLineID PK
-        bigint OrderID FK
-        bigint VariantID FK
-        varchar SKU
-        nvarchar ProductName
-        nvarchar VariantName
-        nvarchar VariantAttributesSnapshot
-        decimal UnitPrice
-        int OrderedQty
-        decimal LineSubtotal
-    }
-    ORDER_ADDRESS {
-        bigint OrderAddressID PK
-        bigint OrderID UK_FK
-        nvarchar RecipientName
-        varchar RecipientPhone
-        nvarchar Province
-        nvarchar District
-        nvarchar Ward
-        nvarchar StreetAddress
-    }
-    ORDER_STATUS_HISTORY {
-        bigint StatusHistoryID PK
-        bigint OrderID FK
-        varchar PreviousStatus
-        varchar NewStatus
-        datetimeoffset ChangedAt
-        bigint ChangedBy
-        nvarchar ChangeReason
-    }
-```
+![Sales](ERD/images/Sales.png)
 
 ---
 
 ### 5.7. Phân hệ 07: Fulfillment & Shipping (E44 – E48)
 * **Giao diện liên miền:** Nhận `OrderID` và `OrderLineID` từ (06), `WarehouseID` và `AllocationID` từ (02).
+* **Tham chiếu sơ đồ:**
+  * **Mã nguồn Mermaid:** [Fulfillment-Shipping.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Fulfillment-Shipping.md)
+  * **Sơ đồ ảnh Render:** [Fulfillment-Shipping.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Fulfillment-Shipping.png)
 
-```mermaid
-erDiagram
-    SALES_ORDER ||--o{ SHIPMENT : "fulfills (1..1 : 0..N)"
-    WAREHOUSE ||--o{ SHIPMENT : "dispatched_from (1..1 : 0..N)"
-    CARRIER ||--o{ SHIPMENT : "shipped_by (1..1 : 0..N)"
-
-    SHIPMENT ||--|{ SHIPMENT_LINE : "contains (1..1 : 1..N)"
-    ORDER_LINE ||--o{ SHIPMENT_LINE : "ships_order_item (1..1 : 0..N)"
-    ORDER_WAREHOUSE_ALLOCATION ||--o{ SHIPMENT_LINE : "consumes_allocation (1..1 : 0..N)"
-
-    SHIPMENT ||--o{ DELIVERY_ATTEMPT : "attempted (1..1 : 0..N)"
-    SHIPMENT ||--|{ SHIPMENT_STATUS_HISTORY : "logs_status (1..1 : 1..N)"
-
-    CARRIER {
-        bigint CarrierID PK
-        varchar CarrierCode UK
-        nvarchar CarrierName
-        varchar ContactPhone
-        varchar Email
-        varchar Website
-        varchar CarrierStatus
-        datetimeoffset CreatedAt
-    }
-    SHIPMENT {
-        bigint ShipmentID PK
-        varchar ShipmentNumber UK
-        bigint OrderID FK
-        bigint WarehouseID FK
-        bigint CarrierID FK
-        varchar TrackingNumber UK_Filtered
-        varchar ShipmentStatus
-        decimal ShippingFee
-        datetimeoffset CreatedAt
-        datetimeoffset HandedOverAt
-        datetimeoffset DeliveredAt
-    }
-    SHIPMENT_LINE {
-        bigint ShipmentLineID PK
-        bigint ShipmentID FK
-        bigint OrderLineID FK
-        bigint AllocationID FK
-        int ShipmentQty
-    }
-    DELIVERY_ATTEMPT {
-        bigint AttemptID PK
-        bigint ShipmentID FK
-        int AttemptNumber
-        datetimeoffset AttemptedAt
-        varchar AttemptStatus
-        nvarchar FailureReason
-        nvarchar RecipientName
-        nvarchar DeliveryNote
-    }
-    SHIPMENT_STATUS_HISTORY {
-        bigint ShipmentStatusHistoryID PK
-        bigint ShipmentID FK
-        varchar PreviousStatus
-        varchar NewStatus
-        datetimeoffset ChangedAt
-        bigint ChangedBy
-        nvarchar ChangeReason
-    }
-```
+![Fulfillment & Shipping](ERD/images/Fulfillment-Shipping.png)
 
 ---
 
@@ -819,88 +201,11 @@ erDiagram
   * Chiết khấu SKU từ Catalog (01).
   * Tiêu thụ và snapshot giảm giá trên `SalesOrder` và `OrderLine` (06).
   * Chỉ định khách VIP từ Customer (04).
+* **Tham chiếu sơ đồ:**
+  * **Mã nguồn Mermaid:** [Promotion-Voucher.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Promotion-Voucher.md)
+  * **Sơ đồ ảnh Render:** [Promotion-Voucher.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Promotion-Voucher.png)
 
-```mermaid
-erDiagram
-    PROMOTION ||--o{ PROMOTION_CONDITION : "defines (1..1 : 0..N)"
-    PROMOTION ||--o{ PROMOTION_PRODUCT : "includes (1..1 : 0..N)"
-    PRODUCT_VARIANT ||--o{ PROMOTION_PRODUCT : "discounted (1..1 : 0..N)"
-
-    PROMOTION ||--o{ VOUCHER : "issues (1..1 : 0..N)"
-    CUSTOMER ||--o{ VOUCHER : "assigned_to (0..1 : 0..N)"
-
-    PROMOTION ||--o{ PROMOTION_TARGET_CUSTOMER : "whitelists (1..1 : 0..N)"
-    CUSTOMER ||--o{ PROMOTION_TARGET_CUSTOMER : "eligible (1..1 : 0..N)"
-
-    PROMOTION ||--o{ PROMOTION_USAGE : "recorded_in (1..1 : 0..N)"
-    VOUCHER ||--o{ PROMOTION_USAGE : "used_as (1..1 : 0..N)"
-    SALES_ORDER ||--o{ PROMOTION_USAGE : "applied_to_order (1..1 : 0..N)"
-    ORDER_LINE ||--o{ PROMOTION_USAGE : "applied_to_line (1..1 : 0..N)"
-
-    PROMOTION {
-        bigint PromotionID PK
-        varchar PromotionCode
-        int VersionNumber
-        bigint SupersedesPromotionID FK
-        nvarchar PromotionName
-        varchar PromotionType
-        varchar PromotionScope
-        varchar DiscountType
-        decimal DiscountValue
-        decimal MaxDiscountAmount
-        decimal MinOrderAmount
-        datetimeoffset StartAt
-        datetimeoffset EndAt
-        varchar PromotionStatus
-        int Priority
-        bit IsStackable
-        int MaxUsage
-        int MaxUsagePerCustomer
-        int UsedCount
-        datetimeoffset CreatedAt
-    }
-    PROMOTION_CONDITION {
-        bigint ConditionID PK
-        bigint PromotionID FK
-        varchar ConditionType
-        varchar ComparisonOperator
-        nvarchar ConditionValue
-    }
-    PROMOTION_PRODUCT {
-        bigint PromotionID PK_FK
-        bigint VariantID PK_FK
-        datetimeoffset AssignedAt
-    }
-    VOUCHER {
-        bigint VoucherID PK
-        bigint PromotionID FK
-        varchar VoucherCode UK
-        varchar VoucherType
-        bigint AssignedCustomerID FK
-        varchar VoucherStatus
-        int MaxUsage
-        int UsedCount
-        datetimeoffset StartAt
-        datetimeoffset EndAt
-    }
-    PROMOTION_USAGE {
-        bigint PromotionUsageID PK
-        bigint PromotionID FK
-        bigint OrderID FK
-        bigint OrderLineID FK
-        bigint VoucherID FK
-        decimal DiscountAmount
-        varchar UsageStatus
-        datetimeoffset UsedAt
-        datetimeoffset ReversedAt
-        nvarchar ReversalReason
-    }
-    PROMOTION_TARGET_CUSTOMER {
-        bigint PromotionID PK_FK
-        bigint CustomerID PK_FK
-        datetimeoffset AssignedAt
-    }
-```
+![Promotion & Voucher](ERD/images/Promotion-Voucher.png)
 
 ---
 
@@ -908,79 +213,11 @@ erDiagram
 * **Giao diện liên miền:** 
   * Liên kết $1:1$ với `SalesOrder` (06).
   * Tiếp nhận yêu cầu kích hoạt hoàn tiền từ `ReturnRequest` (10).
+* **Tham chiếu sơ đồ:**
+  * **Mã nguồn Mermaid:** [Payment-Refund.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Payment-Refund.md)
+  * **Sơ đồ ảnh Render:** [Payment-Refund.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Payment-Refund.png)
 
-```mermaid
-erDiagram
-    SALES_ORDER ||--|| PAYMENT : "settled_by (1..1 : 1..1)"
-    PAYMENT_METHOD ||--o{ PAYMENT : "uses_method (1..1 : 0..N)"
-
-    PAYMENT ||--o{ PAYMENT_TRANSACTION : "executes_attempts (1..1 : 0..N)"
-    PAYMENT ||--o{ REFUND : "has_refunds (1..1 : 0..N)"
-    RETURN_REQUEST ||--o{ REFUND : "triggered_by_rma (1..1 : 0..N)"
-    REFUND ||--o{ REFUND_TRANSACTION : "executes_payout (1..1 : 0..N)"
-
-    PAYMENT_METHOD {
-        bigint PaymentMethodID PK
-        varchar MethodCode UK
-        nvarchar MethodName
-        varchar MethodType
-        varchar MethodStatus
-        datetimeoffset CreatedAt
-    }
-    PAYMENT {
-        bigint PaymentID PK
-        bigint OrderID UK_FK
-        bigint PaymentMethodID FK
-        varchar PaymentStatus
-        decimal AmountDue
-        decimal AmountPaid
-        decimal AmountRefunded
-        datetimeoffset CreatedAt
-        datetimeoffset PaidAt
-    }
-    PAYMENT_TRANSACTION {
-        bigint PaymentTransactionID PK
-        bigint PaymentID FK
-        varchar TransactionReference UK
-        varchar GatewayTransactionID
-        varchar TransactionType
-        varchar TransactionStatus
-        decimal Amount
-        decimal TransactionFee
-        datetimeoffset InitiatedAt
-        datetimeoffset CompletedAt
-        varchar GatewayResponseCode
-        nvarchar GatewayResponseMessage
-        nvarchar GatewayResponseData
-    }
-    REFUND {
-        bigint RefundID PK
-        bigint PaymentID FK
-        bigint ReturnRequestID FK
-        varchar RefundReference UK
-        decimal RefundAmount
-        nvarchar RefundReason
-        varchar RefundStatus
-        datetimeoffset RequestedAt
-        bigint RequestedBy
-        bigint ApprovedBy
-        datetimeoffset ApprovedAt
-    }
-    REFUND_TRANSACTION {
-        bigint RefundTransactionID PK
-        bigint RefundID FK
-        varchar TransactionReference UK
-        varchar GatewayTransactionID
-        varchar RefundMethod
-        varchar TransactionStatus
-        decimal Amount
-        decimal TransactionFee
-        datetimeoffset InitiatedAt
-        datetimeoffset CompletedAt
-        varchar GatewayResponseCode
-        nvarchar GatewayResponseMessage
-    }
-```
+![Payment & Refund](ERD/images/Payment-Refund.png)
 
 ---
 
@@ -989,81 +226,11 @@ erDiagram
   * Tham chiếu đơn hàng gốc (`SalesOrder`, `OrderLine` từ 06).
   * Tiếp nhận tại kho hàng (`Warehouse` từ 02).
   * Kích hoạt hoàn tiền sang `Refund` (09).
+* **Tham chiếu sơ đồ:**
+  * **Mã nguồn Mermaid:** [Return-Exchange.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Return-Exchange.md)
+  * **Sơ đồ ảnh Render:** [Return-Exchange.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Return-Exchange.png)
 
-```mermaid
-erDiagram
-    SALES_ORDER ||--o{ RETURN_REQUEST : "originates (1..1 : 0..N)"
-    CUSTOMER ||--o{ RETURN_REQUEST : "submits (1..1 : 0..N)"
-    ACCOUNT ||--o{ RETURN_REQUEST : "created_by (1..1 : 0..N)"
-    WAREHOUSE ||--o{ RETURN_REQUEST : "designated_wh (1..1 : 0..N)"
-
-    RETURN_REQUEST ||--|{ RETURN_REQUEST_LINE : "specifies (1..1 : 1..N)"
-    ORDER_LINE ||--o{ RETURN_REQUEST_LINE : "returns_item (1..1 : 0..N)"
-
-    RETURN_REQUEST ||--|{ RETURN_STATUS_HISTORY : "tracks_status (1..1 : 1..N)"
-    ACCOUNT ||--o{ RETURN_STATUS_HISTORY : "changed_by (1..1 : 0..N)"
-
-    RETURN_REQUEST ||--o{ RETURN_RECEIPT : "received_by (1..1 : 0..N)"
-    WAREHOUSE ||--o{ RETURN_RECEIPT : "dock_at_wh (1..1 : 0..N)"
-    RETURN_RECEIPT ||--|{ RETURN_RECEIPT_LINE : "inspects (1..1 : 1..N)"
-    RETURN_REQUEST_LINE ||--o{ RETURN_RECEIPT_LINE : "reconciles (1..1 : 0..N)"
-
-    RETURN_REQUEST ||--o{ REFUND : "triggers_refund (1..1 : 0..N)"
-
-    RETURN_REQUEST {
-        bigint ReturnRequestID PK
-        varchar ReturnNumber UK
-        bigint OrderID FK
-        bigint CustomerID FK
-        bigint WarehouseID FK
-        bigint CreatedByAccountID FK
-        varchar ReturnStatus
-        nvarchar ReturnReason
-        nvarchar CustomerNote
-        datetimeoffset RequestedAt
-        bigint ReviewedBy
-        datetimeoffset ReviewedAt
-        nvarchar ReviewNote
-    }
-    RETURN_REQUEST_LINE {
-        bigint ReturnRequestLineID PK
-        bigint ReturnRequestID FK
-        bigint OrderLineID FK
-        int RequestedQty
-        int ApprovedQty
-        nvarchar ReturnReason
-        varchar LineStatus
-    }
-    RETURN_RECEIPT {
-        bigint ReturnReceiptID PK
-        varchar ReceiptNumber UK
-        bigint ReturnRequestID FK
-        bigint WarehouseID FK
-        datetimeoffset ReceivedAt
-        bigint ReceivedBy
-        varchar ReceiptStatus
-        nvarchar InspectionNote
-        datetimeoffset PostedAt
-    }
-    RETURN_RECEIPT_LINE {
-        bigint ReturnReceiptLineID PK
-        bigint ReturnReceiptID FK
-        bigint ReturnRequestLineID FK
-        int ReceivedQty
-        varchar Disposition
-        varchar InspectionResult
-        nvarchar InspectionNote
-    }
-    RETURN_STATUS_HISTORY {
-        bigint ReturnStatusHistoryID PK
-        bigint ReturnRequestID FK
-        varchar PreviousStatus
-        varchar NewStatus
-        datetimeoffset ChangedAt
-        bigint ChangedByAccountID FK
-        nvarchar ChangeReason
-    }
-```
+![Return & Exchange](ERD/images/Return-Exchange.png)
 
 ---
 
@@ -1072,84 +239,11 @@ erDiagram
   * `AuditLog` (E65) ghi nhận thao tác của mọi `Account` (04).
   * `ReportExecution` (E68) ghi nhận yêu cầu chạy báo cáo của `Account` (04).
   * `ReportPermission` (E70) phân quyền truy cập báo cáo theo `Role` (04).
+* **Tham chiếu sơ đồ:**
+  * **Mã nguồn Mermaid:** [Audit-Reporting.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Audit-Reporting.md)
+  * **Sơ đồ ảnh Render:** [Audit-Reporting.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Audit-Reporting.png)
 
-```mermaid
-erDiagram
-    ACCOUNT ||--o{ AUDIT_LOG : "performs (0..1 : 0..N)"
-    AUDIT_LOG ||--o{ AUDIT_LOG_DETAIL : "details_changes (1..1 : 0..N)"
-
-    REPORT_DEFINITION ||--o{ REPORT_EXECUTION : "defines_template (1..1 : 0..N)"
-    ACCOUNT ||--o{ REPORT_EXECUTION : "requests_execution (1..1 : 0..N)"
-
-    REPORT_DEFINITION ||--o{ REPORT_SNAPSHOT : "captures_period (1..1 : 0..N)"
-    ACCOUNT ||--o{ REPORT_SNAPSHOT : "created_by (0..1 : 0..N)"
-
-    REPORT_DEFINITION ||--o{ REPORT_PERMISSION : "grants_access (1..1 : 0..N)"
-    ROLE ||--o{ REPORT_PERMISSION : "holds_permission (1..1 : 0..N)"
-
-    AUDIT_LOG {
-        bigint AuditLogID PK
-        bigint AccountID FK
-        varchar ActionType
-        varchar EntityName
-        varchar RecordID
-        datetimeoffset ActionAt
-        varchar IPAddress
-        nvarchar UserAgent
-        varchar Result
-        nvarchar Reason
-        varchar CorrelationID
-        datetimeoffset RetentionUntil
-    }
-    AUDIT_LOG_DETAIL {
-        bigint AuditLogDetailID PK
-        bigint AuditLogID FK
-        varchar FieldName
-        nvarchar OldValue
-        nvarchar NewValue
-    }
-    REPORT_DEFINITION {
-        bigint ReportDefinitionID PK
-        varchar ReportCode UK
-        nvarchar ReportName
-        nvarchar Description
-        varchar DataSource
-        varchar ReportType
-        bit IsActive
-        datetimeoffset CreatedAt
-    }
-    REPORT_EXECUTION {
-        bigint ReportExecutionID PK
-        bigint ReportDefinitionID FK
-        bigint AccountID FK
-        nvarchar Parameters
-        varchar ExecutionStatus
-        datetimeoffset RequestedAt
-        datetimeoffset CompletedAt
-        varchar ExportFormat
-        nvarchar ResultLocation
-        nvarchar ErrorMessage
-    }
-    REPORT_SNAPSHOT {
-        bigint ReportSnapshotID PK
-        bigint ReportDefinitionID FK
-        varchar SnapshotCode UK
-        datetimeoffset PeriodStart
-        datetimeoffset PeriodEnd
-        datetimeoffset SnapshotAt
-        varchar SnapshotStatus
-        nvarchar DataLocation
-        bigint CreatedBy
-        datetimeoffset CreatedAt
-    }
-    REPORT_PERMISSION {
-        bigint ReportDefinitionID PK_FK
-        bigint RoleID PK_FK
-        bit CanView
-        bit CanExport
-        bit CanCreateSnapshot
-    }
-```
+![Audit & Reporting](ERD/images/Audit-Reporting.png)
 
 ---
 
@@ -1160,4 +254,3 @@ erDiagram
    * Mọi quan hệ $N:N$ đều được giải quyết thông qua Thực thể Kết hợp (Associative Entity) mang đầy đủ thuộc tính trạng thái và thời gian.
    * Tất cả các chứng từ giao dịch (SalesOrder, Payment, Shipment, GoodsReceipt, ReturnRequest, InventoryTransaction) đều có thực thể chi tiết dòng (Line/Detail) và nhật ký trạng thái (History) tương ứng.
 3. **Sẵn sàng chuyển đổi M3:** Sơ đồ Conceptual ERD này là căn cứ tối hậu để chuyển dịch thành công sang Mô hình Luận lý (Logical Relational Schema) tại Milestone 3.
-
