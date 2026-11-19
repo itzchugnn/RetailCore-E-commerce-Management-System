@@ -63,6 +63,183 @@ Sơ đồ biểu diễn **Trục xương sống liên kết liên miền (Cross-
 
 ![Cross-Domain Backbone](ERD/images/Cross-Domain-Backbone.png)
 
+### 3.1. Khái niệm & Triết lý Thiết kế Trục Xương sống (Cross-Domain Backbone Philosophy)
+
+Trong hệ thống CSDL bán lẻ thương mại điện tử quy mô lớn như **RetailCore** với **11 Phân hệ (Subject Areas)** và **70 Thực thể**, nếu để tất cả các thực thể tự do kết nối chéo với nhau theo cấu trúc lưới toàn phần (Full Mesh), mô hình quan hệ sẽ rơi vào tình trạng "mớ bòng bong" (Spaghetti Architecture), phát sinh phụ thuộc vòng (Circular FK Dependencies) và gây bế tắc giao dịch (Deadlock) ở tầng CSDL quan hệ.
+
+Trục xương sống liên miền (**Cross-Domain Backbone**) được thiết kế theo nguyên lý **Hub-and-Spoke kết hợp Clean Architecture**:
+1. **Cô lập Nội miền (Internal Encapsulation):** Mỗi phân hệ chỉ công khai một số ít các **Thực thể Hạt nhân (Hub Entities)** đóng vai trò giao diện tiếp giáp (Boundary Interfaces). Toàn bộ các thực thể chi tiết phụ trợ (như cấu hình thuộc tính, lịch sử trạng thái, chi tiết nhật ký kiểm toán) được giấu kín bên trong nội bộ phân hệ.
+2. **Quy hoạch Giao thông Liên miền (Standardized Cross-Domain Highway):** Mọi giao tiếp liên phân hệ bắt buộc phải đi qua trục Backbone này thông qua **40 liên kết liên miền chuẩn hóa (CR-01 đến CR-40)**.
+3. **Phân định Chủ quyền Tuyệt đối (Strict Data Ownership):** Mỗi thực thể thuộc quyền kiểm soát của duy nhất một phân hệ nghiệp vụ, triệt tiêu tranh chấp thẩm quyền và đảm bảo tính toàn vẹn tham chiếu.
+
+---
+
+### 3.2. Danh mục Thực thể Hạt nhân (Hub Entities) trên Trục Xương sống
+
+| Phân hệ (Subject Area) | Thực thể Hạt nhân (Hub Entities) | Vai trò trên Trục Xương sống (Backbone Role) | Các liên kết liên miền đại diện |
+| :--- | :--- | :--- | :--- |
+| **01. Product Catalog** | `ProductVariant` (E04) | **Hạt nhân Hàng hóa (Core SKU):** Định danh đơn vị sản phẩm thương mại cụ thể (Size, Màu). Là giao diện trung tâm kết nối kho, đơn hàng, nhà cung cấp và khuyến mãi. | CR-01 đến CR-13 |
+| **02. Warehouse & Inv.** | `Warehouse` (E10), `OrderWarehouseAllocation` (E12), `StockReservation` (E13), `InventoryTransaction` (E15) | **Hạt nhân Kho vận & Tồn kho:** Quản lý kho bãi vật lý, kế hoạch định tuyến đa kho (Split Shipment), khóa giữ tồn kho tạm thời và sổ cái biến động kho hai chiều. | CR-01..06, CR-14..21, CR-30 |
+| **03. Procurement** | `Supplier` (E21), `PurchaseOrder` (E23), `GoodsReceipt` (E25) | **Hạt nhân Cung ứng:** Quản lý dòng hàng hóa nhập kho từ nhà cung cấp bên ngoài vào mạng lưới kho của doanh nghiệp. | CR-07..10, CR-14..16 |
+| **04. Customer & Identity** | `Account` (E29), `Customer` (E30), `Role` (E32) | **Hạt nhân Chủ thể & Định danh:** Quản lý tài khoản đăng nhập, hồ sơ khách hàng mua sắm và phân quyền nhân viên quản trị. | CR-22..26, CR-37..40 |
+| **05. Shopping** | `ShoppingCart` (E38), `CartItem` (E39) | **Hạt nhân Tiền Giao dịch:** Quản lý giỏ hàng trực tuyến của khách trước khi chuyển đổi thành hợp đồng mua bán chính thức. | CR-11, CR-22, CR-27 |
+| **06. Sales** | `SalesOrder` (E40), `OrderLine` (E41), `OrderAddress` (E42) | **Trái tim Hợp đồng Bán hàng:** Thực thể trung tâm tối cao kết nối khách hàng, định tuyến kho xuất bãi, nghĩa vụ thanh toán và bưu kiện vận chuyển. | CR-12, CR-20, CR-21, CR-27..35 |
+| **07. Fulfillment & Ship.** | `Carrier` (E44), `Shipment` (E45), `ShipmentLine` (E46) | **Hạt nhân Giao vận Bưu kiện:** Hiện thực hóa việc đóng gói và chuyển phát hàng từ kho xuất đến tận tay khách hàng thông qua hãng vận chuyển. | CR-17, CR-28..30 |
+| **08. Promotion & Voucher** | `Promotion` (E49), `Voucher` (E52), `PromotionUsage` (E53) | **Hạt nhân Khuyến mãi & Chiết khấu:** Quản lý quota ưu đãi và lưu vết sổ cái phân bổ giảm giá cho từng đơn hàng và dòng sản phẩm. | CR-13, CR-24, CR-25, CR-31, CR-32 |
+| **09. Payment & Refund** | `Payment` (E56), `PaymentTransaction` (E57), `Refund` (E58) | **Hạt nhân Huyết mạch Tài chính:** Quản lý nghĩa vụ thu tiền đơn hàng ($1:1$ với SalesOrder), lịch sử giao dịch cổng thanh toán và dòng tiền hoàn trả. | CR-33, CR-36 |
+| **10. Return & Exchange** | `ReturnRequest` (E60), `ReturnReceipt` (E62) | **Hạt nhân Logistics Ngược (RMA):** Tiếp nhận khiếu nại trả hàng, tiếp nhận bưu kiện tại bến nhập và kiểm định phân loại chất lượng trước khi hoàn tiền. | CR-18, CR-19, CR-26, CR-34..36 |
+| **11. Audit & Reporting** | `AuditLog` (E65), `ReportExecution` (E68) | **Hạt nhân Giám sát & Báo cáo:** Theo dõi vết thao tác nhạy cảm của người dùng và kết xuất báo cáo thống kê quản trị toàn hệ thống. | CR-37..40 |
+
+---
+
+### 3.3. Bốn Luồng Dữ liệu Huyết mạch Xuyên Miền (The 4 Core Cross-Domain Data Flows)
+
+Toàn bộ hoạt động vận hành của RetailCore lưu thông qua trục Backbone theo 4 luồng dữ liệu huyết mạch:
+
+```
+[Luồng 1: Dòng Hàng Nhập]  Supplier ---> PurchaseOrder ---> GoodsReceipt ---> Warehouse / InventoryBalance
+                                                                                       |
+[Luồng 2: Dòng Bán Hàng]   Customer ---> ShoppingCart ---> SalesOrder ---> Allocation + Reservation ---> Shipment (Carrier)
+                                                                |                      |
+[Luồng 3: Dòng Tiền Tệ]    Promotion / Voucher ---------> PromotionUsage               | (Xuất kho thực tế)
+                                                                |                      v
+                                                          Payment / Tx <--- InventoryTransaction (Dual-Delta)
+                                                                |
+[Luồng 4: Dòng Trả Ngược]  Customer ---> ReturnRequest ---> ReturnReceipt (KCS) ---> Restock to Warehouse
+                                                                |
+                                                                +-------------> Refund / RefundTx
+```
+
+#### 1. Luồng 1: Dòng Hàng hóa Nhập kho & Tồn trữ (Goods Inward & Storage Flow)
+* **Các miền tham gia:** `Procurement (03)` $\longrightarrow$ `Warehouse & Inventory (02)` $\longrightarrow$ `Product Catalog (01)`.
+* **Cơ chế vận hành:**
+  * Doanh nghiệp phát hành đơn đặt mua hàng `PurchaseOrder` gửi tới `Supplier`, chỉ định rõ `WarehouseID` tiếp nhận và các SKU cụ thể (`PurchaseOrderLine` trỏ `ProductVariant`).
+  * Khi nhà cung cấp giao hàng đến cửa kho, nhân viên kho lập biên bản `GoodsReceipt` và kiểm đếm thực tế từng dòng `GoodsReceiptLine`.
+  * Khi biên bản được duyệt (`PostedAt` NOT NULL), hệ thống tự động ghi sổ cái `InventoryTransaction` loại `PO_RECEIPT_IN` và tăng số dư tồn kho vật lý `InventoryBalance.OnHandQty` tại đúng kho đó.
+  * **Bảo toàn chi phí:** Đơn giá mua thực tế được snapshot cứng vào `GoodsReceiptLine.UnitCost` để phục vụ tính giá vốn bình quân gia quyền.
+
+#### 2. Luồng 2: Dòng Đơn hàng, Phân bổ & Giao vận (Sales Order, Allocation & Dispatch Flow)
+* **Các miền tham gia:** `Customer & Identity (04)` $\longrightarrow$ `Shopping (05)` $\longrightarrow$ `Sales (06)` $\longrightarrow$ `Warehouse & Inventory (02)` $\longrightarrow$ `Fulfillment & Shipping (07)`.
+* **Cơ chế vận hành:**
+  * Khách hàng (`Customer`) chọn SKU (`ProductVariant`) vào `CartItem` thuộc `ShoppingCart`.
+  * Khi tiến hành thanh toán, hệ thống thực thi giao dịch All-or-Nothing: Giỏ hàng chuyển sang `CONVERTED`, sinh `SalesOrder` và các dòng `OrderLine`.
+  * **Định tuyến kho xuất:** Thuật toán phân bổ tạo các bản ghi `OrderWarehouseAllocation`, phân rã từng dòng hàng về các kho vật lý phù hợp (xử lý đơn hàng đa kho - Split Shipment).
+  * **Khóa giữ tạm thời:** Đồng thời tạo `StockReservation` và `StockReservationLine`, tạm khóa số lượng tồn kho `ReservedQty` tại các kho chỉ định trong vòng 15 phút.
+  * **Đóng gói xuất bến:** Nhân viên từng kho đóng gói bưu kiện `Shipment`, lấy hàng theo đúng dòng phân bổ (`ShipmentLine.AllocationID`). Khi bưu tá (`Carrier`) nhận hàng đi giao (`ShipmentStatus = DISPATCHED`), hệ thống mới ghi `InventoryTransaction` loại `SHIPMENT_OUT` để trừ `OnHandQty` vật lý và giải phóng `ReservedQty`.
+
+#### 3. Luồng 3: Dòng Tiền tệ & Chiết khấu Khuyến mãi (Financial Settlement & Promotion Flow)
+* **Các miền tham gia:** `Promotion & Voucher (08)` $\longrightarrow$ `Sales (06)` $\longrightarrow$ `Payment & Refund (09)`.
+* **Cơ chế vận hành:**
+  * Các chương trình khuyến mãi (`Promotion`) và mã giảm giá (`Voucher`) được khách hàng áp dụng khi đặt hàng.
+  * Hệ thống ghi nhận lịch sử tiêu thụ bất biến vào `PromotionUsage`, lưu vết rõ ràng số tiền chiết khấu phân bổ cho đơn hàng tổng (`SalesOrder`) và cho từng dòng sản phẩm chi tiết (`OrderLine`).
+  * Mỗi `SalesOrder` liên kết đúng $1:1$ với duy nhất một hồ sơ nghĩa vụ tài chính `Payment`.
+  * Mọi lần thanh toán (thẻ tín dụng, chuyển khoản qua Webhook cổng thanh toán VNPAY/MoMo, hoặc đối soát bưu tá COD) đều được ghi nhận thành các bản ghi `PaymentTransaction` riêng biệt để bảo toàn vết kiểm toán dòng tiền.
+
+#### 4. Luồng 4: Dòng Đổi trả, Kiểm định & Hoàn tiền (Reverse Logistics & Refund Flow)
+* **Các miền tham gia:** `Sales (06)` $\longrightarrow$ `Return & Exchange (10)` $\longrightarrow$ `Warehouse & Inventory (02)` $\longrightarrow$ `Payment & Refund (09)`.
+* **Cơ chế vận hành:**
+  * Khách hàng tạo yêu cầu khiếu nại trả hàng `ReturnRequest` gắn liền với `SalesOrder` gốc đã giao thành công.
+  * Bưu kiện hàng trả được chuyển về kho chỉ định, lập biên bản `ReturnReceipt`.
+  * Nhân viên KCS tiến hành kiểm định chất lượng từng sản phẩm và gắn trạng thái phân loại (`Disposition`):
+    * `SELLABLE` (Hàng còn nguyên tem mác): Sinh `InventoryTransaction` loại `CUSTOMER_RETURN_IN`, cộng lại vào tồn kho bán `OnHandQty`.
+    * `QUARANTINE` / `DISPOSED` (Hàng lỗi, hỏng hóc): Chuyển kho cách ly hoặc hủy bỏ, cấm cộng vào tồn kho bán.
+  * Khi biên bản kiểm định hoàn tất, hệ thống tự động kích hoạt tạo chứng từ `Refund` bên Subject Area 09.
+  * Số tiền hoàn trả được tính toán chuẩn xác dựa trên số tiền thực thu sau khi đã trừ chiết khấu voucher truy vết từ `PromotionUsage`.
+
+---
+
+### 3.4. Thuyết minh Chi tiết Chu trình Vận hành Khép kín từ A đến Z của một Đơn hàng (End-to-End Order Lifecycle Walkthrough)
+
+Dưới đây là kịch bản phân tích chi tiết từng bước chuyển đổi dữ liệu và trạng thái giữa các Hub Entities qua 6 giai đoạn nghiệp vụ:
+
+```
++-------------------------------------------------------------------------------------------------------------+
+|                                  END-TO-END ORDER LIFECYCLE WALKTHROUGH                                     |
++-------------------------------------------------------------------------------------------------------------+
+| Chặng 1: Mua sắm & Chốt đơn    ---> Snapshot dữ liệu (Địa chỉ, Giá, Thuộc tính SKU JSON)                    |
+| Chặng 2: Định tuyến & Giữ hàng ---> Phân bổ đa kho (Allocation) + Khóa giữ 15 phút (Reservation)             |
+| Chặng 3: Áp mã & Thanh toán    ---> Phân bổ chiết khấu (PromotionUsage) + Khởi tạo Payment ($1:1$)          |
+| Chặng 4: Đóng gói & Xuất kho   ---> Kiện hàng Shipment + Trừ tồn vật lý (InventoryTransaction: SHIPMENT_OUT)|
+| Chặng 5: Giao nhận & Đối soát  ---> Bưu tá giao (Delivered) + Bảng kê tiền mặt COD (COD_SETTLEMENT)        |
+| Chặng 6: Đổi trả & Hoàn tiền   ---> Phiếu RMA -> Kiểm định KCS -> Nhập kho SELLABLE -> Hoàn tiền Refund    |
++-------------------------------------------------------------------------------------------------------------+
+```
+
+#### Chặng 1: Mua sắm & Khởi tạo Đơn hàng (Shopping to Sales Conversion)
+1. Khách hàng (`Customer`, định danh bởi `Account`) chọn mua 2 mặt hàng: **1 Áo sơ mi xanh size L** và **1 Quần âu đen size 32**. Mỗi mặt hàng ứng với một mã SKU cụ thể (`ProductVariant`).
+2. Mặt hàng được lưu tạm trong các dòng `CartItem` của giỏ hàng `ShoppingCart`.
+3. Khi khách bấm **"Đặt hàng"**:
+   * Hệ thống thực thi giao dịch nguyên tử: Chuyển `ShoppingCart.CartStatus = 'CONVERTED'`.
+   * Khởi tạo bản ghi hợp đồng mua bán chính thức: `SalesOrder` (`OrderStatus = 'PENDING_PAYMENT'`) cùng 2 bản ghi `OrderLine`.
+   * **Thực thi cơ chế Snapshot 3 điểm:**
+     * Tạo bản ghi `OrderAddress` độc lập, sao chép toàn bộ tên người nhận, số điện thoại, địa chỉ chi tiết từ `CustomerAddress`. Thực thể này hoàn toàn không có khóa ngoại trỏ về sổ địa chỉ người dùng, giúp đơn hàng miễn nhiễm với việc khách sửa sổ địa chỉ sau này.
+     * Lưu cứng đơn giá niêm yết tại thời điểm mua vào `OrderLine.UnitPrice`.
+     * Lưu vết thuộc tính biến thể vào chuỗi JSON bất biến `OrderLine.VariantAttributesSnapshot` (ví dụ: `{"Size": "L", "Color": "Navy Blue"}`).
+
+#### Chặng 2: Định tuyến Đa kho & Khóa giữ Tồn kho (Multi-Warehouse Split Allocation & Reservation)
+Do mặt hàng áo sơ mi có sẵn tại **Kho Hà Nội** (`WarehouseID = 1`), nhưng quần âu chỉ còn tồn tại **Kho TP.HCM** (`WarehouseID = 2`):
+1. **Phân bổ kho (`OrderWarehouseAllocation`):**
+   * Dòng Áo sơ mi $\to$ phân bổ lấy từ Kho Hà Nội (`AllocationID = 101`, `WarehouseID = 1`, `AllocatedQty = 1`).
+   * Dòng Quần âu $\to$ phân bổ lấy từ Kho TP.HCM (`AllocationID = 102`, `WarehouseID = 2`, `AllocatedQty = 1`).
+2. **Khóa giữ tồn kho (`StockReservation` & `StockReservationLine`):**
+   * Hệ thống tạo một phiếu giữ hàng `StockReservation` (`ReservationStatus = 'ACTIVE'`, `ExpiresAt = NOW() + 15 phút`).
+   * Tạo 2 dòng `StockReservationLine` liên kết trực tiếp với từng `AllocationID` và `WarehouseID`.
+   * **Biến động số dư:** Tồn kho vật lý `OnHandQty` tại 2 kho **giữ nguyên không đổi**. Số lượng giữ `ReservedQty` tăng lên 1 tại mỗi kho:
+     $$\text{AvailableQty} = \text{OnHandQty} - \text{ReservedQty}$$
+   * Khách hàng khác trên sàn sẽ thấy số lượng khả dụng bị giảm đi, triệt tiêu nguy cơ bán vượt tồn (Overselling).
+
+#### Chặng 3: Hạch toán Khuyến mãi & Khởi tạo Nghĩa vụ Thanh toán (Promotion Stacking & Payment Inception)
+1. Đơn hàng áp dụng Voucher giảm 50.000đ cho đơn từ 500.000đ:
+   * Bản ghi `PromotionUsage` được tạo ra, ghi nhận mã voucher `VoucherID`, liên kết với `SalesOrder`, và phân bổ số tiền giảm 50.000đ theo tỷ trọng giá trị cho 2 dòng `OrderLine` (mỗi dòng chịu chiết khấu 25.000đ).
+2. Tạo hồ sơ nghĩa vụ tài chính:
+   * Bản ghi `Payment` ($1:1$ với `SalesOrder`) được sinh ra với `AmountDue = OrderSubtotal - 50.000đ + ShippingFee`, trạng thái ban đầu `PaymentStatus = 'PENDING'`.
+   * Khách chọn thanh toán qua thẻ tín dụng/cổng trực tuyến: Hệ thống ghi nhận `PaymentTransaction` gửi sang cổng thanh toán. Khi nhận webhook thành công, `PaymentTransaction` cập nhật `SUCCESS`, đẩy `Payment.PaymentStatus = 'PAID'` và `SalesOrder.OrderStatus = 'CONFIRMED'`.
+
+#### Chặng 4: Đóng gói Bưu kiện & Trừ tồn Kho Vật lý (Fulfillment Dispatch & Ledger Settlement)
+Do hàng nằm ở 2 kho cách xa nhau, hệ thống tự động tách thành 2 kiện hàng giao vận (**Split Shipment**):
+1. **Kiện 1 (Kho Hà Nội):** Lập `Shipment` 01 (`WarehouseID = 1`), đóng gói chiếc áo sơ mi (`ShipmentLine` trỏ `AllocationID = 101`). Giao cho bưu tá của Viettel Post (`CarrierID = 1`).
+2. **Kiện 2 (Kho TP.HCM):** Lập `Shipment` 02 (`WarehouseID = 2`), đóng gói chiếc quần âu (`ShipmentLine` trỏ `AllocationID = 102`). Giao cho bưu tá của Giao Hàng Tiết Kiệm (`CarrierID = 2`).
+3. **Trừ tồn kho vật lý chính thức:**
+   * Khi shipper quét mã nhận hàng tại cửa kho xuất (`ShipmentStatus = 'DISPATCHED'`), thủ kho xác nhận xuất bãi.
+   * Hệ thống ghi sổ cái `InventoryTransaction` loại `SHIPMENT_OUT` kèm 2 dòng `InventoryTransactionLine`:
+     * Kho Hà Nội: `OnHandDelta = -1`, `ReservedDelta = -1`.
+     * Kho TP.HCM: `OnHandDelta = -1`, `ReservedDelta = -1`.
+   * Lúc này tồn kho vật lý `OnHandQty` mới thực sự giảm, và khóa giữ `ReservedQty` được giải phóng.
+
+#### Chặng 5: Giao nhận & Nghiệp vụ Đối soát Thu hộ Tiền mặt COD (Post-Delivery COD Settlement)
+Trong trường hợp khách hàng chọn phương thức thanh toán **COD (Trả tiền mặt khi nhận hàng)**:
+1. Khi xuất kho giao hàng: `OrderStatus = 'IN_TRANSIT'`, `ShipmentStatus = 'IN_TRANSIT'`, nhưng `PaymentStatus` vẫn là `'PENDING'`.
+2. Khi shipper giao thành công kiện hàng và nhận tiền mặt từ khách: `ShipmentStatus = 'DELIVERED'`, đơn hàng chuyển `OrderStatus = 'DELIVERED'`.
+3. **Độc lập máy trạng thái:** Mặc dù đơn đã giao xong, nhưng `Payment.PaymentStatus` **vẫn tiếp tục giữ trạng thái `'PENDING'`** vì tiền mặt đang nằm ở tài khoản trung gian của hãng vận chuyển chưa nộp về công ty.
+4. **Đối soát bưu tá:** Định kỳ 3 ngày, hãng vận chuyển chuyển khoản tiền COD và gửi bảng kê đối soát. Kế toán tải bảng kê lên hệ thống:
+   * Hệ thống ghi nhận một bản ghi `PaymentTransaction` loại `COD_SETTLEMENT` kèm mã bảng kê.
+   * `Payment.AmountPaid` được cập nhật đủ, lúc này `Payment.PaymentStatus` mới chính thức chuyển sang `'PAID'`.
+
+#### Chặng 6: Xử lý Khiếu nại Đổi trả & Hoàn tiền Bảo toàn Tài chính (Reverse Logistics RMA & Pro-rated Refund)
+Sau 2 ngày sử dụng, khách hàng thấy áo sơ mi bị rộng và tạo yêu cầu trả lại chiếc áo:
+1. **Khởi tạo yêu cầu RMA (`ReturnRequest`):** Khách gửi yêu cầu trả 1 áo sơ mi (`ReturnRequestLine` trỏ `OrderLineID` tương ứng). CSKH duyệt `APPROVED` và chỉ định duy nhất một kho tiếp nhận là Kho Hà Nội (`WarehouseID = 1`).
+2. **Tiếp nhận tại bến nhập (`ReturnReceipt`):** Shipper mang kiện hàng trả về kho Hà Nội. Thủ kho lập `ReturnReceipt` xác nhận thực nhận 1 áo.
+3. **Kiểm định chất lượng (Disposition):**
+   * Nhân viên KCS mở hàng kiểm tra: Tem mác nguyên vẹn, áo mới 100% $\to$ Đánh giá trạng thái `Disposition = 'SELLABLE'`.
+   * Khi biên bản được chốt (`PostedAt` NOT NULL), hệ thống sinh `InventoryTransaction` loại `CUSTOMER_RETURN_IN`, cộng lại 1 chiếc vào `OnHandQty` của Kho Hà Nội để tái lưu thông.
+4. **Kích hoạt Hoàn tiền Tự động & Chống Thất thoát Chiết khấu:**
+   * Hệ thống tự động kích hoạt tạo chứng từ `Refund` bên Subject Area 09.
+   * **Thuật toán bảo toàn tài chính:** Hệ thống truy vết ngược lại `PromotionUsage` ở Chặng 3: Chiếc áo sơ mi có giá niêm yết 300.000đ nhưng đã hưởng chiết khấu voucher 25.000đ, số tiền thực thu là 275.000đ.
+   * Số tiền duyệt hoàn trả `Refund.RefundAmount` được chốt chính xác là **275.000đ**, bảo vệ doanh nghiệp khỏi gian lận voucher khi trả hàng từng phần:
+     $$\text{RefundAmount} = \text{OrderLine.UnitPrice} - \text{AllocatedVoucherDiscount} = 300.000 - 25.000 = 275.000\text{ đ}$$
+   * Giao dịch hoàn tiền `RefundTransaction` được kích hoạt chuyển tiền về tài khoản ngân hàng của khách. Chu trình khép kín $100\%$.
+
+---
+
+### 3.5. Bốn Cơ chế Bảo toàn Tính Toàn vẹn Dữ liệu trên Trục Xương sống
+
+| Cơ chế Bảo toàn | Vấn đề Rủi ro nếu thiết kế lỏng lẻo | Giải pháp Kiến trúc trên Trục Xương sống của RetailCore |
+| :--- | :--- | :--- |
+| **1. Khử triệt để Vòng lặp Khóa ngoại (Zero Circular Dependency)** | Thiết kế quan hệ vòng quanh giữa Bán hàng $\to$ Phân bổ kho $\to$ Giữ hàng $\to$ Bán hàng làm SQL Server báo lỗi vòng lặp khóa ngoại hoặc gây Deadlock khi cập nhật đồng thời. | **Kiến trúc phân rã 2 cấp Header–Line song song:** `SalesOrder` quản lý chứng từ tổng, `OrderLine` quản lý dòng hàng. `OrderWarehouseAllocation` và `StockReservationLine` liên kết qua `AllocationID`. Mối quan hệ luôn đi theo luồng đơn hướng, không có bất kỳ chu trình khép kín nào. |
+| **2. Tách rời 3 Máy trạng thái Giao dịch (Decoupled State Machines)** | Gộp chung trạng thái đơn hàng, thanh toán và vận chuyển làm một khiến hệ thống không thể xử lý đơn COD, đơn giao nhiều lần (Split Shipment) hoặc giao thất bại. | **3 máy trạng thái vận hành độc lập:** $\text{OrderStatus} \ne \text{PaymentStatus} \ne \text{ShipmentStatus}$. Đơn hàng có thể giao thành công trong khi thanh toán COD đang chờ đối soát; một đơn hàng có thể có nhiều kiện hàng với các tiến độ giao nhận khác nhau. |
+| **3. Cơ chế Đóng băng Snapshot Lịch sử Đa tầng** | Khách sửa địa chỉ trong sổ địa chỉ cá nhân, hoặc Catalog tăng giá/đổi tên thuộc tính biến thể làm sai lệch dữ liệu kế toán và hóa đơn cũ. | **Snapshot 3 điểm trọng yếu:** `OrderAddress` là thực thể yếu snapshot độc lập không trỏ FK về `CustomerAddress`. `OrderLine` lưu cứng đơn giá bán và chuỗi JSON `VariantAttributesSnapshot` (`{"Size": "L", "Color": "Navy"}`). `GoodsReceiptLine` lưu cứng giá vốn `UnitCost`. |
+| **4. Nguyên tắc Ghi sổ Kép Hai chiều (Append-Only Dual-Delta Ledger)** | Sửa trực tiếp số dư tồn kho hoặc số tiền thanh toán làm mất vết kiểm toán tài chính, không thể giải trình kế toán khi phát sinh sai lệch. | **Nguyên tắc Sổ cái Bất biến:** Mọi biến động tồn kho đều thông qua `InventoryTransactionLine` (`OnHandDelta`, `ReservedDelta`). Mọi biến động tiền đều thông qua `PaymentTransaction` và `RefundTransaction`. Cấm tuyệt đối lệnh `UPDATE` hoặc `DELETE` trên sổ cái. |
+
 ---
 
 ## 4. MA TRẬN QUAN HỆ LIÊN MIỀN (CROSS-SUBJECT-AREA RELATIONSHIPS MATRIX)
