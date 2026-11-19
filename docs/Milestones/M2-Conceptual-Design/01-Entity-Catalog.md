@@ -48,28 +48,40 @@
 | Mã | Thực thể (Entity) | Phân loại | Ý nghĩa nghiệp vụ | Danh mục Thuộc tính Chuẩn hóa | Định danh chính (PK / UK) |
 | :---: | :--- | :--- | :--- | :--- | :--- |
 | **E10** | `Warehouse` | Strong Entity | Kho hàng vật lý thuộc mạng lưới phân phối của doanh nghiệp. | `WarehouseID`, `WarehouseCode`, `WarehouseName`, `Address`, `WarehouseStatus`, `CreatedAt` | **PK:** `WarehouseID`<br>**UK:** `WarehouseCode` |
-| **E11** | `InventoryBalance` | Associative Entity | Số dư tồn kho tức thời của một SKU tại một kho hàng vật lý. | `WarehouseID`, `VariantID`, `OnHandQty`, `ReservedQty`, `LastUpdatedAt` | **PK:** `(WarehouseID, VariantID)` |
+| **E11** | `InventoryBalance` | Associative Entity | Số dư tồn kho tức thời của một SKU tại một kho hàng vật lý theo phân loại chất lượng. | `WarehouseID`, `VariantID`, `OnHandQty`, `ReservedQty`, `QuarantinedQty`, `DamagedQty`, `CurrentAverageCost`, `LastUpdatedAt` | **PK:** `(WarehouseID, VariantID)` |
 | **E12** | `OrderWarehouseAllocation` | Associative Entity | Quyết định phân bổ một phần số lượng của dòng đơn hàng cho một kho. | `AllocationID`, `OrderLineID`, `WarehouseID`, `VariantID`, `AllocatedQty`, `AllocationStatus`, `AllocatedAt` | **PK:** `AllocationID` |
 | **E13** | `StockReservation` | Strong / Document Entity | Chứng từ/Phiếu giữ hàng tạm thời gắn với đơn hàng (Header). | `ReservationID`, `OrderID`, `ReservationStatus`, `CreatedAt`, `ExpiresAt`, `ReleasedAt` | **PK:** `ReservationID` |
-| **E14** | `StockReservationLine` | Weak Entity | Chi tiết số lượng SKU được giữ tại một kho cụ thể (Line). | `ReservationLineID`, `ReservationID`, `AllocationID`, `VariantID`, `WarehouseID`, `ReservedQty`, `ReservationLineStatus` | **PK:** `ReservationLineID` |
+| **E14** | `StockReservationLine` | Weak Entity | Chi tiết số lượng SKU được giữ tại một kho cụ thể (Line) liên kết với phân bổ ($1:0..N$). | `ReservationLineID`, `ReservationID`, `AllocationID`, `VariantID`, `WarehouseID`, `ReservedQty`, `ReservationLineStatus` | **PK:** `ReservationLineID` |
 | **E15** | `InventoryTransaction` | Strong / Document Entity | Chứng từ sổ cái ghi nhận nghiệp vụ làm thay đổi tồn kho (Header). | `TransactionID`, `TransactionType`, `TransactionStatus`, `ReferenceType`, `ReferenceID`, `CreatedAt`, `PostedAt` | **PK:** `TransactionID` |
-| **E16** | `InventoryTransactionLine` | Weak Entity | Chi tiết dòng biến động tồn kho theo SKU và kho (`OnHandDelta`, `ReservedDelta`). | `TransactionLineID`, `TransactionID`, `VariantID`, `WarehouseID`, `OnHandDelta`, `ReservedDelta` | **PK:** `TransactionLineID` |
+| **E16** | `InventoryTransactionLine` | Weak Entity | Chi tiết dòng biến động tồn kho theo SKU, kho, chuyển đổi chất lượng và giá vốn. | `TransactionLineID`, `TransactionID`, `VariantID`, `WarehouseID`, `OnHandDelta`, `ReservedDelta`, `QuarantinedDelta`, `DamagedDelta`, `FromStockStatus`, `ToStockStatus`, `UnitCost` | **PK:** `TransactionLineID` |
 | **E17** | `StockCount` | Strong / Document Entity | Phiếu kiểm kê tồn kho định kỳ hoặc đột xuất tại một kho (Header). | `StockCountID`, `WarehouseID`, `CountStatus`, `StartedAt`, `CompletedAt`, `ApprovedAt`, `ApprovedBy` | **PK:** `StockCountID` |
 | **E18** | `StockCountLine` | Weak Entity | Chi tiết ghi nhận số lượng hệ thống và số lượng thực tế kiểm đếm (Line). | `StockCountLineID`, `StockCountID`, `VariantID`, `SystemQty`, `CountedQty`, `VarianceQty` | **PK:** `StockCountLineID` |
 | **E19** | `WarehouseTransfer` | Strong / Document Entity | Phiếu điều chuyển hàng hóa giữa hai kho vật lý trong mạng lưới (Header). | `TransferID`, `TransferNumber`, `SourceWarehouseID`, `DestinationWarehouseID`, `TransferStatus`, `CreatedAt`, `DispatchedAt`, `ReceivedAt`, `CreatedBy`, `ApprovedBy` | **PK:** `TransferID`<br>**UK:** `TransferNumber` |
 | **E20** | `WarehouseTransferLine` | Weak Entity | Chi tiết SKU và số lượng xuất chuyển / thực nhận giữa hai kho (Line). | `TransferLineID`, `TransferID`, `VariantID`, `TransferQty`, `ReceivedQty`, `VarianceQty` | **PK:** `TransferLineID` |
 
 ### 3.2. Cơ chế và Quy tắc cốt lõi đã chốt của Warehouse & Inventory
-1. **Công thức tồn khả dụng & Nguyên tắc All-or-nothing (WI-Q02):**
-   $$\text{AvailableQty} = \text{OnHandQty} - \text{ReservedQty}$$
+1. **Công thức tồn khả dụng theo phân loại chất lượng & Nguyên tắc All-or-nothing (WI-Q02, CORR-02):**
+   $$\text{SellableOnHandQty} = \text{OnHandQty} - \text{QuarantinedQty} - \text{DamagedQty}$$
+   $$\text{AvailableQty} = \text{SellableOnHandQty} - \text{ReservedQty}$$
+   * **Năm Ràng buộc Số dư Toàn vẹn (Check Constraints):**
+     * $\text{OnHandQty} \ge 0$
+     * $0 \le \text{QuarantinedQty} \le \text{OnHandQty}$
+     * $0 \le \text{DamagedQty} \le \text{OnHandQty}$
+     * $\text{QuarantinedQty} + \text{DamagedQty} \le \text{OnHandQty}$
+     * $0 \le \text{ReservedQty} \le \text{SellableOnHandQty}$
    * Giao dịch checkout đơn hàng chỉ được xác nhận thành công khi hệ thống khóa giữ đủ 100% số lượng cần thiết cho toàn bộ các dòng hàng trong đơn (All-or-nothing).
-2. **Cơ chế ghi sổ hai chiều (Dual-Delta Ledger):**
-   * Mỗi dòng `InventoryTransactionLine` lưu trực tiếp `OnHandDelta` (mức tăng/giảm tồn vật lý) và `ReservedDelta` (mức tăng/giảm tồn giữ).
-   * Mọi chứng từ sau khi `POSTED` là bất biến (Immutable), không được sửa đổi trực tiếp.
-3. **Quy trình chuyển kho hai bước & Trạng thái In-Transit (WI-Q04):**
+2. **Cơ chế ghi sổ hai chiều & Truy vết trạng thái chất lượng (Dual-Delta Ledger, CORR-02):**
+   * Phân biệt rõ **Trạng thái Chất lượng Tồn kho Vật lý** (`SELLABLE`, `QUARANTINED`, `DAMAGED`) với **Loại Biến động Kho** (`PURCHASE_RECEIPT`, `CUSTOMER_RETURN_IN`, `QUARANTINE_IN`, `QUARANTINE_RELEASE`, `MOVE_TO_QUARANTINE`, `MOVE_TO_DAMAGED`, `SCRAP_OUT`, `SHIPMENT_OUT`, `SUPPLIER_RETURN_OUT`).
+   * Mỗi dòng `InventoryTransactionLine` lưu `OnHandDelta`, `ReservedDelta`, `QuarantinedDelta`, `DamagedDelta`, cùng trạng thái chuyển đổi `FromStockStatus \to ToStockStatus`.
+   * Nghiệp vụ tiêu hủy (`SCRAP_OUT`): Hàng rời kho chuyển từ `DAMAGED` hoặc `QUARANTINED` sang `NULL` (`OnHandDelta = -X, DamagedDelta = -X`). Không tồn tại trạng thái tồn kho `DISPOSED` trong kho.
+3. **Chính sách Giá vốn Bình quân Gia quyền Liên tục (Moving Weighted Average Costing, CORR-09):**
+   * Theo dõi trường `CurrentAverageCost` trên `InventoryBalance`. Giá vốn nhập kho PO được tính toán lại ngay khi biên bản nhập kho được POST.
+   * Khi trả hàng cho nhà cung cấp (`SupplierReturn`), giá trị tồn kho giảm theo **WAC hiện tại tại thời điểm xuất trả**, phần chênh lệch với giá mua PO được ghi nhận vào tài khoản điều chỉnh giá vốn hàng bán.
+   * Khi tồn kho về 0, giá trị tồn kho bằng 0, giữ `CurrentAverageCost` làm mốc tham chiếu cho đến khi có lô hàng nhập kho PO mới.
+4. **Quy trình chuyển kho hai bước & Trạng thái In-Transit (WI-Q04):**
    * **Bước 1 (Xuất kho nguồn):** Ghi nhận `TRANSFER_OUT`, giảm `OnHandQty` tại kho nguồn. Hàng chuyển sang trạng thái In-Transit (`DISPATCHED`). Hàng đang trên đường không thuộc `OnHandQty` của bất kỳ kho nào.
    * **Bước 2 (Nhập kho đích):** Kho đích kiểm đếm thực nhận và ghi nhận `TRANSFER_IN`, chỉ tăng `OnHandQty` tại kho đích theo `ReceivedQty` thực tế. Nếu có chênh lệch (`VarianceQty`), ghi nhận xử lý riêng, không tự động làm tròn.
-4. **Quy trình kiểm kê và phê duyệt chênh lệch (WI-Q05, WI-Q06):**
+5. **Quy trình kiểm kê và phê duyệt chênh lệch (WI-Q05, WI-Q06):**
    * Phiếu kiểm kê hoàn tất kiểm đếm (`COMPLETED`) tuyệt đối không tự động cập nhật số dư kho.
    * Chênh lệch chỉ được hạch toán khi có cấp quản lý phê duyệt (`ApprovedAt`, `ApprovedBy`). Sau khi duyệt, hệ thống tự động sinh `InventoryTransaction` loại `STOCK_ADJUSTMENT` để cập nhật `InventoryBalance`. Người kiểm đếm không được tự duyệt phiếu của chính mình (Separation of Duties).
 
@@ -117,7 +129,7 @@
 
 | Mã | Thực thể (Entity) | Phân loại | Ý nghĩa nghiệp vụ | Danh mục Thuộc tính Chuẩn hóa | Định danh chính (PK / UK) |
 | :---: | :--- | :--- | :--- | :--- | :--- |
-| **E29** | `Account` | Strong Entity | Tài khoản xác thực danh tính dùng chung để truy cập hệ thống. | `AccountID`, `Email`, `Phone`, `PasswordHash`, `AccountStatus`, `CreatedAt`, `LastLoginAt` | **PK:** `AccountID`<br>**UK:** `Email` *(Filtered)*, `Phone` *(Filtered)* |
+| **E29** | `Account` | Strong Entity | Tài khoản xác thực danh tính dùng chung để truy cập hệ thống. | `AccountID`, `AccountType`, `Email`, `Phone`, `PasswordHash`, `AccountStatus`, `CreatedAt`, `LastLoginAt` | **PK:** `AccountID`<br>**UK:** `Email` *(Filtered)*, `Phone` *(Filtered)* |
 | **E30** | `Customer` | Subtype / Profile | Hồ sơ nghiệp vụ của khách hàng mua sắm B2C. | `CustomerID`, `AccountID`, `FullName`, `DateOfBirth`, `Gender`, `CustomerStatus`, `CreatedAt` | **PK:** `CustomerID`<br>**UK:** `AccountID` |
 | **E31** | `Employee` | Subtype / Profile | Hồ sơ nhân sự nội bộ vận hành hệ thống RetailCore. | `EmployeeID`, `AccountID`, `EmployeeCode`, `FullName`, `Department`, `EmployeeStatus`, `CreatedAt` | **PK:** `EmployeeID`<br>**UK:** `AccountID`, `EmployeeCode` |
 | **E32** | `Role` | Strong / Master | Danh mục vai trò trong hệ thống (RBAC). | `RoleID`, `RoleName`, `RoleDescription` | **PK:** `RoleID`<br>**UK:** `RoleName` |
