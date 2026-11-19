@@ -1,15 +1,15 @@
 # M2.01 - ENTITY CATALOG (DANH MỤC THỰC THỂ KHÁI NIỆM)
 
 * **Milestone:** M2 – Conceptual Database Design
-* **Phiên bản:** 1.1 – Standardized Attribute Names & Multi-Area Catalog
-* **Kế thừa:** Business Rules v1.1, Data Requirements v1.1, Quyết định BD-01 đến BD-07 & PC-Q01 đến PC-Q06
+* **Phiên bản:** 1.2 – Full Baseline Amendment (72 Thực thể Chuẩn hóa E01 đến E72)
+* **Kế thừa:** Business Rules v1.1, Data Requirements v1.1, Quyết định BD-01 đến BD-07 & Bản ghi Hiệu chỉnh Kiến trúc [M2.08](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/08-Architectural-Correction-Log.md)
 
 ---
 
 ## 1. Phân loại Loại hình Thực thể trong Mô hình Quan niệm
 
-1. **Thực thể Mạnh (Strong Entity):** Tồn tại độc lập, có khóa định danh riêng trong thế giới thực (`Product`, `Warehouse`, `Category`, `Attribute`, `Supplier`, `User`, `InventoryTransaction`, `StockCount`, `StockReservation`).
-2. **Thực thể Phụ thuộc / Yếu (Dependent / Weak Entity):** Sự tồn tại phụ thuộc vào thực thể cha, định danh gắn liền với cha (`AttributeValue`, `StockReservationLine`, `InventoryTransactionLine`, `StockCountLine`, `CustomerAddress`, `CartLine`, `OrderLine`, `ShipmentLine`).
+1. **Thực thể Mạnh (Strong Entity):** Tồn tại độc lập, có khóa định danh riêng trong thế giới thực (`Product`, `Warehouse`, `Category`, `Attribute`, `Supplier`, `Account`, `InventoryTransaction`, `StockCount`, `StockReservation`).
+2. **Thực thể Phụ thuộc / Yếu (Dependent / Weak Entity):** Sự tồn tại phụ thuộc vào thực thể cha, định danh gắn liền với cha (`AttributeValue`, `StockReservationLine`, `InventoryTransactionLine`, `StockCountLine`, `CustomerAddress`, `CartItem`, `OrderLine`, `ShipmentLine`, `DeliveryAttempt`, `ReturnLineAssessment`, `PaymentWebhookLog`).
 3. **Thực thể Biến thể Trung tâm (Core SKU Entity):** `ProductVariant` – Có surrogate key riêng nhưng phụ thuộc logic vào `Product`, mang mã tự nhiên `SKU` duy nhất toàn hệ thống.
 4. **Thực thể Liên kết (Associative Entity):** Giải quyết quan hệ $N-N$ và mang thuộc tính nghiệp vụ riêng (`ProductCategory` mang cờ `IsPrimary`, `ProductAttribute` mang `AttributeRole`, `ProductAttributeValue`, `VariantAttributeValue`, `InventoryBalance`, `OrderWarehouseAllocation`).
 
@@ -140,8 +140,10 @@
 | **E37** | `AccountVerification` | Weak / Event | Ghi nhận lịch sử và trạng thái yêu cầu xác minh Email / Phone. | `VerificationID`, `AccountID`, `VerificationType`, `VerificationTarget`, `VerificationStatus`, `CreatedAt`, `ExpiresAt`, `VerifiedAt` | **PK:** `VerificationID` |
 
 ### 5.2. Các quy ước và Bất biến Nghiệp vụ Customer & Identity đã chốt
-1. **Nguyên tắc loại trừ hồ sơ (CID-Q01, BR-ID04):**
-   * Một `Account` chỉ được liên kết với một loại hồ sơ duy nhất: hoặc `Customer`, hoặc `Employee` (Ràng buộc XOR). Không bao giờ tồn tại một tài khoản vừa là khách hàng vừa là nhân viên trên cùng định danh.
+1. **Nguyên tắc loại trừ hồ sơ và bảo đảm Total Participation (CID-Q01, BR-ID04, CORR-05):**
+   * Áp dụng mô hình Table-Per-Type (TPT): Bảng cha `Account` có `AccountType` (`'CUSTOMER'` hoặc `'EMPLOYEE'`). Hai bảng subtype `Customer` và `Employee` dùng `AccountID` vừa làm Khóa chính vừa làm Khóa ngoại.
+   * Một `Account` chỉ được liên kết với một loại hồ sơ duy nhất (Ràng buộc Disjoint XOR: $\text{IsCustomer} \oplus \text{IsEmployee} = 1$). Không bao giờ tồn tại một tài khoản vừa là khách hàng vừa là nhân viên trên cùng định danh.
+   * Đảm bảo Total Participation: Khởi tạo tài khoản bắt buộc qua Stored Procedure giao dịch nguyên tử (`usp_Identity_CreateCustomerAccount` hoặc `usp_Identity_CreateEmployeeAccount`). Trigger trên bảng con ngăn chặn chèn sai `AccountType` và ngăn cản xóa subtype khi `Account` vẫn còn tồn tại. Thu hồi quyền INSERT trực tiếp của ứng dụng.
 2. **Phân quyền RBAC linh hoạt (CID-Q02, BR-ID05..07):**
    * Một tài khoản có thể được cấp nhiều `Role` qua `AccountRole`. Không cấp trùng lặp vai trò cho cùng một tài khoản.
    * Quyền hiệu lực của tài khoản là hợp (Union) các `Permission` của tất cả các `Role` mà tài khoản đó sở hữu.
@@ -194,21 +196,25 @@
 
 | Mã | Thực thể (Entity) | Phân loại | Ý nghĩa nghiệp vụ | Danh mục Thuộc tính Chuẩn hóa | Định danh chính (PK / UK) |
 | :---: | :--- | :--- | :--- | :--- | :--- |
-| **E40** | `SalesOrder` | Strong / Document Entity | Hợp đồng mua bán chính thức giữa khách hàng và RetailCore (Header). | `OrderID`, `OrderNumber`, `CustomerID`, `CartID`, `OrderStatus`, `OrderDate`, `SubtotalAmount`, `DiscountAmount`, `ShippingFee`, `TotalAmount`, `CustomerNote`, `CreatedAt`, `UpdatedAt` | **PK:** `OrderID`<br>**UK:** `OrderNumber`, `CartID` |
-| **E41** | `OrderLine` | Weak / Detail Entity | Chi tiết mặt hàng SKU và số lượng cam kết bán trong đơn (Line). | `OrderLineID`, `OrderID`, `VariantID`, `SKU`, `ProductName`, `VariantName`, `VariantAttributesSnapshot`, `UnitPrice`, `OrderedQty`, `LineSubtotal` | **PK:** `OrderLineID` |
+| **E40** | `SalesOrder` | Strong / Document Entity | Hợp đồng mua bán chính thức giữa khách hàng và RetailCore (Header). | `OrderID`, `OrderNumber`, `CustomerID`, `CartID`, `OrderStatus`, `OrderDate`, `SubtotalAmount`, `DiscountAmount`, `ShippingFee`, `TotalAmount`, `CustomerNote`, `CreatedAt`, `UpdatedAt`, `DeliveredAt`, `ClosedAt` | **PK:** `OrderID`<br>**UK:** `OrderNumber`, `CartID` |
+| **E41** | `OrderLine` | Weak / Detail Entity | Chi tiết mặt hàng SKU, giá trị chiết khấu phân bổ và vết hoàn tiền. | `OrderLineID`, `OrderID`, `VariantID`, `SKU`, `ProductName`, `VariantName`, `VariantAttributesSnapshot`, `UnitPrice`, `OrderedQty`, `LineGrossAmount`, `LineProductDiscount`, `AllocatedOrderDiscount`, `LineNetAmount`, `RefundedQty`, `AccumulatedRefundedAmount` | **PK:** `OrderLineID` |
 | **E42** | `OrderAddress` | Weak / Snapshot Entity | Bản sao bất biến địa chỉ giao hàng tại thời điểm tạo đơn. | `OrderAddressID`, `OrderID`, `RecipientName`, `RecipientPhone`, `Province`, `District`, `Ward`, `StreetAddress` | **PK:** `OrderAddressID`<br>**UK:** `OrderID` |
 | **E43** | `OrderStatusHistory` | Weak / Event Entity | Nhật ký lưu vết mọi lần chuyển đổi trạng thái của đơn hàng. | `StatusHistoryID`, `OrderID`, `PreviousStatus`, `NewStatus`, `ChangedAt`, `ChangedBy`, `ChangeReason` | **PK:** `StatusHistoryID` |
 
 ### 7.2. Các quy ước và Bất biến Nghiệp vụ Sales đã chốt
-1. **Tạo đơn và giữ hàng nguyên tử (SALES-Q01, BR-SA07, BR-SA17):**
+1. **Tạo đơn, giữ hàng nguyên tử & Bảo đảm Mandatory 1:1 (SALES-Q01, BR-SA07, CORR-04):**
    * Quá trình tạo đơn và giữ hàng là một giao dịch nguyên tử (All-or-nothing): Chỉ khi hệ thống phân bổ và khóa giữ đủ 100% số lượng hàng cần thiết (`StockReservation`) thì đơn hàng mới được tạo chính thức và giỏ hàng mới chuyển sang `CONVERTED`.
-   * Nếu thiếu hàng, toàn bộ giao dịch bị rollback và giỏ hàng giữ nguyên `ACTIVE`.
-2. **Máy trạng thái đơn hàng (SALES-Q02, BR-SA08, BR-SA09):**
-   * Vòng đời chuẩn: `PENDING_PAYMENT` $\to$ `CONFIRMED` $\to$ `PROCESSING` $\to$ `PARTIALLY_SHIPPED` $\to$ `SHIPPED` $\to$ `COMPLETED` (nhánh kết thúc bất thường: `CANCELLED`).
-   * Trạng thái ban đầu luôn là `PENDING_PAYMENT`. Đơn chỉ chuyển sang `CONFIRMED` khi điều kiện thanh toán được thỏa mãn (COD hợp lệ hoặc cổng thanh toán xác nhận `PAID`).
-3. **Bảo toàn bất biến thông tin dòng hàng (SALES-Q04, SALES-Q05, BR-SA10, BR-SA11):**
-   * Sau khi đơn hàng được xác nhận, tuyệt đối cấm chỉnh sửa dòng hàng `OrderLine` (không sửa SKU, không đổi số lượng). Muốn thay đổi, khách hàng phải hủy đơn và đặt lại.
-   * `OrderLine` lưu snapshot toàn bộ: `SKU`, `ProductName`, `VariantName`, `UnitPrice`, và `VariantAttributesSnapshot` (JSON) để độc lập hoàn toàn với các biến động của Catalog trong tương lai.
+   * **Bảo đảm Mandatory 1:1 bằng Transaction Boundary:** Thu hồi toàn bộ quyền DML trực tiếp (`INSERT`, `UPDATE`, `DELETE`) trên `SalesOrder`, `OrderAddress`, `Payment` đối với tài khoản ứng dụng. Mọi đơn hàng bắt buộc phải tạo thông qua Stored Procedure `usp_Checkout_CreateOrder` thực thi trong `BEGIN TRANSACTION ... COMMIT`. Rollback toàn bộ nếu bất kỳ thao tác nào thất bại.
+2. **Máy trạng thái đơn hàng độc lập (SALES-Q02, BR-SA08, CORR-07):**
+   * Vòng đời chuẩn là trạng thái tổng hợp dựa trên số lượng còn hiệu lực: `PENDING_PAYMENT` $\to$ `CONFIRMED` $\to$ `PROCESSING` $\to$ `PARTIALLY_SHIPPED` $\to$ `SHIPPED` $\to$ `PARTIALLY_DELIVERED` $\to$ `DELIVERED`.
+   * Trạng thái hủy: `CANCELLED` (hủy toàn bộ), `PARTIALLY_CANCELLED` (hủy phần số lượng chưa giao).
+   * `DELIVERED` đạt được khi $100\%$ số lượng hàng còn hiệu lực phải giao đã được bưu tá giao thành công.
+   * `ClosedAt` ghi nhận thời điểm đóng hồ sơ hành chính/kế toán sau khi kết thúc mọi thời hạn khiếu nại, tách biệt khỏi máy trạng thái giao vận.
+3. **Bảo toàn bất biến thông tin dòng hàng & Thuật toán phân bổ chiết khấu (SALES-Q04, BR-SA10, CORR-03, CORR-10):**
+   * Sau khi đơn hàng được xác nhận, tuyệt đối cấm chỉnh sửa dòng hàng `OrderLine`.
+   * `OrderLine` lưu snapshot JSON có định danh chuẩn hóa: `schemaVersion`, `attributeId`, `attributeName`, `valueId`, `valueDisplay` kèm Check Constraint `ISJSON(VariantAttributesSnapshot) = 1`.
+   * Phân bổ chiết khấu voucher cấp đơn xuống `OrderLine` theo thuật toán **Largest Remainder Method**: $\sum \text{AllocatedOrderDiscount}_i \equiv \text{ActualVoucherDiscount}$.
+   * Áp dụng công thức hoàn tiền lũy tiến $F(q) = B \cdot q + \min(q, R)$ để khi hoàn trả từng phần số lượng lẻ tiền (VND), số tiền hoàn luôn là số nguyên xác định và bảo toàn $\sum \text{RefundAmount} \le \text{LineNetAmount}$.
 4. **Snapshot địa chỉ giao hàng duy nhất (SALES-Q06, BR-SA12, BR-SA13):**
    * Mỗi đơn hàng có đúng một địa chỉ giao hàng snapshot (`OrderAddress`, quan hệ $1:1$).
    * Tách lô giao hàng từ nhiều kho (Split Shipment) không làm phát sinh nhiều địa chỉ nhận; mọi kiện hàng đều hướng về địa chỉ của đơn.
@@ -296,26 +302,29 @@ Subject Area này quản lý toàn bộ các chương trình khuyến mãi, đi�
 
 Subject Area này quản lý toàn bộ nghĩa vụ tài chính, dòng tiền thu vào (Payment) và hoàn trả (Refund) của đơn hàng trong RetailCore, chịu trách nhiệm bảo toàn tính toán kế toán, quản lý đối soát và kiểm toán dòng tiền với cổng thanh toán và đối tác vận chuyển.
 
-### 10.1. Danh mục 5 Thực thể Chuẩn hóa (E55 đến E59)
+### 10.1. Danh mục 6 Thực thể Chuẩn hóa (E55 đến E59, E71)
 
 | Mã | Thực thể (Entity) | Phân loại | Ý nghĩa nghiệp vụ | Danh mục Thuộc tính Chuẩn hóa | Định danh chính (PK / UK) |
 | :---: | :--- | :--- | :--- | :--- | :--- |
 | **E55** | `PaymentMethod` | Strong Entity | Danh mục các phương thức thanh toán được hệ thống hỗ trợ (COD, BANK_TRANSFER, E_WALLET, CARD...). | `PaymentMethodID`, `MethodCode`, `MethodName`, `MethodType`, `MethodStatus`, `CreatedAt` | **PK:** `PaymentMethodID`<br>**UK:** `MethodCode` |
-| **E56** | `Payment` | Document / Strong Entity | Hồ sơ nghĩa vụ và trạng thái thanh toán tổng thể của đơn hàng (Header). | `PaymentID`, `OrderID`, `PaymentMethodID`, `PaymentStatus`, `AmountDue`, `AmountPaid`, `AmountRefunded`, `CreatedAt`, `PaidAt` | **PK:** `PaymentID`<br>**UK:** `OrderID` |
+| **E56** | `Payment` | Document / Strong Entity | Hồ sơ nghĩa vụ và trạng thái thanh toán tổng thể của đơn hàng (Header). | `PaymentID`, `OrderID`, `PaymentMethodID`, `PaymentStatus`, `CarrierSettlementStatus`, `AmountDue`, `AmountPaid`, `AmountRefunded`, `CreatedAt`, `PaidAt` | **PK:** `PaymentID`<br>**UK:** `OrderID` |
 | **E57** | `PaymentTransaction` | Weak / Event Entity | Nhật ký giao dịch ghi nhận từng lần thực hiện thanh toán hoặc gọi cổng thanh toán bên ngoài (kể cả lần thử thất bại). | `PaymentTransactionID`, `PaymentID`, `TransactionReference`, `GatewayTransactionID`, `TransactionType`, `TransactionStatus`, `Amount`, `TransactionFee`, `InitiatedAt`, `CompletedAt`, `GatewayResponseCode`, `GatewayResponseMessage`, `GatewayResponseData` | **PK:** `PaymentTransactionID`<br>**UK:** `TransactionReference` |
 | **E58** | `Refund` | Document / Strong Entity | Yêu cầu hoàn tiền gắn với hồ sơ thanh toán đã phát sinh thực thu (Header kiểm soát nội bộ). | `RefundID`, `PaymentID`, `RefundReference`, `RefundAmount`, `RefundReason`, `RefundStatus`, `RequestedAt`, `RequestedBy`, `ApprovedBy`, `ApprovedAt` | **PK:** `RefundID`<br>**UK:** `RefundReference` |
-| **E59** | `RefundTransaction` | Weak / Event Entity | Giao dịch thực thi chuyển tiền hoàn qua cổng thanh toán hoặc ủy nhiệm chi ngân hàng. | `RefundTransactionID`, `RefundID`, `TransactionReference`, `GatewayTransactionID`, `RefundMethod`, `TransactionStatus`, `Amount`, `TransactionFee`, `InitiatedAt`, `CompletedAt`, `GatewayResponseCode`, `GatewayResponseMessage` | **PK:** `RefundTransactionID`<br>**UK:** `TransactionReference` |
+| **E59** | `RefundTransaction` | Weak / Event Entity | Giao dịch thực thi chuyển tiền hoàn qua cổng thanh toán, liên kết giao dịch thu tiền gốc. | `RefundTransactionID`, `RefundID`, `OriginalPaymentTransactionID`, `TransactionReference`, `GatewayTransactionID`, `RefundMethod`, `TransactionStatus`, `Amount`, `TransactionFee`, `InitiatedAt`, `CompletedAt`, `GatewayResponseCode`, `GatewayResponseMessage` | **PK:** `RefundTransactionID`<br>**UK:** `TransactionReference` |
+| **E71** | `PaymentWebhookLog` | Event / Support Entity | Nhật ký tiếp nhận và đối soát Webhook từ các cổng thanh toán bên ngoài chống xử lý trùng lặp. | `WebhookLogID`, `PaymentMethodID`, `MerchantAccountID`, `ProviderEventID`, `Environment`, `PayloadJSON`, `SignatureVerified`, `ProcessingStatus`, `ReceivedAt`, `ProcessedAt`, `ErrorMessage` | **PK:** `WebhookLogID`<br>**UK:** `(PaymentMethodID, ProviderEventID, Environment)` |
 
-### 10.2. Các quy ước và Bất biến Nghiệp vụ Payment đã chốt (PAY-Q01 đến PAY-Q09)
+### 10.2. Các quy ước và Bất biến Nghiệp vụ Payment đã chốt (PAY-Q01 đến PAY-Q09, CORR-06, CORR-08)
 1. **Một phương thức thanh toán cho mỗi đơn hàng (PAY-Q01, BR-PY01, BR-PY02):**
    * Mỗi `SalesOrder` có quan hệ $1:1$ bắt buộc với đúng một hồ sơ `Payment` (`Payment.OrderID` UNIQUE). Khách hàng chọn 1 phương thức thanh toán khi checkout và không đổi phương thức sau khi giao dịch đã phát sinh.
-2. **Hỗ trợ song song COD và Thanh toán trực tuyến (PAY-Q02, BR-PY03):**
-   * Đơn online: Chuyển `CONFIRMED` khi có giao dịch `PaymentTransaction` thành công và `AmountPaid == AmountDue` (PAY-Q08, BR-PY09).
-   * Đơn COD: Chuyển `CONFIRMED` ngay sau khi tạo đơn và thẩm định hợp lệ; `PaymentTransaction` loại `COD_COLLECTION` chỉ được ghi nhận thành công khi Shipper giao hàng thành công và bàn giao tiền mặt (PAY-Q08, BR-PY10).
+2. **Quy trình Đối soát COD Tách bạch Hai Đầu (PAY-Q02, CORR-08):**
+   * **Góc nhìn Khách hàng (`Payment.PaymentStatus`):** Khi bưu tá quét xác nhận thu tiền mặt $\to$ Cập nhật `PaymentStatus = 'CUSTOMER_PAID'` (hoặc `'PAID'`). Khách hàng hoàn thành nghĩa vụ, hệ thống xuất hóa đơn VAT và tích điểm.
+   * **Góc nhìn Quản trị Doanh nghiệp (`Payment.CarrierSettlementStatus`):** Theo dõi khoản phải thu từ hãng vận chuyển: `NOT_COLLECTED` $\to$ `COLLECTED_BY_CARRIER` $\to$ `REMITTED` $\to$ `RECONCILED`.
+   * Chỉ khi kế toán khớp bảng kê (`RECONCILED`), hệ thống mới sinh `PaymentTransaction` loại `COD_SETTLEMENT` ghi nhận tăng tiền gửi ngân hàng.
 3. **Thanh toán lại không làm vỡ đơn hàng (PAY-Q03, BR-PY04, BR-PY05):**
    * Khi khách hàng gặp lỗi thẻ/quên OTP, đơn giữ nguyên trạng thái `PENDING_PAYMENT` trong thời gian timeout. Mỗi lần bấm thanh toán lại tạo một bản ghi `PaymentTransaction` mới độc lập. Giao dịch thất bại được giữ nguyên phục vụ đối soát.
-4. **Hoàn tiền một phần và nhiều lần (PAY-Q04, BR-PY15, BR-PY16, BR-PY18):**
-   * Hỗ trợ hoàn tiền toàn phần hoặc một phần qua nhiều đợt. Bất biến tài chính: $\sum RefundAmount \le RemainingRefundable = AmountPaid - AmountRefunded$.
+4. **Truy vết nguồn tiền hoàn và Hoàn tiền nhiều lần (PAY-Q04, CORR-08):**
+   * Đặt `OriginalPaymentTransactionID` tại `RefundTransaction` (E59) trỏ về `PaymentTransaction` (E57) thành công ban đầu.
+   * Bất biến tài chính: $\sum RefundAmount \le RemainingRefundable = AmountPaid - AmountRefunded$.
    * `Payment.AmountRefunded` chỉ được tăng khi `RefundTransaction` thực tế thành công (`SUCCESS`).
 5. **Kiểm soát nội bộ và phê duyệt hoàn tiền (PAY-Q05, BR-PY14):**
    * Mọi yêu cầu `Refund` bắt buộc phải được nhân viên có thẩm quyền phê duyệt (`ApprovedBy NOT NULL`) trước khi thực hiện giao dịch chuyển tiền.
@@ -323,8 +332,9 @@ Subject Area này quản lý toàn bộ nghĩa vụ tài chính, dòng tiền th
    * Đơn COD được hoàn tiền qua chuyển khoản ngân hàng (Bank Transfer) và lưu vết thông tin đối soát tại `RefundTransaction`.
 7. **Lưu vết đối soát và phí giao dịch cổng (PAY-Q07, PAY-Q09, BR-PY06, BR-PY07):**
    * Lưu đầy đủ `GatewayTransactionID`, `GatewayResponseCode`, `GatewayResponseMessage`, `GatewayResponseData` và `TransactionFee` để tính toán chính xác số tiền thực nhận (Net Settlement) và biên lợi nhuận ròng.
-8. **Bất biến nhật ký giao dịch và Idempotency (BR-PY05, BR-PY22, BR-PY09):**
-   * `PaymentTransaction` và `RefundTransaction` là nhật ký bất biến (Append-only). Tuyệt đối cấm xóa vật lý hoặc ghi đè giao dịch cũ. Xử lý triệt để webhook trùng lặp (Idempotency) để không tăng tiền trùng.
+8. **Bất biến nhật ký giao dịch, Idempotency và Webhook Log (BR-PY05, BR-PY22, CORR-06):**
+   * Phân biệt rõ: `IdempotencyKey` (kèm `RequestHash` SHA-256), `TransactionReference`, và `ProviderEventID`.
+   * Bảng `PaymentWebhookLog` lưu giữ toàn bộ sự kiện Webhook, có `UNIQUE INDEX (PaymentMethodID, ProviderEventID, Environment)` chống Webhook replay. Phân biệt trạng thái tiếp nhận và trạng thái xử lý giao dịch.
 
 ---
 
@@ -332,34 +342,36 @@ Subject Area này quản lý toàn bộ nghĩa vụ tài chính, dòng tiền th
 
 Subject Area này quản lý toàn bộ quy trình hậu mãi sau bán hàng khi khách hàng có nhu cầu đổi trả hàng hóa sau khi đã nhận hàng thành công (`DELIVERED`/`COMPLETED`), bao gồm: tiếp nhận yêu cầu RMA, phê duyệt trước khi gửi hàng, tiếp nhận bưu kiện tại kho, kiểm định phân loại chất lượng hàng hóa và kích hoạt hoàn tiền sang phân hệ Payment & Refund.
 
-### 11.1. Danh mục 5 Thực thể Chuẩn hóa (E60 đến E64)
+### 11.1. Danh mục 6 Thực thể Chuẩn hóa (E60 đến E64, E72)
 
 | Mã | Thực thể (Entity) | Phân loại | Ý nghĩa nghiệp vụ | Danh mục Thuộc tính Chuẩn hóa | Định danh chính (PK / UK) |
 | :---: | :--- | :--- | :--- | :--- | :--- |
 | **E60** | `ReturnRequest` | Document / Strong Entity | Yêu cầu đổi trả hàng chính thức từ khách hàng hoặc CSKH tạo thay (RMA Header). | `ReturnRequestID`, `ReturnNumber`, `OrderID`, `CustomerID`, `WarehouseID`, `CreatedByAccountID`, `ReturnStatus`, `ReturnReason`, `CustomerNote`, `RequestedAt`, `ReviewedBy`, `ReviewedAt`, `ReviewNote` | **PK:** `ReturnRequestID`<br>**UK:** `ReturnNumber` |
 | **E61** | `ReturnRequestLine` | Weak / Detail Entity | Chi tiết từng SKU và số lượng yêu cầu trả thuộc một dòng đơn hàng gốc (RMA Line). | `ReturnRequestLineID`, `ReturnRequestID`, `OrderLineID`, `RequestedQty`, `ApprovedQty`, `ReturnReason`, `LineStatus` | **PK:** `ReturnRequestLineID`<br>**UK:** `(ReturnRequestID, OrderLineID)` |
 | **E62** | `ReturnReceipt` | Document / Strong Entity | Phiếu tiếp nhận hàng hoàn trả thực tế tại kho vật lý được chỉ định (Receipt Header). | `ReturnReceiptID`, `ReceiptNumber`, `ReturnRequestID`, `WarehouseID`, `ReceivedAt`, `ReceivedBy`, `ReceiptStatus`, `InspectionNote`, `PostedAt` | **PK:** `ReturnReceiptID`<br>**UK:** `ReceiptNumber` |
-| **E63** | `ReturnReceiptLine` | Weak / Detail Entity | Chi tiết số lượng thực nhận, kết quả kiểm tra và phân loại xử lý tồn kho của từng dòng hàng. | `ReturnReceiptLineID`, `ReturnReceiptID`, `ReturnRequestLineID`, `ReceivedQty`, `Disposition`, `InspectionResult`, `InspectionNote` | **PK:** `ReturnReceiptLineID` |
+| **E63** | `ReturnReceiptLine` | Weak / Detail Entity | Chi tiết số lượng thực tế tiếp nhận tại kho và mô tả hiện trạng ngoại quan. | `ReturnReceiptLineID`, `ReturnReceiptID`, `ReturnRequestLineID`, `ReceivedQty`, `ConditionDescription` | **PK:** `ReturnReceiptLineID` |
 | **E64** | `ReturnStatusHistory` | Weak / Audit Entity | Nhật ký lưu vết mọi lần chuyển đổi trạng thái của yêu cầu trả hàng phục vụ kiểm toán và theo dõi SLA. | `ReturnStatusHistoryID`, `ReturnRequestID`, `PreviousStatus`, `NewStatus`, `ChangedAt`, `ChangedByAccountID`, `ChangeReason` | **PK:** `ReturnStatusHistoryID` |
+| **E72** | `ReturnLineAssessment` | Weak / Assessment Entity | Chi tiết kết quả kiểm định chất lượng, thẩm định trách nhiệm lỗi và xét duyệt hoàn tiền cho từng phần số lượng. | `AssessmentID`, `ReturnReceiptLineID`, `AssessedQty`, `FaultParty`, `RefundEligibilityStatus`, `ResolutionType`, `ApprovedRefundAmount`, `ShippingRefundAmount`, `DisputeReason`, `InspectionNotes`, `AssessedAt`, `AssessedBy` | **PK:** `AssessmentID` |
 
-### 11.2. Các quy ước và Bất biến Nghiệp vụ Return đã chốt (RET-Q01 đến RET-Q08)
+### 11.2. Các quy ước và Bất biến Nghiệp vụ Return đã chốt (RET-Q01 đến RET-Q08, CORR-01, CORR-10)
 1. **Đối tượng tạo yêu cầu trả hàng (RET-Q01, BR-RT01, BR-RT02, BR-RT03):**
    * Cho phép khách hàng tự tạo yêu cầu trên Web/App hoặc nhân viên CSKH tạo yêu cầu thay khách hàng trên tổng đài (`CreatedByAccountID`). Yêu cầu luôn gắn chặt với đúng `CustomerID` và `OrderID` sở hữu.
-2. **Thời hạn yêu cầu trả hàng hợp lệ (RET-Q02, BR-RT04):**
-   * Chỉ cho phép tạo yêu cầu đổi trả trong thời hạn chính sách được cấu hình (ví dụ 7 hoặc 14 ngày) tính từ thời điểm giao hàng thành công (`SalesOrder.DeliveredAt`).
+2. **Thời hạn yêu cầu trả hàng tính riêng theo từng Kiện hàng (RET-Q02, CORR-10):**
+   * Thời hạn đổi trả được tính độc lập cho từng kiện hàng: $\text{CurrentTime} \le \text{Shipment.DeliveredAt} + \text{PolicyReturnDays}$. Đơn hàng giao nhiều đợt (Split Shipment) có thời hạn đổi trả riêng theo từng kiện chứa sản phẩm đó.
 3. **Trả hàng một phần và nhiều lần (RET-Q03, BR-RT07, BR-RT08, BR-RT09):**
    * Cho phép khách hàng yêu cầu trả một phần số lượng của dòng hàng. Tổng số lượng được duyệt qua tất cả các lần RMA không được vượt số lượng còn đủ điều kiện: $\sum ApprovedQty \le OrderedQty - AlreadyReturnedQty$.
 4. **Quy trình phê duyệt hai bước bắt buộc (RET-Q04, BR-RT10):**
    * Nhân viên CSKH/Kiểm duyệt phải xem xét lý do và bấm duyệt (`APPROVED`) trước khi khách gửi hàng về kho. Tuyệt đối không cho phép gửi hàng khi yêu cầu chưa được phê duyệt.
 5. **Chỉ định kho tiếp nhận duy nhất (RET-Q06, BR-RT11, BR-RT12):**
    * Mỗi `ReturnRequest` chỉ định đúng một kho tiếp nhận (`WarehouseID NOT NULL`). Mọi phiếu `ReturnReceipt` thuộc yêu cầu này bắt buộc phải xử lý tại đúng kho đã chỉ định.
-6. **Phân loại xử lý hàng trả và biến động tồn kho (RET-Q05, BR-RT15, BR-RT16, BR-RT17, BR-RT18, BR-RT19):**
-   * CSDL phân loại rõ trường `Disposition`:
-     - `SELLABLE`: Hàng nguyên vẹn tem mác $\to$ tạo `InventoryTransaction` loại `CUSTOMER_RETURN_IN`, cộng lại vào `OnHandQty` kho hàng bán.
-     - `QUARANTINE`: Hàng cần kiểm tra sâu/chờ hãng giám định $\to$ chuyển khu cách ly, không cộng vào tồn bán được.
-     - `DISPOSED`: Hàng hỏng/vỡ nát $\to$ ghi nhận tổn thất, tiêu hủy, không cộng vào tồn kho bán.
-7. **Cơ chế kích hoạt hoàn tiền an toàn (RET-Q07, BR-RT20, BR-RT21):**
-   * Tuyệt đối không hoàn tiền khi chưa nhận được hàng. Chỉ sau khi thủ kho ký xác nhận phiếu nhận hàng (`PostedAt` NOT NULL) với `Disposition = 'SELLABLE'`, hệ thống mới tính toán số tiền hoàn thực tế (đã trừ voucher phân bổ) và sinh yêu cầu `Refund` sang Subject Area 09.
+6. **Tách biệt Thẩm định Hoàn tiền khỏi Phân loại Tồn kho (CORR-01, E72):**
+   * Quản lý qua thực thể `ReturnLineAssessment` ($1:N$ với `ReturnReceiptLine`). Cho phép 1 lần nhận hàng có nhiều kết luận KCS khác nhau cho từng phần số lượng: $\sum \text{AssessedQty} \le \text{ReceivedQty}$.
+   * **Bên chịu trách nhiệm (`FaultParty`):** `VENDOR_FAULT`, `CARRIER_FAULT`, `CUSTOMER_FAULT`, `NO_FAULT`.
+   * **Quyền hoàn tiền (`RefundEligibilityStatus`):** `PENDING_INSPECTION`, `APPROVED`, `PARTIALLY_APPROVED`, `REJECTED`. Hàng lỗi do NSX (`VENDOR_FAULT`) hoặc vỡ do vận chuyển (`CARRIER_FAULT`) dù phải tiêu hủy (`DISPOSED`) vẫn được xét duyệt `APPROVED` hoàn tiền đầy đủ.
+   * **Hình thức xử lý (`ResolutionType`):** `REFUND`, `EXCHANGE`, `REPAIR`, `NO_ACTION` tách rời độc lập.
+7. **Cơ chế kích hoạt hoàn tiền từng phần (Partial Milestone Refund, CORR-01):**
+   * Không bắt buộc chờ toàn bộ phiếu RMA đóng. Ngay khi từng dòng `ReturnLineAssessment` được duyệt `APPROVED`, hệ thống tự động tính số tiền hoàn thực tế và sinh yêu cầu `Refund` sang Subject Area 09.
+   * Hàng đưa vào `QUARANTINE` (chờ hãng giám định) bắt buộc giữ `RefundEligibilityStatus = 'PENDING_INSPECTION'`, cấm sinh `Refund` trước khi có kết luận.
 8. **Nhật ký chuyển trạng thái bất biến (RET-Q08, BR-RT22, BR-RT23):**
    * Mọi lần thay đổi trạng thái RMA từ `PENDING_APPROVAL` $\to$ `APPROVED` $\to$ `AWAITING_RETURN` $\to$ `RECEIVED` $\to$ `INSPECTING` $\to$ `COMPLETED` đều được lưu vết trong `ReturnStatusHistory`. Cấm xóa vật lý chứng từ RMA.
 

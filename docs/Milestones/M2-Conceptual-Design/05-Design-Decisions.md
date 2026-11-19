@@ -52,7 +52,7 @@ Tuyệt đối không được gộp 4 khái niệm sau thành một thực th�
 | **M2-Q07** | `Promotion` có cần chuyên biệt hóa theo tầng không? | **Có.** Áp dụng mô hình kế thừa (Generalization): Bảng cha `Promotion` (thời gian, tầng khuyến mãi); Bảng con `Voucher` (mã code, hạn mức dùng, cờ `IsStackable`). |
 | **M2-Q08** | `ReturnRequest` có liên hệ với `Shipment`? | **Không gắn cứng.** Giao thất bại được xử lý tự động qua `Shipment` $\rightarrow$ `DeliveryReturnReceipt`. Còn `ReturnRequest` phục vụ khiếu nại của khách sau khi đã nhận hàng thành công (`OrderLine`). |
 | **M2-Q09** | `CustomerAddress` có cần snapshot trong `Order`? | **Bắt buộc snapshot 100%.** Địa chỉ giao hàng tại thời điểm đặt phải được sao chép nguyên văn vào `Order` để tránh việc khách đổi sổ địa chỉ làm sai lệch lịch sử đơn cũ. |
-| **M2-Q10** | `Payment` và `Order` có quan hệ 1–1 hay 1–N? | **Quan hệ 1–N.** Một đơn hàng có thể có nhiều lần thử thanh toán (`PaymentAttempt` thất bại/thành công) và nhiều giao dịch hoàn tiền (`Refund`). |
+| **M2-Q10** | `Payment` và `Order` có quan hệ 1–1 hay 1–N? | **Quan hệ 1–1 đối với hồ sơ nghĩa vụ thanh toán (`Payment`), và 1–N đối với các giao dịch cổng (`PaymentTransaction`) và hoàn tiền (`Refund`).** | Mỗi đơn hàng có duy nhất 1 hồ sơ nghĩa vụ thanh toán `Payment` (`OrderID` UNIQUE), liên kết 1-N với các lần thanh toán thử qua cổng `PaymentTransaction` và các yêu cầu hoàn tiền `Refund` (PAY-Q01, PAY-Q04). |
 
 ---
 
@@ -184,12 +184,12 @@ Tuyệt đối không được gộp 4 khái niệm sau thành một thực th�
 | ID | Vấn đề thiết kế | Quyết định chốt | Giải thích kỹ thuật & Tác động CSDL |
 | :---: | :--- | :--- | :--- |
 | **RET-Q01** | Đối tượng được phép tạo yêu cầu trả hàng? | **Khách hàng tự tạo hoặc Nhân viên (CSKH) tạo thay khách hàng.** | CSDL lưu `CustomerID` (chủ đơn) và `CreatedByAccountID` (tài khoản người tạo), hỗ trợ tiếp nhận RMA đa kênh từ tổng đài. |
-| **RET-Q02** | Thời hạn được phép gửi yêu cầu trả hàng? | **Cấu hình theo số ngày kể từ thời điểm giao hàng thành công (`DeliveredAt`).** | Ràng buộc ứng dụng: `DATEDIFF(day, SalesOrder.DeliveredAt, ReturnRequest.RequestedAt) <= PolicyDays`. Quá hạn hệ thống khóa tạo RMA. |
+| **RET-Q02** | Thời hạn được phép gửi yêu cầu trả hàng? | **Cấu hình theo số ngày kể từ thời điểm giao hàng thành công của từng kiện hàng (`Shipment.DeliveredAt`).** | Ràng buộc ứng dụng: `DATEDIFF(day, Shipment.DeliveredAt, ReturnRequest.RequestedAt) <= PolicyDays`. Hỗ trợ chính xác đối với đơn hàng Split Shipment giao nhiều đợt vào các ngày khác nhau (CORR-10). |
 | **RET-Q03** | Có cho phép trả một phần số lượng dòng hàng? | **Có, cho phép trả một phần và trả nhiều lần cho cùng dòng hàng.** | Ràng buộc bất biến: $\sum ApprovedQty \le OrderedQty - AlreadyReturnedQty$. Phục vụ trường hợp đơn mua nhiều cái nhưng chỉ trả một vài cái. |
 | **RET-Q04** | Quy trình phê duyệt yêu cầu trả hàng? | **Nhân viên CSKH/Kiểm duyệt phải phê duyệt trước khi khách gửi hàng.** | Ngăn chặn việc gửi trả hàng sai chính sách, lãng phí chi phí logistics ngược. Trạng thái bắt buộc: `REQUESTED` $\to$ `APPROVED`. |
-| **RET-Q05** | Phân loại hàng trả về sau kiểm định tại kho? | **Phân loại thành 3 hướng: `SELLABLE`, `QUARANTINE`, hoặc `DISPOSED`.** | Chỉ hàng `SELLABLE` mới ghi nhận `CUSTOMER_RETURN_IN` tăng tồn kho bán được. Hàng `QUARANTINE` và `DISPOSED` tuyệt đối không cộng vào tồn khả dụng. |
+| **RET-Q05** | Phân loại hàng trả về sau kiểm định tại kho? | **Phân loại thành 3 hướng: `SELLABLE`, `QUARANTINE`, hoặc `DISPOSED`.** | Hàng `SELLABLE` tăng `OnHandQty`, hàng `QUARANTINE` tăng `QuarantinedQty`, hàng `DISPOSED` loại bỏ khỏi kho. Tách biệt hoàn toàn xử lý tồn kho khỏi quyền hoàn tiền (CORR-01, CORR-02). |
 | **RET-Q06** | Số lượng kho tiếp nhận cho một yêu cầu? | **Mỗi yêu cầu RMA chỉ định ĐÚNG MỘT kho tiếp nhận (`WarehouseID NOT NULL`).** | Tránh chia tách phân tán hàng hoàn. Mọi phiếu `ReturnReceipt` của yêu cầu phải tiếp nhận tại đúng kho đã chỉ định. |
-| **RET-Q07** | Thời điểm tạo yêu cầu hoàn tiền (`Refund`)? | **Sau khi kho tiếp nhận và kiểm tra hàng, xác định số lượng đạt chuẩn.** | Chống gian lận hoàn tiền khống. Chỉ kích hoạt tạo `Refund` bên Subject Area 09 khi phiếu `ReturnReceipt` được chốt (`POSTED`) với `SELLABLE > 0`. |
+| **RET-Q07** | Thời điểm tạo yêu cầu hoàn tiền (`Refund`)? | **Sau khi kiểm định và đánh giá lỗi được phê duyệt qua `ReturnLineAssessment` (E72).** | Tách rời khỏi kiểm định kho: Kích hoạt tạo `Refund` ngay khi có dòng đánh giá (`ReturnLineAssessment.RefundEligibilityStatus = 'APPROVED'`) được phê duyệt. Hỗ trợ hoàn tiền từng mốc theo số lượng thực nhận được chấp thuận (CORR-01). |
 | **RET-Q08** | Lưu trữ lịch sử trạng thái yêu cầu trả hàng? | **Có, lưu vết toàn diện qua thực thể `ReturnStatusHistory`.** | Đảm bảo tính kiểm toán và đo lường SLA xử lý RMA: lưu `PreviousStatus`, `NewStatus`, `ChangedAt`, `ChangedByAccountID` và `ChangeReason`. |
 
 ---

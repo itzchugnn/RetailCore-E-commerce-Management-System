@@ -134,7 +134,7 @@
 | `ProductVariant` – `OrderWarehouseAllocation` | $1:N$ | `|| ─── }o` | Allocation xác định chính xác SKU cần lấy từ kho. |
 | `Order` – `StockReservation` | $1:N$ | `|| ─── }o` | Một đơn hàng có thể có nhiều lần giữ hàng trong vòng đời; mỗi reservation thuộc đúng 1 đơn hàng. |
 | `StockReservation` – `StockReservationLine` | $1:N$ | `|| ─── }|` | Một phiếu giữ hàng gồm nhiều dòng giữ hàng theo từng kho/SKU. |
-| `OrderWarehouseAllocation` – `StockReservationLine` | $1:0..1$ | `|| ─── o|` | Mỗi allocation có tối đa 1 dòng reservation tương ứng đang có hiệu lực. |
+| `OrderWarehouseAllocation` – `StockReservationLine` | $1 : 0..N$ | `|| ─── }o` | Một phân bổ kho có thể trải qua nhiều lần giữ hàng (khách thanh toán lại sau timeout); mỗi dòng reservation thuộc đúng 1 allocation. Dùng Filtered Unique Index bảo đảm tối đa 1 dòng ACTIVE tại một thời điểm (CORR-10). |
 | `Warehouse` – `StockReservationLine` | $1:N$ | `|| ─── }o` | Dòng reservation xác định hàng được giữ tại kho vật lý nào. |
 | `ProductVariant` – `StockReservationLine` | $1:N$ | `|| ─── }o` | Dòng reservation xác định SKU được giữ. |
 | `InventoryTransaction` – `InventoryTransactionLine` | $1:N$ | `|| ─── }|` | Một chứng từ sổ cái có nhiều dòng biến động chi tiết. |
@@ -331,6 +331,8 @@
 | `Payment` – `PaymentTransaction` | $1 : 0..N$ | `|| ─── }o` | Một hồ sơ thanh toán có thể có nhiều lần thử giao dịch qua cổng thanh toán khi khách hàng thanh toán lại (PAY-Q03, BR-PY04, BR-PY11). Đơn COD ghi nhận giao dịch thu tiền khi giao thành công. |
 | `Payment` – `Refund` | $1 : 0..N$ | `|| ─── }o` | Một hồ sơ thanh toán đã thu tiền có thể phát sinh nhiều yêu cầu hoàn tiền toàn phần hoặc một phần (PAY-Q04, BR-PY15, BR-PY16). Ràng buộc: $\sum RefundAmount \le RemainingRefundable$. |
 | `Refund` – `RefundTransaction` | $1 : 0..N$ | `|| ─── }o` | Một yêu cầu hoàn tiền có thể trải qua nhiều lần thực hiện chuyển tiền nếu lần trước thất bại hoặc hoàn nhiều đợt (BR-PY17, BR-PY19). |
+| `PaymentTransaction` – `RefundTransaction` | $1 : 0..N$ | `|| ─── }o` | Mỗi giao dịch hoàn tiền truy vết trực tiếp về giao dịch thu tiền thành công nguồn ban đầu (`OriginalPaymentTransactionID`, CORR-08). |
+| `PaymentMethod` – `PaymentWebhookLog` | $1 : 0..N$ | `|| ─── }o` | Một cổng thanh toán gửi nhiều sự kiện Webhook; lưu vết toàn bộ sự kiện chống xử lý trùng lặp (CORR-06, E71). |
 
 ### 12.2. Sơ đồ Quan hệ Khái niệm (Subject Area 09: Payment & Refund)
 
@@ -358,10 +360,11 @@
 | `ReturnRequest` – `ReturnReceipt` | $1 : 0..N$ | `|| ─── }o` | Một yêu cầu trả hàng có thể được kho tiếp nhận thành nhiều phiếu nhận nếu khách gửi nhiều kiện (BR-RT13). |
 | `Warehouse` – `ReturnReceipt` | $1 : 0..N$ | `|| ─── }o` | Mỗi phiếu tiếp nhận thuộc duy nhất một kho vật lý và phải khớp với kho đã chỉ định trên `ReturnRequest` (BR-RT12). |
 | `ReturnReceipt` – `ReturnReceiptLine` | $1 : 1..N$ | `|| ─── }|` | Mỗi phiếu tiếp nhận bắt buộc có ít nhất một dòng kiểm đếm thực tế (BR-RT14). |
-| `ReturnRequestLine` – `ReturnReceiptLine` | $1 : 0..N$ | `|| ─── }o` | Một dòng yêu cầu trả hàng có thể được tiếp nhận qua nhiều dòng phiếu nhận (do nhận nhiều đợt hoặc có nhiều kết quả phân loại `Disposition`). |
+| `ReturnRequestLine` – `ReturnReceiptLine` | $1 : 0..N$ | `|| ─── }o` | Một dòng yêu cầu trả hàng có thể được tiếp nhận qua nhiều dòng phiếu nhận (do gửi nhiều đợt kiện). |
+| `ReturnReceiptLine` – `ReturnLineAssessment` | $1 : 1..N$ | `|| ─── }|` | Một dòng nhận hàng có thể phân tách thành nhiều kết luận KCS độc lập cho từng phần số lượng (CORR-01, E72). |
 | `ReturnRequest` – `ReturnStatusHistory` | $1 : 1..N$ | `|| ─── }|` | Ngay khi tạo, RMA có bản ghi trạng thái đầu tiên (`PENDING_APPROVAL`); lưu vết bất biến mọi lần chuyển đổi trạng thái (RET-Q08, BR-RT22). |
 | `Account` – `ReturnStatusHistory` | $1 : 0..N$ | `|| ─── }o` | Một tài khoản nhân viên hoặc khách hàng có thể thực hiện nhiều lần chuyển trạng thái trong các yêu cầu trả hàng. |
-| `ReturnRequest` – `Refund` | $1 : 0..N$ | `|| ─── }o` | Sau khi hàng trả được kho tiếp nhận kiểm định đạt chuẩn, RMA kích hoạt phát sinh yêu cầu hoàn tiền bên Subject Area 09 (BR-RT20, BR-RT21). |
+| `ReturnLineAssessment` – `Refund` | $1 : 0..1$ | `|| ─── o|` | Từng dòng đánh giá kiểm định đạt `RefundEligibilityStatus = 'APPROVED'` sẽ tự động kích hoạt tạo chứng từ `Refund` bên Subject Area 09 (Partial Milestone Refund, CORR-01). |
 
 ### 13.2. Sơ đồ Quan hệ Khái niệm (Subject Area 10: Return & Exchange)
 

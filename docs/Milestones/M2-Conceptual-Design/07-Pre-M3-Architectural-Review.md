@@ -4,7 +4,7 @@
 * **Dự án:** RetailCore – E-commerce Management System
 * **Cột mốc:** Milestone 2 (M2 – Conceptual Design) $\to$ Milestone 3 (M3 – Logical Design)
 * **Vai trò phê duyệt:** Lead Enterprise Database Engineer & Solution Architect
-* **Mục tiêu:** Rà soát toàn diện 70 thực thể, 40 quan hệ liên miền và 5 khu vực rủi ro kiến trúc cao theo 6 nhóm tiêu chuẩn kỹ thuật trước khi đóng M2 và ánh xạ Relational Schema.
+* **Mục tiêu:** Rà soát toàn diện 72 thực thể, 40 quan hệ liên miền và 5 khu vực rủi ro kiến trúc cao theo 6 nhóm tiêu chuẩn kỹ thuật trước khi đóng M2 và ánh xạ Relational Schema.
 * **Quy chuẩn tài liệu:** Định dạng văn bản phân tích chuyên sâu, bảng biểu đối soát kỹ thuật, công thức ràng buộc toán học, không sử dụng hình ảnh.
 
 ---
@@ -23,23 +23,23 @@ Quá trình rà soát được thực hiện độc lập dựa trên 6 chiều 
 
 ## 2. RÀ SOÁT CHI TIẾT THEO 6 CHIỀU KÍCH THƯỚC KIẾN TRÚC
 
-### 2.1. Nhóm 1: Entity Ownership (Quyền sở hữu 70 Thực thể qua 11 Phân hệ)
+### 2.1. Nhóm 1: Entity Ownership (Quyền sở hữu 72 Thực thể qua 11 Phân hệ)
 
 | Subject Area | Thực thể trực thuộc | Rà soát phân định ranh giới (Boundary Review) | Đánh giá |
 | :--- | :--- | :--- | :---: |
 | **01. Product Catalog** | `Product` (E01), `Category` (E02), `ProductCategory` (E03), `ProductVariant` (E04), `Attribute` (E05), `AttributeValue` (E06), `ProductAttribute` (E07), `ProductAttributeValue` (E08), `VariantAttributeValue` (E09) | Sở hữu toàn bộ từ điển thuộc tính và cấu trúc SKU. Giá bán `SellingPrice` gắn tại `ProductVariant`, không đặt tại `Product`. | **Chuẩn xác (100%)** |
-| **02. Warehouse & Inventory** | `Warehouse` (E10), `InventoryBalance` (E11), `OrderWarehouseAllocation` (E12), `StockReservation` (E13), `StockReservationLine` (E14), `InventoryTransaction` (E15), `InventoryTransactionLine` (E16), `StockCount` (E17), `StockCountLine` (E18), `WarehouseTransfer` (E19), `WarehouseTransferLine` (E20) | Sở hữu trọn vẹn số dư vật lý, kế hoạch phân bổ kho và chứng từ giữ tồn kho. Không gộp chứng từ kho với đơn hàng thương mại. | **Chuẩn xác (100%)** |
+| **02. Warehouse & Inventory** | `Warehouse` (E10), `InventoryBalance` (E11), `OrderWarehouseAllocation` (E12), `StockReservation` (E13), `StockReservationLine` (E14), `InventoryTransaction` (E15), `InventoryTransactionLine` (E16), `StockCount` (E17), `StockCountLine` (E18), `WarehouseTransfer` (E19), `WarehouseTransferLine` (E20) | Sở hữu trọn vẹn số dư vật lý theo chất lượng, kế hoạch phân bổ kho và chứng từ giữ tồn kho. Không gộp chứng từ kho với đơn hàng thương mại. | **Chuẩn xác (100%)** |
 | **03. Procurement** | `Supplier` (E21), `SupplierProduct` (E22), `PurchaseOrder` (E23), `PurchaseOrderLine` (E24), `GoodsReceipt` (E25), `GoodsReceiptLine` (E26), `SupplierReturn` (E27), `SupplierReturnLine` (E28) | Khép kín chu trình mua hàng từ NCC. Tách bạch `PurchaseOrder` (cam kết mua) với `GoodsReceipt` (nhập kho thực tế). | **Chuẩn xác (100%)** |
-| **04. Customer & Identity** | `Account` (E29), `Customer` (E30), `Employee` (E31), `Role` (E32), `Permission` (E33), `AccountRole` (E34), `RolePermission` (E35), `CustomerAddress` (E36), `AccountVerification` (E37) | Phân tách tài khoản xác thực `Account` với hồ sơ nghiệp vụ `Customer`/`Employee` (Disjoint Subtype). `CustomerAddress` là sổ địa chỉ người dùng. | **Chuẩn xác (100%)** |
+| **04. Customer & Identity** | `Account` (E29), `Customer` (E30), `Employee` (E31), `Role` (E32), `Permission` (E33), `AccountRole` (E34), `RolePermission` (E35), `CustomerAddress` (E36), `AccountVerification` (E37) | Phân tách tài khoản xác thực `Account` với hồ sơ nghiệp vụ `Customer`/`Employee` theo mô hình TPT Disjoint XOR. `CustomerAddress` là sổ địa chỉ người dùng. | **Chuẩn xác (100%)** |
 | **05. Shopping** | `ShoppingCart` (E38), `CartItem` (E39) | Quản lý trạng thái tiền giao dịch của khách hàng. Hoàn toàn tách biệt khỏi hợp đồng bán hàng chính thức. | **Chuẩn xác (100%)** |
-| **06. Sales** | `SalesOrder` (E40), `OrderLine` (E41), `OrderAddress` (E42), `OrderStatusHistory` (E43) | Sở hữu hợp đồng bán hàng chính thức. `OrderAddress` snapshot địa chỉ độc lập với `CustomerAddress`. | **Chuẩn xác (100%)** |
+| **06. Sales** | `SalesOrder` (E40), `OrderLine` (E41), `OrderAddress` (E42), `OrderStatusHistory` (E43) | Sở hữu hợp đồng bán hàng chính thức. Lưu snapshot địa chỉ độc lập, lưu giá trị phân bổ voucher LRM và vết hoàn tiền lũy tiến. | **Chuẩn xác (100%)** |
 | **07. Fulfillment & Shipping** | `Carrier` (E44), `Shipment` (E45), `ShipmentLine` (E46), `DeliveryAttempt` (E47), `ShipmentStatusHistory` (E48) | Sở hữu quy trình giao vận bưu kiện bên ngoài kho. Theo dõi chặt chẽ bưu tá và các lần giao thất bại. | **Chuẩn xác (100%)** |
 | **08. Promotion & Voucher** | `Promotion` (E49), `PromotionCondition` (E50), `PromotionProduct` (E51), `Voucher` (E52), `PromotionUsage` (E53), `PromotionTargetCustomer` (E54) | Quản lý quy tắc giảm giá và quota tiêu thụ. `PromotionUsage` là sổ cái hạch toán chiết khấu. | **Chuẩn xác (100%)** |
-| **09. Payment & Refund** | `PaymentMethod` (E55), `Payment` (E56), `PaymentTransaction` (E57), `Refund` (E58), `RefundTransaction` (E59) | Sở hữu nghĩa vụ tài chính và dòng tiền (thu tiền & chuyển hoàn tiền). Tách biệt khỏi khiếu nại đổi trả hàng. | **Chuẩn xác (100%)** |
-| **10. Return & Exchange** | `ReturnRequest` (E60), `ReturnRequestLine` (E61), `ReturnReceipt` (E62), `ReturnReceiptLine` (E63), `ReturnStatusHistory` (E64) | Sở hữu nghiệp vụ RMA và kiểm định hiện vật tại kho bến nhập. Kích hoạt chứng từ hoàn tiền chứ không tự quản lý giao dịch tiền tệ. | **Chuẩn xác (100%)** |
+| **09. Payment & Refund** | `PaymentMethod` (E55), `Payment` (E56), `PaymentTransaction` (E57), `Refund` (E58), `RefundTransaction` (E59), `PaymentWebhookLog` (E71) | Sở hữu nghĩa vụ tài chính và dòng tiền. Quản lý đối soát COD hai đầu, kiểm soát Webhook chống replay và truy vết nguồn tiền hoàn trả. | **Chuẩn xác (100%)** |
+| **10. Return & Exchange** | `ReturnRequest` (E60), `ReturnRequestLine` (E61), `ReturnReceipt` (E62), `ReturnReceiptLine` (E63), `ReturnStatusHistory` (E64), `ReturnLineAssessment` (E72) | Sở hữu nghiệp vụ RMA và thẩm định chất lượng từng phần số lượng. Tách biệt quyền hoàn tiền khỏi định đoạt kho vật lý. | **Chuẩn xác (100%)** |
 | **11. Audit & Reporting** | `AuditLog` (E65), `AuditLogDetail` (E66), `ReportDefinition` (E67), `ReportExecution` (E68), `ReportSnapshot` (E69), `ReportPermission` (E70) | Quản lý an ninh vết kiểm toán và kết xuất báo cáo quản trị. Phân quyền báo cáo gắn kết với RBAC của Identity. | **Chuẩn xác (100%)** |
 
-> **Kết luận Nhóm 1:** Cả 70 thực thể đều có ranh giới chủ quyền rõ ràng, không có thực thể nào bị trùng lặp trách nhiệm hoặc tranh chấp thẩm quyền giữa các phân hệ.
+> **Kết luận Nhóm 1:** Cả 72 thực thể đều có ranh giới chủ quyền rõ ràng, không có thực thể nào bị trùng lặp trách nhiệm hoặc tranh chấp thẩm quyền giữa các phân hệ.
 
 ---
 
@@ -98,7 +98,7 @@ Quá trình rà soát được thực hiện độc lập dựa trên 6 chiều 
 ### 2.6. Nhóm 6: Completeness & M3 Readiness (Độ Đầy đủ Kỹ thuật cho M3)
 
 * **Định danh Khóa chính và Mã tự nhiên:**
-  * Toàn bộ 70 thực thể đều đã xác định rõ Surrogate Key (`bigint IDENTITY`) hoặc Composite Key hợp lý.
+  * Toàn bộ 72 thực thể đều đã xác định rõ Surrogate Key (`bigint IDENTITY`) hoặc Composite Key hợp lý.
   * Các thực thể nghiệp vụ cốt lõi đều có Natural Business Key duy nhất: `ProductCode`, `SKU`, `WarehouseCode`, `SupplierCode`, `PONumber`, `ReceiptNumber`, `OrderNumber`, `ShipmentNumber`, `VoucherCode`, `TransactionReference`, `ReturnNumber`, `ReportCode`.
 * **Idempotency & Concurrency:**
   * Đã chuẩn bị sẵn trường `TransactionReference` trên `PaymentTransaction` và `RefundTransaction` để cài đặt Unique Index, chống trùng lặp Webhook từ cổng thanh toán.
@@ -185,10 +185,10 @@ Quá trình rà soát được thực hiện độc lập dựa trên 6 chiều 
 
 ---
 
-## 5. KẾT LUẬN & KIẾN NGHỊ BÀN GIAO (ARCHITECTURAL SIGN-OFF)
+## 5. KẾT LUẬN & KIẾN NGHỊ BÀN GIAO (AMENDED ARCHITECTURAL SIGN-OFF)
 
-Sau khi rà soát toàn diện theo 6 nhóm tiêu chuẩn kỹ thuật và đánh giá sâu 5 khu vực rủi ro cao:
-1. **Mô hình Khái niệm M2 đạt tính toàn vẹn 100%:** 70 thực thể và 40 quan hệ liên miền đã được chuẩn hóa chặt chẽ, khép kín về mặt nghiệp vụ, không có quan hệ mồ côi và bảo đảm nguyên tắc bảo toàn dữ liệu tài chính.
-2. **Hóa giải triệt để các rủi ro vận hành:** Các cơ chế phân bổ kho (Split Shipment), đối soát COD hai bước, logistics ngược (RMA 4 chặng) và snapshot lịch sử đã có phương án giải quyết cụ thể, khả thi trên SQL Server.
-3. **Phê duyệt chuyển giao (Approved for M3):** Hồ sơ kiến trúc M2 chính thức được ký duyệt nghiệm thu chất lượng, sẵn sàng $100\%$ làm đầu vào chuẩn xác để tiến hành **Milestone 3 – Logical Database Design** (Ánh xạ Relational Schema, chuẩn hóa 3NF/BCNF, quy định kiểu dữ liệu T-SQL và thiết lập Constraints).
+Sau khi rà soát toàn diện theo 6 nhóm tiêu chuẩn kỹ thuật, tiếp thu toàn bộ phản biện kiến trúc độc lập và ban hành bản ghi hiệu chỉnh [08-Architectural-Correction-Log.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/08-Architectural-Correction-Log.md):
+1. **Mô hình Khái niệm M2 đã hoàn thiện đạt chuẩn 100% (Baseline Amendment v1.2):** Chuẩn hóa toàn bộ **72 Thực thể (E01 đến E72)** (bổ sung `PaymentWebhookLog` E71 và `ReturnLineAssessment` E72). Toàn bộ 10 khiếm khuyết kỹ thuật (P0, P1, P2) đã có giải pháp thiết kế dứt điểm và khóa chặt bằng các ràng buộc toàn vẹn.
+2. **Hóa giải triệt để các rủi ro vận hành & tài chính:** Khắc phục triệt để logic hoàn tiền, quản lý tồn kho cách ly theo chất lượng, phân bổ chiết khấu LRM và công thức lũy tiến $F(q)$ cho số lẻ tiền VND, đối soát COD hai đầu, mô hình TPT cho Account, và quản lý lịch sử giữ hàng $1:0..N$.
+3. **Phê duyệt chuyển giao chính thức (Officially Cleared & Signed-off for M3):** Hồ sơ kiến trúc M2 cùng Bản ghi Hiệu chỉnh M2.08 chính thức được ký duyệt nghiệm thu chất lượng, sẵn sàng $100\%$ làm đầu vào chuẩn xác để tiến hành **Milestone 3 – Logical Database Design** (Ánh xạ Relational Schema, chuẩn hóa 3NF/BCNF, quy định kiểu dữ liệu T-SQL và thiết lập Constraints/Triggers).
 

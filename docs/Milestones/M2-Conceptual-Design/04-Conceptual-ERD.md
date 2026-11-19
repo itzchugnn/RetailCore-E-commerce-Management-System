@@ -4,7 +4,7 @@
 * **Phiên bản:** 1.0 – Official Release (Master Integration)
 * **Hệ quản trị CSDL mục tiêu:** Microsoft SQL Server Enterprise Edition
 * **Kế thừa trực tiếp:**
-  * [01-Entity-Catalog.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/01-Entity-Catalog.md) (70 Thực thể E01 – E70)
+  * [01-Entity-Catalog.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/01-Entity-Catalog.md) (72 Thực thể E01 – E72)
   * [02-Relationship-Analysis.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/02-Relationship-Analysis.md) (Phân tích bản số Crow's Foot 11 Phân hệ)
   * [05-Design-Decisions.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/05-Design-Decisions.md) (3 Nguyên tắc bất biến & Quyết định thiết kế)
   * Quyết định kiến trúc [11-Business-Decisions.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M1-Business-Analysis/11-Business-Decisions.md) (BD-01 đến BD-07)
@@ -13,17 +13,17 @@
 
 ## 1. TỔNG QUAN KIẾN TRÚC MÔ HÌNH DỮ LIỆU KHÁI NIỆM (M2 ARCHITECTURE)
 
-Hệ thống **RetailCore – E-commerce Management System** được mô hình hóa ở tầng Quan niệm (Conceptual Design) bao gồm **70 Thực thể chuẩn hóa (E01 đến E70)** phân bổ trên **11 Phân hệ nghiệp vụ (Subject Areas)**. 
+Hệ thống **RetailCore – E-commerce Management System** được mô hình hóa ở tầng Quan niệm (Conceptual Design) bao gồm **72 Thực thể chuẩn hóa (E01 đến E72)** phân bổ trên **11 Phân hệ nghiệp vụ (Subject Areas)**. 
 
 Mô hình tuân thủ triệt để phương pháp luận Crow's Foot Notation, xác định rõ bản số ($1:1$, $1:N$, $N:N$), tính tham gia bắt buộc/tùy chọn (Total/Partial Participation), bảo đảm tính toàn vẹn tham chiếu khái niệm và chuẩn bị nền tảng hoàn hảo cho bước chuyển đổi sang Mô hình Luận lý (Logical Schema) chuẩn 3NF/BCNF trên Microsoft SQL Server.
 
-### Bản đồ 11 Phân hệ Nghiệp vụ và 70 Thực thể:
+### Bản đồ 11 Phân hệ Nghiệp vụ và 72 Thực thể:
 ```
 +----------------------------------------------------------------------------------------------------+
 |                                 RETAILCORE CONCEPTUAL DOMAINS                                      |
 +----------------------------------------------------------------------------------------------------+
-|  01. Product Catalog (E01..E09)     | 05. Shopping (E38..E39)       | 09. Payment & Refund (E55..E59)  |
-|  02. Warehouse & Inv. (E10..E20)   | 06. Sales (E40..E43)          | 10. Return & Exchange (E60..E64)|
+|  01. Product Catalog (E01..E09)     | 05. Shopping (E38..E39)       | 09. Payment (E55..E59, E71)      |
+|  02. Warehouse & Inv. (E10..E20)   | 06. Sales (E40..E43)          | 10. Return (E60..E64, E72)       |
 |  03. Procurement (E21..E28)         | 07. Fulfillment (E44..E48)    | 11. Audit & Reporting (E65..E70) |
 |  04. Customer & Identity (E29..E37) | 08. Promotion (E49..E54)      |                                  |
 +----------------------------------------------------------------------------------------------------+
@@ -65,7 +65,7 @@ Sơ đồ biểu diễn **Trục xương sống liên kết liên miền (Cross-
 
 ### 3.1. Khái niệm & Triết lý Thiết kế Trục Xương sống (Cross-Domain Backbone Philosophy)
 
-Trong hệ thống CSDL bán lẻ thương mại điện tử quy mô lớn như **RetailCore** với **11 Phân hệ (Subject Areas)** và **70 Thực thể**, nếu để tất cả các thực thể tự do kết nối chéo với nhau theo cấu trúc lưới toàn phần (Full Mesh), mô hình quan hệ sẽ rơi vào tình trạng "mớ bòng bong" (Spaghetti Architecture), phát sinh phụ thuộc vòng (Circular FK Dependencies) và gây bế tắc giao dịch (Deadlock) ở tầng CSDL quan hệ.
+Trong hệ thống CSDL bán lẻ thương mại điện tử quy mô lớn như **RetailCore** với **11 Phân hệ (Subject Areas)** và **72 Thực thể**, nếu để tất cả các thực thể tự do kết nối chéo với nhau theo cấu trúc lưới toàn phần (Full Mesh), mô hình quan hệ sẽ rơi vào tình trạng "mớ bòng bong" (Spaghetti Architecture), phát sinh phụ thuộc vòng (Circular FK Dependencies) và gây bế tắc giao dịch (Deadlock) ở tầng CSDL quan hệ.
 
 Trục xương sống liên miền (**Cross-Domain Backbone**) được thiết kế theo nguyên lý **Hub-and-Spoke kết hợp Clean Architecture**:
 1. **Cô lập Nội miền (Internal Encapsulation):** Mỗi phân hệ chỉ công khai một số ít các **Thực thể Hạt nhân (Hub Entities)** đóng vai trò giao diện tiếp giáp (Boundary Interfaces). Toàn bộ các thực thể chi tiết phụ trợ (như cấu hình thuộc tính, lịch sử trạng thái, chi tiết nhật ký kiểm toán) được giấu kín bên trong nội bộ phân hệ.
@@ -86,8 +86,8 @@ Trục xương sống liên miền (**Cross-Domain Backbone**) được thiết 
 | **06. Sales** | `SalesOrder` (E40), `OrderLine` (E41), `OrderAddress` (E42) | **Trái tim Hợp đồng Bán hàng:** Thực thể trung tâm tối cao kết nối khách hàng, định tuyến kho xuất bãi, nghĩa vụ thanh toán và bưu kiện vận chuyển. | CR-12, CR-20, CR-21, CR-27..35 |
 | **07. Fulfillment & Ship.** | `Carrier` (E44), `Shipment` (E45), `ShipmentLine` (E46) | **Hạt nhân Giao vận Bưu kiện:** Hiện thực hóa việc đóng gói và chuyển phát hàng từ kho xuất đến tận tay khách hàng thông qua hãng vận chuyển. | CR-17, CR-28..30 |
 | **08. Promotion & Voucher** | `Promotion` (E49), `Voucher` (E52), `PromotionUsage` (E53) | **Hạt nhân Khuyến mãi & Chiết khấu:** Quản lý quota ưu đãi và lưu vết sổ cái phân bổ giảm giá cho từng đơn hàng và dòng sản phẩm. | CR-13, CR-24, CR-25, CR-31, CR-32 |
-| **09. Payment & Refund** | `Payment` (E56), `PaymentTransaction` (E57), `Refund` (E58) | **Hạt nhân Huyết mạch Tài chính:** Quản lý nghĩa vụ thu tiền đơn hàng ($1:1$ với SalesOrder), lịch sử giao dịch cổng thanh toán và dòng tiền hoàn trả. | CR-33, CR-36 |
-| **10. Return & Exchange** | `ReturnRequest` (E60), `ReturnReceipt` (E62) | **Hạt nhân Logistics Ngược (RMA):** Tiếp nhận khiếu nại trả hàng, tiếp nhận bưu kiện tại bến nhập và kiểm định phân loại chất lượng trước khi hoàn tiền. | CR-18, CR-19, CR-26, CR-34..36 |
+| **09. Payment & Refund** | `Payment` (E56), `PaymentTransaction` (E57), `Refund` (E58), `RefundTransaction` (E59), `PaymentWebhookLog` (E71) | **Hạt nhân Huyết mạch Tài chính:** Quản lý nghĩa vụ thu tiền đơn hàng ($1:1$ với SalesOrder), lịch sử giao dịch cổng thanh toán, truy vết nguồn tiền hoàn trả và kiểm soát Webhook chống replay. | CR-33, CR-36 |
+| **10. Return & Exchange** | `ReturnRequest` (E60), `ReturnReceipt` (E62), `ReturnLineAssessment` (E72) | **Hạt nhân Logistics Ngược (RMA):** Tiếp nhận khiếu nại trả hàng, tiếp nhận bưu kiện tại bến nhập và thẩm định điều kiện hoàn tiền cho từng phần số lượng độc lập với tình trạng kho. | CR-18, CR-19, CR-26, CR-34..36 |
 | **11. Audit & Reporting** | `AuditLog` (E65), `ReportExecution` (E68) | **Hạt nhân Giám sát & Báo cáo:** Theo dõi vết thao tác nhạy cảm của người dùng và kết xuất báo cáo thống kê quản trị toàn hệ thống. | CR-37..40 |
 
 ---
@@ -426,7 +426,7 @@ Toàn bộ mã nguồn Mermaid chi tiết và sơ đồ ảnh render chất lư�
 
 ## 6. KIỂM TRA TÍNH TOÀN VẸN & KHÉP KÍN MÔ HÌNH (INTEGRITY CHECK)
 
-1. **Đầy đủ 100% 70 Thực thể:** Toàn bộ 70 thực thể (E01 đến E70) đều xuất hiện trong sơ đồ và có liên kết quan hệ xác thực, không có bất kỳ thực thể nào bị cô lập (No Orphan Entities).
+1. **Đầy đủ 100% 72 Thực thể:** Toàn bộ 72 thực thể (E01 đến E72) đều xuất hiện trong sơ đồ và có liên kết quan hệ xác thực, không có bất kỳ thực thể nào bị cô lập (No Orphan Entities).
 2. **Khép kín ranh giới nghiệp vụ:**
    * Mọi quan hệ $N:N$ đều được giải quyết thông qua Thực thể Kết hợp (Associative Entity) mang đầy đủ thuộc tính trạng thái và thời gian.
    * Tất cả các chứng từ giao dịch (SalesOrder, Payment, Shipment, GoodsReceipt, ReturnRequest, InventoryTransaction) đều có thực thể chi tiết dòng (Line/Detail) và nhật ký trạng thái (History) tương ứng.

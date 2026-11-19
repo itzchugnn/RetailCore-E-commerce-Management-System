@@ -6,8 +6,9 @@
 * **Kế thừa trực tiếp:**
   * Toàn bộ 55 Yêu cầu Chức năng (FR) và ~200 Business Rules (`BR-ID`, `BR-PR`, `BR-IN`, `BR-PO`, `BR-CU`, `BR-OR`, `BR-PRM`, `BR-PY`, `BR-FS`, `BR-RT`, `BR-SH`, `BR-SA`, `BR-AR`) từ M1.
   * Quyết định nền tảng [11-Business-Decisions.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M1-Business-Analysis/11-Business-Decisions.md) (BD-01 đến BD-07).
-  * [01-Entity-Catalog.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/01-Entity-Catalog.md) (70 Thực thể E01 – E70).
+  * [01-Entity-Catalog.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/01-Entity-Catalog.md) (72 Thực thể E01 – E72).
   * [02-Relationship-Analysis.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/02-Relationship-Analysis.md) & [05-Design-Decisions.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/05-Design-Decisions.md).
+  * [08-Architectural-Correction-Log.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/08-Architectural-Correction-Log.md) (10 Hiệu chỉnh kiến trúc chuẩn hóa Pre-M3).
 
 ---
 
@@ -30,9 +31,9 @@ Trong thiết kế Cơ sở dữ liệu Quan niệm chuẩn quốc tế, mỗi m
 
 ---
 
-## 2. MA TRẬN BẢN SỐ TOÀN DIỆN 70 THỰC THỂ (MASTER CARDINALITY MATRIX)
+## 2. MA TRẬN BẢN SỐ TOÀN DIỆN 72 THỰC THỂ (MASTER CARDINALITY MATRIX)
 
-Dưới đây là ma trận chuẩn hóa toàn bộ các mối quan hệ nội bộ và liên miền của 70 thực thể qua 11 phân hệ:
+Dưới đây là ma trận chuẩn hóa toàn bộ các mối quan hệ nội bộ và liên miền của 72 thực thể qua 11 phân hệ:
 
 ### 2.1. Phân hệ 01: Product Catalog
 | Thực thể Cha (Nguồn) | Ký hiệu | Thực thể Con (Đích) | Bản số | Tham gia Cha | Tham gia Con | Ý nghĩa & Cơ chế kiểm soát |
@@ -59,7 +60,7 @@ Dưới đây là ma trận chuẩn hóa toàn bộ các mối quan hệ nội b
 | `ProductVariant` | `|| ─── }o` | `OrderWarehouseAllocation` | $1:0..N$ | Partial | **Total** | Xác định chính xác SKU xuất kho. |
 | `SalesOrder` | `|| ─── }o` | `StockReservation` | $1:0..N$ | Partial | **Total** | Đơn hàng tạo các chứng từ khóa giữ tồn kho logic (BD-04, WI-Q02). |
 | `StockReservation` | `|| ─── }|` | `StockReservationLine` | $1:1..N$ | **Total** | **Total** | Phiếu giữ hàng bắt buộc có ít nhất 1 dòng chi tiết giữ hàng theo kho. |
-| `OrderWarehouseAllocation` | `|| ─── o|` | `StockReservationLine` | $1:0..1$ | Partial | **Total** | Mỗi phân bổ kho tương ứng tối đa 1 dòng giữ hàng logic đang hiệu lực. |
+| `OrderWarehouseAllocation` | `|| ─── }o` | `StockReservationLine` | $1:0..N$ | Partial | **Total** | Phân bổ kho có thể trải qua nhiều lượt giữ hàng lịch sử; tối đa 1 dòng giữ hàng `ACTIVE` qua Filtered Unique Index (CORR-10). |
 | `Warehouse` | `|| ─── }o` | `StockReservationLine` | $1:0..N$ | Partial | **Total** | Xác định kho vật lý thực hiện giữ hàng. |
 | `ProductVariant` | `|| ─── }o` | `StockReservationLine` | $1:0..N$ | Partial | **Total** | Xác định SKU bị khóa giữ. |
 | `InventoryTransaction` | `|| ─── }|` | `InventoryTransactionLine` | $1:1..N$ | **Total** | **Total** | Chứng từ biến động kho bắt buộc có $\ge 1$ dòng chi tiết ghi sổ kế toán. |
@@ -158,6 +159,8 @@ Dưới đây là ma trận chuẩn hóa toàn bộ các mối quan hệ nội b
 | `Payment` | `|| ─── }o` | `Refund` | $1:0..N$ | Partial | **Total** | Hồ sơ yêu cầu hoàn tiền gắn với khoản thanh toán đã thực thu (PAY-Q04). |
 | `ReturnRequest` | `|| ─── }o` | `Refund` | $1:0..N$ | Partial | Partial | Yêu cầu RMA đã kiểm định kích hoạt phát sinh chứng từ hoàn tiền (RET-Q07). |
 | `Refund` | `|| ─── }o` | `RefundTransaction` | $1:0..N$ | Partial | **Total** | Giao dịch chuyển khoản thực tế chi trả tiền hoàn lại cho khách (PAY-Q06). |
+| `PaymentMethod` | `|| ─── }o` | `PaymentWebhookLog` | $1:0..N$ | Partial | **Total** | Bảng đệm webhook lưu payload thô và hỗ trợ xử lý idempotent đối soát callback (E71, CORR-05). |
+| `PaymentTransaction` | `|| ─── }o` | `RefundTransaction` | $1:0..N$ | Partial | Partial | Giao dịch hoàn tiền tham chiếu trực tiếp giao dịch thanh toán gốc qua `OriginalPaymentTransactionID` (CORR-05). |
 
 ### 2.10. Phân hệ 10: Return & Exchange (RMA)
 | Thực thể Cha (Nguồn) | Ký hiệu | Thực thể Con (Đích) | Bản số | Tham gia Cha | Tham gia Con | Ý nghĩa & Cơ chế kiểm soát |
@@ -174,6 +177,8 @@ Dưới đây là ma trận chuẩn hóa toàn bộ các mối quan hệ nội b
 | `Warehouse` | `|| ─── }o` | `ReturnReceipt` | $1:0..N$ | Partial | **Total** | Phiếu tiếp nhận tại kho; bắt buộc trùng kho chỉ định trên RMA (RET-Q06). |
 | `ReturnReceipt` | `|| ─── }|` | `ReturnReceiptLine` | $1:1..N$ | **Total** | **Total** | Phiếu nhập trả bắt buộc có $\ge 1$ dòng kiểm định chất lượng (BR-RT14). |
 | `ReturnRequestLine` | `|| ─── }o` | `ReturnReceiptLine` | $1:0..N$ | Partial | **Total** | Dòng kiểm định đối soát về đúng dòng yêu cầu RMA gốc (RET-Q05). |
+| `ReturnReceiptLine` | `|| ─── }|` | `ReturnLineAssessment` | $1:1..N$ | **Total** | **Total** | Dòng tiếp nhận hàng trả phát sinh các đợt đánh giá lỗi và xét duyệt hoàn tiền (E72, CORR-01). |
+| `ReturnLineAssessment` | `|| ─── o|` | `Refund` | $1:0..1$ | Partial | Partial | Đánh giá được phê duyệt đủ điều kiện hoàn tiền liên kết chứng từ hoàn tiền tương ứng (CORR-01). |
 
 ### 2.11. Phân hệ 11: Audit & Reporting
 | Thực thể Cha (Nguồn) | Ký hiệu | Thực thể Con (Đích) | Bản số | Tham gia Cha | Tham gia Con | Ý nghĩa & Cơ chế kiểm soát |
@@ -218,14 +223,16 @@ Dưới đây là ma trận chuẩn hóa toàn bộ các mối quan hệ nội b
    * Luồng: $\text{PREPARING} \longrightarrow \text{READY\_TO\_DISPATCH} \longrightarrow \text{IN\_TRANSIT} \longrightarrow \text{DELIVERED}$.
    * Nhánh thất bại: $\text{DELIVERY\_FAILED} \longrightarrow$ Giao lại (tối đa 3 lần `AttemptNumber`) $\longrightarrow$ Vượt quá chuyển sang $\text{RETURNING} \longrightarrow \text{RETURNED}$.
 
-### 3.3. Ràng buộc Mô hình Tồn kho 4 Tầng & Kế toán Kho (4-Tier Inventory Constraints)
-1. **Công thức tồn khả dụng và nguyên tắc All-or-Nothing (WI-Q02, BD-04, SALES-Q01):**
-   $$\text{AvailableQty} = \text{OnHandQty} - \text{ReservedQty} \ge 0$$
+### 3.3. Ràng buộc Mô hình Tồn kho Đa Trạng thái & Kế toán Kho (Inventory Quality & Accounting Constraints)
+1. **Công thức tồn khả dụng và nguyên tắc All-or-Nothing (WI-Q02, BD-04, SALES-Q01, CORR-02):**
+   $$\text{AvailableQty} = \text{OnHandQty} - \text{ReservedQty} - \text{QuarantinedQty} - \text{DamagedQty} \ge 0$$
    * Giao dịch checkout đơn hàng là nguyên tử: Nếu bất kỳ SKU nào trong đơn không đáp ứng đủ $\text{OrderedQty} \le \text{AvailableQty}$ tại các kho phân bổ, toàn bộ transaction bị hủy bỏ (Rollback), giỏ hàng giữ nguyên `ACTIVE`.
-2. **Số dư tồn kho vật lý không âm (Non-negative OnHand, WI-Q01):**
-   * Ràng buộc: `CHECK (OnHandQty >= 0 AND ReservedQty >= 0)`.
-3. **Sổ cái biến động kho hai chiều Dual-Delta (WI-Q02):**
-   * Mọi sự kiện làm thay đổi tồn kho đều ghi nhận vào `InventoryTransactionLine` với hai tham số biến động trực tiếp: `OnHandDelta` và `ReservedDelta`.
+2. **Bộ 5 Ràng buộc toàn vẹn số dư tồn kho (5 CHECK Constraints trên `InventoryBalance`, CORR-02):**
+   * Ràng buộc không âm: `CHECK (OnHandQty >= 0)`, `CHECK (ReservedQty >= 0)`, `CHECK (QuarantinedQty >= 0)`, `CHECK (DamagedQty >= 0)`.
+   * Ràng buộc tổng dung lượng tồn vật lý: `CHECK (OnHandQty >= ReservedQty + QuarantinedQty + DamagedQty)`.
+   * Chuyển đổi trạng thái phẩm chất kho được ghi sổ qua `InventoryTransactionLine` với các trường `FromStockStatus`, `ToStockStatus` và bộ 4 delta (`OnHandDelta`, `ReservedDelta`, `QuarantinedDelta`, `DamagedDelta`).
+3. **Sổ cái biến động kho đa chiều (Multi-Delta Ledger, WI-Q02, CORR-02):**
+   * Mọi sự kiện làm thay đổi tồn kho đều ghi nhận vào `InventoryTransactionLine`.
    * Chứng từ sau khi `PostedAt` là bất biến (Immutable), không được phép sửa đổi hoặc xóa vật lý.
 4. **Cô lập hàng In-Transit trong chuyển kho hai bước (WI-Q04):**
    * Bước 1 xuất kho nguồn (`DISPATCHED`): Giảm `OnHandQty` tại kho nguồn. Hàng trong quá trình vận chuyển không thuộc `OnHandQty` của bất kỳ kho nào.
@@ -251,9 +258,9 @@ Dưới đây là ma trận chuẩn hóa toàn bộ các mối quan hệ nội b
 4. **Hạn mức hoàn tiền tối đa (Financial Refund Ceiling, PAY-Q04, BR-PY15):**
    $$\sum \text{RefundAmount} \le \text{RemainingRefundable} = \text{AmountPaid} - \text{AmountRefunded}$$
    * Chỉ các yêu cầu `Refund` đã được duyệt (`ApprovedBy NOT NULL`) và có giao dịch `RefundTransaction` thành công (`SUCCESS`) mới được cập nhật tăng `Payment.AmountRefunded`.
-5. **Hạn mức đổi trả hàng RMA không vượt quá số lượng mua (RET-Q03, BR-RT08):**
+5. **Hạn mức đổi trả hàng RMA và Tách rời Hoàn tiền khỏi Tồn kho (RET-Q03, BR-RT08, CORR-01):**
    $$\forall \text{OrderLine}: \sum_{\text{RMA}} \text{ApprovedQty} \le \text{OrderLine.OrderedQty} - \text{AlreadyReturnedQty}$$
-   * Chỉ khi kho ký xác nhận nhận hàng trả (`ReturnReceipt.PostedAt` NOT NULL) với phân loại `Disposition = 'SELLABLE'`, hệ thống mới cộng lại tồn kho bán và kích hoạt hoàn tiền sang phân hệ Payment.
+   * Phân định độc lập giữa xử lý tồn kho và xét duyệt hoàn tiền: Hàng trả về kho chỉ tăng lại tồn khả dụng `OnHandQty` nếu `Disposition = 'SELLABLE'` (hoặc ghi nhận `QuarantinedQty` nếu `QUARANTINE`). Quyền được hoàn tiền và số tiền hoàn được xét duyệt độc lập qua `ReturnLineAssessment` (E72) theo `FaultParty` và chính sách. Hỗ trợ hoàn tiền từng mốc theo số lượng thực nhận và chấp thuận, không phụ thuộc vào tình trạng tồn kho vật lý (CORR-01).
 
 ### 3.5. Ràng buộc Khuyến mãi Hai Tầng & Kết hợp Mã (Two-Tier Promotion Constraints)
 1. **Cấu trúc phân tầng khuyến mãi nghiêm ngặt (BD-05, PROMO-Q01..08):**
@@ -297,10 +304,12 @@ Dưới đây là ma trận chuẩn hóa toàn bộ các mối quan hệ nội b
 | `OrderAddress` | `UQ_OrderAddress_Order` | `(OrderID)` | *(Toàn bảng)* | Mỗi đơn hàng có đúng một địa chỉ giao hàng snapshot duy nhất ($1:1$, SALES-Q06). |
 | `Voucher` | `UQ_Voucher_Code` | `(VoucherCode)` | *(Toàn bảng)* | Mã code voucher khuyến mãi là duy nhất toàn hệ thống. |
 | `ProductVariant` | `UQ_ProductVariant_SKU` | `(SKU)` | *(Toàn bảng)* | Mã định danh SKU vật lý là duy nhất toàn hệ thống (BR-PR04). |
+| `StockReservationLine` | `UQ_ReservationLine_ActiveAlloc` | `(OrderWarehouseAllocationID)` | `WHERE Status = 'ACTIVE'` | Mỗi phân bổ xuất kho có tối đa đúng một dòng giữ hàng `ACTIVE` tại một thời điểm (CORR-10). |
+| `PaymentWebhookLog` | `UQ_PaymentWebhookLog_ProviderEvent` | `(PaymentProvider, EventID)` | `WHERE EventID IS NOT NULL` | Chống trùng lặp Webhook xử lý idempotent từ cổng thanh toán (E71, CORR-05). |
 
 ---
 
 ## 5. TỔNG KẾT & CHUYỂN GIAO SANG LOGICAL DESIGN (M3)
 
-Tài liệu này cùng với [01-Entity-Catalog.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/01-Entity-Catalog.md), [02-Relationship-Analysis.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/02-Relationship-Analysis.md), [04-Conceptual-ERD.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/04-Conceptual-ERD.md) và [05-Design-Decisions.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/05-Design-Decisions.md) tạo thành bộ hồ sơ Thiết kế Khái niệm hoàn chỉnh 100%, bảo đảm không có bất kỳ mâu thuẫn hay điểm nghẽn nào cản trở quá trình ánh xạ sang Relational Schema chuẩn 3NF/BCNF của Milestone 3.
+Tài liệu này cùng với [01-Entity-Catalog.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/01-Entity-Catalog.md), [02-Relationship-Analysis.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/02-Relationship-Analysis.md), [04-Conceptual-ERD.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/04-Conceptual-ERD.md), [05-Design-Decisions.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/05-Design-Decisions.md), [06-M1-M2-Traceability.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/06-M1-M2-Traceability.md), [07-Pre-M3-Architectural-Review.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/07-Pre-M3-Architectural-Review.md) và [08-Architectural-Correction-Log.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/08-Architectural-Correction-Log.md) tạo thành bộ hồ sơ Thiết kế Khái niệm hoàn chỉnh 100% với 72 thực thể chuẩn hóa, bảo đảm không có bất kỳ mâu thuẫn hay điểm nghẽn nào cản trở quá trình ánh xạ sang Relational Schema chuẩn 3NF/BCNF của Milestone 3.
 
