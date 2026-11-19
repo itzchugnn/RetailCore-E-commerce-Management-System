@@ -57,14 +57,14 @@ Quá trình rà soát được thực hiện độc lập dựa trên 6 chiều 
 
 ### 2.3. Nhóm 3: Cardinality & Participation Constraints (Bản số & Tính tham gia)
 
-1. **Quan hệ $1:1$ Bắt buộc (Mandatory $1:1$):**
+1. **Quan hệ $1:1$ Bắt buộc (Mandatory $1:1$) & Giới hạn của DDL:**
    * `SalesOrder` $\leftrightarrow$ `OrderAddress`: Đúng $1:1$. Mỗi đơn hàng bắt buộc có đúng 1 bản chụp địa chỉ giao hàng (`OrderAddress.OrderID` UNIQUE).
    * `SalesOrder` $\leftrightarrow$ `Payment`: Đúng $1:1$. Mỗi hợp đồng bán hàng chính thức gắn liền với duy nhất 1 hồ sơ thanh toán (`Payment.OrderID` UNIQUE). Dù thanh toán nhiều lần hoặc nhiều cổng, các lần thử đều nằm trong `PaymentTransaction` ($1:N$ với `Payment`).
-2. **Quan hệ $1:0..1$ Tùy chọn (Optional $1:0..1$):**
+   * *Lưu ý kỹ thuật then chốt (CORR-04):* Khóa ngoại kèm UNIQUE ở bảng con chỉ bảo đảm cận trên $\le 1$ ($0..1$), không tự bảo đảm cận dưới $\ge 1$ (Mandatory Participation) ở tầng Declarative DDL. Bắt buộc phải thực thi qua Stored Procedure giao dịch nguyên tử (`BEGIN TRANSACTION ... COMMIT`) tạo đồng thời Header và Detail để ngăn chặn bản ghi mồ côi.
+2. **Quan hệ $1:0..1$ Tùy chọn (Optional $1:0..1$) & Mô hình Kế thừa Table-Per-Type (TPT):**
    * `Account` $\leftrightarrow$ `Customer`: Tối đa 1 hồ sơ Customer.
    * `Account` $\leftrightarrow$ `Employee`: Tối đa 1 hồ sơ Employee.
-   * *Ràng buộc loại trừ (Disjoint XOR):* Một `Account` chỉ được thuộc tối đa một subtype:
-     $$\text{IsCustomer} \oplus \text{IsEmployee} = 1$$
+   * *Ràng buộc loại trừ (Disjoint XOR & TPT, CORR-04):* Bảng `Account` bổ sung trường định danh subtype `AccountType` (`CUSTOMER` / `EMPLOYEE`). Bảng con `Customer` và `Employee` sử dụng `AccountID PK_FK`. Stored Procedure đăng ký tài khoản bắt buộc tạo đồng thời `Account` và bảng con tương ứng trong một transaction.
    * `ShoppingCart` $\leftrightarrow$ `SalesOrder`: Một giỏ hàng chuyển đổi thành tối đa 1 đơn hàng (`SalesOrder.CartID` UNIQUE). Khi đã chuyển đổi, giỏ hàng khóa trạng thái `CONVERTED`.
 3. **Tính tham gia Toàn phần của Thực thể Yếu (Total Participation):**
    * Toàn bộ các thực thể chi tiết dòng (`OrderLine`, `ShipmentLine`, `StockReservationLine`, `GoodsReceiptLine`, `ReturnRequestLine`, `ReturnReceiptLine`) đều có tính tham gia **Toàn phần (Total)** đối với thực thể Header cha. Cấm tuyệt đối dòng hàng mồ côi (Orphan lines).
@@ -101,7 +101,8 @@ Quá trình rà soát được thực hiện độc lập dựa trên 6 chiều 
   * Toàn bộ 72 thực thể đều đã xác định rõ Surrogate Key (`bigint IDENTITY`) hoặc Composite Key hợp lý.
   * Các thực thể nghiệp vụ cốt lõi đều có Natural Business Key duy nhất: `ProductCode`, `SKU`, `WarehouseCode`, `SupplierCode`, `PONumber`, `ReceiptNumber`, `OrderNumber`, `ShipmentNumber`, `VoucherCode`, `TransactionReference`, `ReturnNumber`, `ReportCode`.
 * **Idempotency & Concurrency:**
-  * Đã chuẩn bị sẵn trường `TransactionReference` trên `PaymentTransaction` và `RefundTransaction` để cài đặt Unique Index, chống trùng lặp Webhook từ cổng thanh toán.
+  * Bổ sung bảng đệm `PaymentWebhookLog` (E71) với Filtered Unique Index `(PaymentProvider, EventID) WHERE EventID IS NOT NULL` để chống trùng lặp Webhook xử lý bất đồng bộ từ cổng thanh toán (CORR-05).
+  * Chuẩn bị sẵn trường `TransactionReference` trên `PaymentTransaction` và `RefundTransaction` để cài đặt Unique Index, cùng `OriginalPaymentTransactionID` để truy vết đối soát giao dịch gốc.
 
 ---
 
@@ -109,11 +110,12 @@ Quá trình rà soát được thực hiện độc lập dựa trên 6 chiều 
 
 ### 3.1. Rủi ro 1: Quan hệ Phân bổ Kho vs Giữ Tồn Kho (Allocation – Reservation)
 
-* **Vấn đề rủi ro:** Một đơn hàng có thể gồm nhiều sản phẩm nằm ở các kho khác nhau (Split Shipment). Nếu thiết kế giữ hàng gắn cứng vào `SalesOrder` mà không định danh kho, hệ thống sẽ không biết trừ tồn tại kho nào khi xuất bãi.
-* **Giải pháp kiến trúc đã chốt:**
+* **Vấn đề rủi ro:** Một đơn hàng có thể gồm nhiều sản phẩm nằm ở các kho khác nhau (Split Shipment). Nếu thiết kế giữ hàng gắn cứng vào `SalesOrder` mà không định danh kho, hệ thống sẽ không biết trừ tồn tại kho nào khi xuất bãi. Hơn nữa, việc cố định $1:0..1$ sẽ làm mất lịch sử giữ hàng nếu khách thanh toán lại sau khi timeout.
+* **Giải pháp kiến trúc đã chốt (CORR-10):**
   * `OrderWarehouseAllocation` (E12) đóng vai trò là **kế hoạch phân bổ**.
   * `StockReservation` (E13) và `StockReservationLine` (E14) đóng vai trò là **khóa giữ vật lý tại kho**.
-  * Cơ chế liên kết: Mỗi dòng `StockReservationLine` liên kết trực tiếp với một `AllocationID` và `WarehouseID`.
+  * **Quan hệ $1 : 0..N$ linh hoạt:** Một `Allocation` có thể trải qua nhiều lượt giữ hàng trong vòng đời (lần 1 hết hạn EXPIRED, lần 2 tạo dòng giữ hàng mới).
+  * **Kiểm soát tính duy nhất qua Filtered Unique Index:** Trên SQL Server cài đặt `CREATE UNIQUE INDEX UX_StockReservationLine_ActiveAlloc ON StockReservationLine(OrderWarehouseAllocationID) WHERE ReservationLineStatus = 'ACTIVE'`, bảo đảm tại một thời điểm chỉ có tối đa 1 dòng giữ hàng đang hiệu lực cho mỗi phân bổ kho.
   * **Xử lý tình huống Hủy / Hết hạn đơn hàng:**
     * Nếu khách không thanh toán trong 15 phút: Hệ thống hủy `StockReservation`, hoàn lại `ReservedQty` tại đúng kho đó. Kế hoạch `OrderWarehouseAllocation` chuyển sang `CANCELLED`. Tồn vật lý `OnHandQty` không bị tác động sai lệch.
 
@@ -121,55 +123,74 @@ Quá trình rà soát được thực hiện độc lập dựa trên 6 chiều 
 
 ### 3.2. Rủi ro 2: Thanh toán COD vs Đối soát Thu hộ Tiền mặt (Payment – COD Collection)
 
-* **Vấn đề rủi ro:** Nếu gộp chung trạng thái đơn hàng và thanh toán, đơn COD sẽ bị bế tắc: Đơn đã giao cho khách (`Shipment = DELIVERED`) nhưng tiền mặt shipper cầm chưa nộp về cho công ty.
-* **Giải pháp kiến trúc đã chốt:**
+* **Vấn đề rủi ro:** Nếu gộp chung trạng thái đơn hàng và thanh toán, hoặc không phân định nghĩa vụ thanh toán của khách với khoản phải thu từ hãng vận chuyển, số liệu tài chính sẽ bị phản ánh sai lệch nghiêm trọng.
+* **Giải pháp kiến trúc đã chốt (CORR-06 & CORR-07):**
   * Tách độc lập 3 máy trạng thái:
     $$\text{SalesOrder.OrderStatus} \neq \text{Payment.PaymentStatus} \neq \text{Shipment.ShipmentStatus}$$
-  * **Vòng đời đối soát đơn COD:**
-    1. Khi đặt hàng: `OrderStatus = CONFIRMED`, `PaymentStatus = PENDING`, `ShipmentStatus = PREPARING`.
-    2. Xuất kho giao hàng: `OrderStatus = IN_TRANSIT`, `PaymentStatus = PENDING`, `ShipmentStatus = IN_TRANSIT`.
-    3. Khách nhận hàng và trả tiền mặt cho shipper: `ShipmentStatus = DELIVERED`. Lúc này đơn hàng `OrderStatus = DELIVERED`, nhưng `PaymentStatus` vẫn là `PENDING` (tiền đang nằm ở tài khoản trung gian của hãng vận chuyển).
-    4. Đối soát bưu tá / Hãng vận chuyển chuyển khoản tiền COD: Hệ thống ghi nhận một `PaymentTransaction` loại `COD_SETTLEMENT` kèm mã bảng kê. Lúc này `Payment.AmountPaid` được cập nhật đủ và `PaymentStatus` chính thức chuyển sang `PAID`.
+  * **Mô hình Đối soát COD Hai Chặng Độc lập (Two-Sided Reconciliation):**
+    * **Chặng 1 (Nghĩa vụ khách hàng):** Khi bưu tá thu tiền mặt và kiện hàng `ShipmentStatus = 'DELIVERED'`, khách hàng đã hoàn thành 100% nghĩa vụ thanh toán. Ngay tại thời điểm này, hệ thống cập nhật `Payment.PaymentStatus = 'PAID'` và `Payment.PaidAt = DeliveredAt`.
+    * **Chặng 2 (Công nợ thu hộ từ đơn vị vận chuyển):** Số tiền COD đang nằm ở tài khoản trung gian của Carrier, là khoản phải thu của sàn. Quản lý độc lập qua thuộc tính `Payment.CarrierSettlementStatus`:
+      $$\text{NOT\_COLLECTED} \longrightarrow \text{COLLECTED\_BY\_CARRIER} \longrightarrow \text{REMITTED} \longrightarrow \text{RECONCILED}$$
+    * Khi đối soát bưu tá và nhận tiền chuyển khoản: Ghi nhận `PaymentTransaction` loại `COD_SETTLEMENT` kèm mã bảng kê và chuyển `CarrierSettlementStatus = 'RECONCILED'`.
 
 ---
 
 ### 3.3. Rủi ro 3: Chu trình Logistics Ngược (Return – Refund – Inventory)
 
-* **Vấn đề rủi ro:** Khách trả hàng thì tiền hoàn trước hay hàng về trước? Nếu hoàn tiền trước mà hàng chuyển về bị mất hoặc vỡ nát thì doanh nghiệp chịu thất thoát. Nếu hàng nhập kho tự động cộng tồn kho thì hàng hỏng sẽ bị bán tiếp cho khách khác.
-* **Giải pháp kiến trúc đã chốt (Quy trình 4 chặng nghiêm ngặt):**
-  1. **Chặng 1 (Tiếp nhận & Duyệt RMA):** Khách gửi `ReturnRequest`, CSKH kiểm tra tính hợp lệ và duyệt `APPROVED`, cấp mã trả hàng và chỉ định duy nhất một `WarehouseID` tiếp nhận.
-  2. **Chặng 2 (Tiếp nhận tại kho):** Bưu kiện về đến bến nhập, thủ kho lập `ReturnReceipt` ghi nhận `ReceivedQty`. **Chưa tăng tồn kho bán.**
-  3. **Chặng 3 (Kiểm định chất lượng - Disposition):** Nhân viên kiểm định ghi nhận `ReturnReceiptLine.Disposition`:
-     * `SELLABLE` (Hàng mới, nguyên tem): Sinh `InventoryTransaction` loại `CUSTOMER_RETURN_IN`, cộng lại vào `OnHandQty` để bán tiếp.
-     * `QUARANTINE` (Chờ giám định hãng): Chuyển vào kho cách ly, không cộng tồn bán được.
-     * `DISPOSED` (Hỏng hóc, tiêu hủy): Ghi nhận chi phí tổn thất, cấm đưa vào tồn bán.
-  4. **Chặng 4 (Kích hoạt hoàn tiền):** Chỉ sau khi `ReturnReceipt` có dòng `Disposition = SELLABLE` được `POSTED`, hệ thống mới tự động tạo chứng từ `Refund` bên Subject Area 09 theo tỷ lệ hàng thực nhận.
+* **Vấn đề rủi ro:** Nhầm lẫn giữa quyền được hoàn tiền của khách hàng và tình trạng vật lý của hàng hóa sau kiểm định. Nếu bắt buộc hàng phải `SELLABLE` mới được hoàn tiền thì khách nhận hàng lỗi từ nhà sản xuất hoặc bị vỡ do vận chuyển (hàng phải `DISPOSED`) sẽ bị từ chối hoàn tiền sai chính sách.
+* **Giải pháp kiến trúc đã chốt (Tách rời Quyền Hoàn tiền khỏi Tồn kho, CORR-01 & CORR-02):**
+  1. **Chặng 1 (Tiếp nhận & Duyệt RMA):** Khách gửi `ReturnRequest` trong thời hạn chính sách tính theo từng kiện hàng (`Shipment.DeliveredAt`, CORR-10). CSKH duyệt `APPROVED` và chỉ định duy nhất một `WarehouseID` tiếp nhận.
+  2. **Chặng 2 (Tiếp nhận tại kho):** Bưu kiện về đến bến nhập, thủ kho lập `ReturnReceipt` và các dòng `ReturnReceiptLine` xác nhận số lượng thực nhận `ReceivedQty` và ghi nhận tình trạng vỏ kiện (`ConditionDescription`). **Chưa tăng tồn kho bán.**
+  3. **Chặng 3 (Xử lý vật lý tại kho - Inventory Disposition):** Căn cứ phẩm chất hàng để đưa vào đúng nhóm tồn kho:
+     * `SELLABLE` (Hàng mới, nguyên vẹn): Sinh `InventoryTransaction` loại `CUSTOMER_RETURN_IN`, cộng lại vào `OnHandQty` để bán tiếp.
+     * `QUARANTINE` (Chờ giám định chuyên sâu): Ghi nhận vào `QuarantinedQty`, cách ly khỏi tồn bán được.
+     * `DISPOSED` (Hỏng hóc, tiêu hủy): Xuất hủy khỏi kho (`SCRAP_OUT`), ghi nhận tổn thất, cấm đưa vào tồn bán.
+     * *Quản lý qua 5 CHECK Constraints trên `InventoryBalance` (CORR-02).*
+  4. **Chặng 4 (Đánh giá nguyên nhân lỗi & Phê duyệt Hoàn tiền - ReturnLineAssessment E72):**
+     * Nhân viên thẩm định lập bản ghi `ReturnLineAssessment` (E72) cho từng phần số lượng thực nhận, xác định rõ: bên chịu trách nhiệm `FaultParty` (`VENDOR`, `CARRIER`, `CUSTOMER`, `NO_FAULT`), kết quả `RefundEligibilityStatus` (`PENDING`, `APPROVED`, `REJECTED`) và phương án xử lý `ResolutionType` (`REFUND`, `EXCHANGE`, `REPAIR`, `NO_ACTION`).
+     * Hàng lỗi do Nhà sản xuất hoặc Hãng vận chuyển vẫn được duyệt `RefundEligibilityStatus = 'APPROVED'` và hoàn tiền 100%, kể cả khi vật lý hàng hóa bị `DISPOSED`.
+  5. **Chặng 5 (Kích hoạt Hoàn tiền Từng phần):** Kích hoạt tạo chứng từ `Refund` bên Subject Area 09 ngay khi có lượt đánh giá E72 được duyệt, cho phép hoàn tiền theo tiến độ nhận hàng thực tế mà không cần chờ toàn bộ yêu cầu trả hàng hoàn tất.
 
 ---
 
 ### 3.4. Rủi ro 4: Phân bổ Chiết khấu Khuyến mãi khi Hoàn tiền (PromotionUsage – Payment – Refund)
 
-* **Vấn đề rủi ro:** Đơn hàng áp Voucher giảm 100.000đ cho đơn từ 500.000đ. Khách mua 2 áo (mỗi áo 250.000đ), tổng thanh toán 400.000đ. Sau đó khách trả lại 1 áo. Nếu hoàn đủ 250.000đ theo giá niêm yết thì doanh nghiệp bị lỗ do khách gian lận voucher.
-* **Giải pháp kiến trúc đã chốt:**
-  * Bảng `PromotionUsage` lưu vết chi tiết số tiền chiết khấu phân bổ cho từng dòng `OrderLineID`:
-    $$\text{LineRefundableAmount} = \text{OrderLine.UnitPrice} - \text{AllocatedVoucherDiscount} - \text{LineProductDiscount}$$
-  * Khi duyệt `Refund`, hệ thống căn cứ chính xác vào số tiền thực thu sau chiết khấu được truy vết từ `PromotionUsage` để sinh `Refund.RefundAmount`.
-  * Ràng buộc kiểm soát ngân sách hoàn tiền:
-    $$\sum \text{Refund.RefundAmount} \le \text{Payment.AmountPaid} - \text{PreviousRefundedAmount}$$
+* **Vấn đề rủi ro:** Đơn hàng áp Voucher cấp đơn giảm giá. Nếu dùng phép chia hoặc làm tròn `Round()` thông thường thì tổng chiết khấu phân bổ bị lệch tiền lẻ (Rounding Error). Khi khách hoàn trả từng món hoặc từng đơn vị lẻ (Unit-level partial return), nếu không có công thức xác định thì số tiền hoàn bị xung đột và không thể đối soát khớp từng đồng VNĐ.
+* **Giải pháp kiến trúc đã chốt (Thuật toán LRM & Hoàn tiền Lũy tiến Nguyên số, CORR-03):**
+  1. **Phân bổ chiết khấu cấp đơn chuẩn mực bằng thuật toán Largest Remainder Method (LRM):**
+     * Tính phần nguyên và phần dư số tiền giảm giá cấp đơn cho từng `OrderLine`.
+     * Phân bổ phần nguyên, sau đó chia lần lượt 1 VNĐ cho các dòng có phần dư lớn nhất cho đến khi hết ngân sách voucher, bảo đảm tổng chiết khấu phân bổ đúng 100% không lệch 1 xu:
+       $$\sum \text{AllocatedOrderDiscount} \equiv \text{VoucherDiscountAmount}$$
+     * Lưu trữ trực tiếp trên `OrderLine`: `LineGrossAmount`, `LineProductDiscount`, `AllocatedOrderDiscount`, `LineNetAmount`.
+  2. **Công thức hoàn tiền từng đơn vị lũy tiến (Unit-Level Progressive Refund Formula):**
+     * Với dòng hàng mua số lượng $Q$ có `LineNetAmount`:
+       $$B = \left\lfloor \frac{\text{LineNetAmount}}{Q} \right\rfloor, \quad R = \text{LineNetAmount} \pmod{Q}$$
+     * Hàm số tích lũy tiền hoàn cho $q$ đơn vị:
+       $$F(q) = B \cdot q + \min(q, R)$$
+     * Khi khách trả thêm $b$ đơn vị sau khi đã hoàn $a$ đơn vị:
+       $$\Delta \text{Refund} = F(a + b) - F(a)$$
+     * Công thức bảo đảm mọi khoản hoàn tiền đều là số nguyên VNĐ và lũy kế hoàn trả đủ $Q$ cái luôn bằng đúng `LineNetAmount`.
 
 ---
 
 ### 3.5. Rủi ro 5: Tính Bất biến của Dữ liệu Lịch sử (Historical Snapshots)
 
-* **Vấn đề rủi ro:** Khách hàng thay đổi địa chỉ trong sổ địa chỉ, hoặc bộ phận Marketing sửa tên sản phẩm/tăng giá biến thể làm biến dạng dữ liệu kế toán và hóa đơn của các đơn hàng cũ.
-* **Giải pháp kiến trúc đã chốt:**
+* **Vấn đề rủi ro:** Khách hàng thay đổi địa chỉ trong sổ địa chỉ, hoặc bộ phận Marketing sửa tên sản phẩm/tăng giá biến thể làm biến dạng dữ liệu kế toán và hóa đơn của các đơn hàng cũ. Việc lưu JSON snapshot vô cấu trúc hoặc text tự do khiến không thể truy vấn hoặc phân tích dữ liệu lịch sử.
+* **Giải pháp kiến trúc đã chốt (CORR-09):**
   * **Tách rời hoàn toàn Entity Sổ địa chỉ và Entity Đơn hàng:**
     * `CustomerAddress`: Là sổ địa chỉ cá nhân, khách hàng có quyền thêm, sửa, xóa, đổi mặc định tùy ý.
     * `OrderAddress`: Là một thực thể riêng biệt mang bản chất **Weak Snapshot**, sao chép nguyên văn thông tin địa chỉ tại giây phút đặt hàng. Bảng này không có khóa ngoại trỏ về `CustomerAddress` mà chỉ trỏ về `SalesOrder.OrderID`.
-  * **Snapshot Dòng hàng đa tầng:**
+  * **Snapshot Dòng hàng đa tầng & Chuẩn hóa JSON Định danh (CORR-09):**
     * `OrderLine.UnitPrice`: Snapshot giá bán tại thời điểm bấm đặt hàng.
     * `OrderLine.ProductName` & `VariantName`: Snapshot tên hiển thị.
-    * `OrderLine.VariantAttributesSnapshot`: Lưu toàn bộ cặp `AttributeName: AttributeValue` dưới dạng chuỗi chuẩn hóa JSON (ví dụ: `{"Size": "XL", "Color": "Navy Blue"}`).
+    * `OrderLine.VariantAttributesSnapshot`: Lưu toàn bộ thuộc tính cấu thành biến thể dưới dạng **mảng JSON có định danh ID và mã Code chuẩn mực**:
+      ```json
+      [
+        {"attributeId": 1, "attributeCode": "SIZE", "attributeName": "Kích cỡ", "valueId": 105, "valueCode": "XL", "displayValue": "XL"},
+        {"attributeId": 2, "attributeCode": "COLOR", "attributeName": "Màu sắc", "valueId": 204, "valueCode": "NAVY", "displayValue": "Xanh Navy"}
+      ]
+      ```
+    * Cấm lưu text tự do hoặc chuỗi vô cấu trúc `{"Size": "XL"}` để bảo đảm khả năng lập chỉ mục full-text hoặc bóc tách dữ liệu bằng hàm `JSON_VALUE` / `OPENJSON` trên SQL Server.
 
 ---
 
@@ -177,11 +198,14 @@ Quá trình rà soát được thực hiện độc lập dựa trên 6 chiều 
 
 | Khu vực kỹ thuật | Rủi ro tiềm ẩn | Cơ chế kiểm soát bắt buộc chuyển giao sang M3 (Logical Design) |
 | :--- | :--- | :--- |
-| **Identity Subtypes** | Một tài khoản vừa là Customer vừa là Employee gây xung đột bảo mật | Thiết lập Trigger hoặc Check Constraint loại trừ: `(AccountType = 'CUSTOMER' AND CustomerID IS NOT NULL) OR (AccountType = 'EMPLOYEE' AND EmployeeID IS NOT NULL)`. |
+| **Identity Subtypes (TPT)** | Một tài khoản vừa là Customer vừa là Employee gây xung đột bảo mật | Mô hình Table-Per-Type (TPT): Bảng cha `Account(AccountID, AccountType)`, bảng con `Customer(AccountID PK_FK)`, `Employee(AccountID PK_FK)`. Stored Procedure đăng ký tài khoản thực thi giao dịch nguyên tử. |
 | **Active Cart Limit** | Khách hàng mở nhiều giỏ hàng `ACTIVE` gây lỗi đồng bộ | Tạo Filtered Unique Index trên SQL Server: `CREATE UNIQUE INDEX UX_Customer_ActiveCart ON ShoppingCart(CustomerID) WHERE CartStatus = 'ACTIVE'`. |
-| **Allocation Integrity** | Tổng số lượng phân bổ kho lệch với số lượng khách đặt | Ràng buộc kiểm toán: $\sum \text{AllocatedQty} \equiv \text{OrderLine.OrderedQty}$. Kiểm soát bằng Stored Procedure tạo đơn All-or-Nothing. |
+| **Active Allocation Reservation** | Nhiều dòng giữ hàng xung đột đồng thời trên cùng một phân bổ kho | Tạo Filtered Unique Index: `CREATE UNIQUE INDEX UX_Reservation_ActiveAlloc ON StockReservationLine(OrderWarehouseAllocationID) WHERE ReservationLineStatus = 'ACTIVE'` (CORR-10). |
+| **Idempotent Payment Webhook** | Webhook từ cổng thanh toán gửi trùng lặp gây ghi nhận thừa tiền | Bổ sung bảng đệm `PaymentWebhookLog` với Filtered Unique Index: `(PaymentProvider, EventID) WHERE EventID IS NOT NULL` (CORR-05). |
+| **Two-Sided COD Accounting** | Nhầm lẫn nghĩa vụ thanh toán của khách với công nợ của hãng vận chuyển | Phân định `PaymentStatus = 'PAID'` (nghĩa vụ khách) và `CarrierSettlementStatus` (`NOT_COLLECTED` $\to$ `COLLECTED` $\to$ `REMITTED` $\to$ `RECONCILED`) (CORR-07). |
+| **Inventory Quarantine Quality** | Hàng cách ly hoặc hư hỏng bị bán nhầm cho khách hàng khác | Bộ 5 Declarative CHECK Constraints trên `InventoryBalance`: kiểm tra không âm và bảo đảm `OnHandQty >= ReservedQty + QuarantinedQty + DamagedQty` (CORR-02). |
+| **LRM & Unit Refund Integrity** | Lệch tiền lẻ khi phân bổ voucher cấp đơn hoặc tranh chấp khi hoàn hàng lẻ cái | Áp dụng thuật toán LRM phân bổ chiết khấu nguyên số và công thức tích lũy $F(q) = B \cdot q + \min(q, R)$ cho phép hoàn trả từng phần chính xác từng đồng VNĐ (CORR-03). |
 | **Ledger Immutability** | Cố tình sửa đổi hoặc xóa nhật ký biến động kho và sổ cái thanh toán | Cấm quyền `UPDATE` và `DELETE` trên bảng `InventoryTransactionLine` và `PaymentTransaction`. Chỉ cho phép `INSERT` (Append-Only). |
-| **Voucher Quota Abuse** | Tranh chấp đồng thời làm số lượt dùng voucher vượt quá hạn mức | Áp dụng Transaction Isolation Level `SERIALIZABLE` hoặc cơ chế Pessimistic Locking (`UPDLOCK, HOLDLOCK`) trong Stored Procedure áp mã voucher. |
 
 ---
 

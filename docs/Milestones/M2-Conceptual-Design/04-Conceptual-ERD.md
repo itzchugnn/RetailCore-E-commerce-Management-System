@@ -135,16 +135,18 @@ Toàn bộ hoạt động vận hành của RetailCore lưu thông qua trục Ba
   * Mỗi `SalesOrder` liên kết đúng $1:1$ với duy nhất một hồ sơ nghĩa vụ tài chính `Payment`.
   * Mọi lần thanh toán (thẻ tín dụng, chuyển khoản qua Webhook cổng thanh toán VNPAY/MoMo, hoặc đối soát bưu tá COD) đều được ghi nhận thành các bản ghi `PaymentTransaction` riêng biệt để bảo toàn vết kiểm toán dòng tiền.
 
-#### 4. Luồng 4: Dòng Đổi trả, Kiểm định & Hoàn tiền (Reverse Logistics & Refund Flow)
+#### 4. Luồng 4: Dòng Đổi trả, Thẩm định Lỗi & Hoàn tiền (Reverse Logistics, Assessment & Refund Flow)
 * **Các miền tham gia:** `Sales (06)` $\longrightarrow$ `Return & Exchange (10)` $\longrightarrow$ `Warehouse & Inventory (02)` $\longrightarrow$ `Payment & Refund (09)`.
 * **Cơ chế vận hành:**
-  * Khách hàng tạo yêu cầu khiếu nại trả hàng `ReturnRequest` gắn liền với `SalesOrder` gốc đã giao thành công.
-  * Bưu kiện hàng trả được chuyển về kho chỉ định, lập biên bản `ReturnReceipt`.
-  * Nhân viên KCS tiến hành kiểm định chất lượng từng sản phẩm và gắn trạng thái phân loại (`Disposition`):
+  * Khách hàng tạo yêu cầu khiếu nại trả hàng `ReturnRequest` gắn liền với `SalesOrder` gốc đã giao thành công (kiểm tra thời hạn đổi trả theo từng kiện hàng `Shipment.DeliveredAt`, CORR-10).
+  * Bưu kiện hàng trả được chuyển về kho chỉ định, lập biên bản tiếp nhận `ReturnReceipt` (E62) và dòng tiếp nhận `ReturnReceiptLine` (E63) tại bến nhập, ghi nhận số lượng thực nhận và tình trạng vỏ bọc.
+  * Nhân viên kho tiến hành phân loại xử lý vật lý (`Disposition`):
     * `SELLABLE` (Hàng còn nguyên tem mác): Sinh `InventoryTransaction` loại `CUSTOMER_RETURN_IN`, cộng lại vào tồn kho bán `OnHandQty`.
-    * `QUARANTINE` / `DISPOSED` (Hàng lỗi, hỏng hóc): Chuyển kho cách ly hoặc hủy bỏ, cấm cộng vào tồn kho bán.
-  * Khi biên bản kiểm định hoàn tất, hệ thống tự động kích hoạt tạo chứng từ `Refund` bên Subject Area 09.
-  * Số tiền hoàn trả được tính toán chuẩn xác dựa trên số tiền thực thu sau khi đã trừ chiết khấu voucher truy vết từ `PromotionUsage`.
+    * `QUARANTINE` (Chờ giám định): Chuyển vào kho cách ly, ghi nhận tăng `QuarantinedQty`.
+    * `DISPOSED` (Hỏng hóc, tiêu hủy): Xuất hủy khỏi kho (`SCRAP_OUT`), ghi nhận tổn thất, cấm đưa vào tồn bán.
+  * **Tách rời thẩm định lỗi và xét duyệt hoàn tiền (CORR-01):** Độc lập với xử lý kho, nhân viên thẩm định lập biên bản `ReturnLineAssessment` (E72) xác định bên chịu trách nhiệm `FaultParty` (`VENDOR`, `CARRIER`, `CUSTOMER`, `NO_FAULT`) và kết quả `RefundEligibilityStatus`.
+  * Khi dòng thẩm định được phê duyệt (`APPROVED`), hệ thống kích hoạt tạo chứng từ `Refund` bên Subject Area 09 mà không cần chờ hàng phải `SELLABLE` hay toàn bộ yêu cầu trả hàng hoàn tất (hỗ trợ hoàn tiền từng mốc theo số lượng thực nhận).
+  * Số tiền hoàn trả được tính toán chuẩn xác theo công thức hoàn tiền lũy tiến nguyên số $F(q)$ dựa trên giá trị thanh toán ròng `LineNetAmount` của `OrderLine` sau chiết khấu LRM.
 
 ---
 
@@ -156,12 +158,12 @@ Dưới đây là kịch bản phân tích chi tiết từng bước chuyển đ
 +-------------------------------------------------------------------------------------------------------------+
 |                                  END-TO-END ORDER LIFECYCLE WALKTHROUGH                                     |
 +-------------------------------------------------------------------------------------------------------------+
-| Chặng 1: Mua sắm & Chốt đơn    ---> Snapshot dữ liệu (Địa chỉ, Giá, Thuộc tính SKU JSON)                    |
+| Chặng 1: Mua sắm & Chốt đơn    ---> Snapshot dữ liệu (Địa chỉ, Giá, Thuộc tính SKU JSON có định danh)       |
 | Chặng 2: Định tuyến & Giữ hàng ---> Phân bổ đa kho (Allocation) + Khóa giữ 15 phút (Reservation)             |
-| Chặng 3: Áp mã & Thanh toán    ---> Phân bổ chiết khấu (PromotionUsage) + Khởi tạo Payment ($1:1$)          |
+| Chặng 3: Áp mã & Thanh toán    ---> Phân bổ chiết khấu LRM + Khởi tạo Payment ($1:1$)                       |
 | Chặng 4: Đóng gói & Xuất kho   ---> Kiện hàng Shipment + Trừ tồn vật lý (InventoryTransaction: SHIPMENT_OUT)|
-| Chặng 5: Giao nhận & Đối soát  ---> Bưu tá giao (Delivered) + Bảng kê tiền mặt COD (COD_SETTLEMENT)        |
-| Chặng 6: Đổi trả & Hoàn tiền   ---> Phiếu RMA -> Kiểm định KCS -> Nhập kho SELLABLE -> Hoàn tiền Refund    |
+| Chặng 5: Giao nhận & Đối soát  ---> Bưu tá giao (Delivered/Customer Paid) + Đối soát COD 2 chặng độc lập    |
+| Chặng 6: Đổi trả & Hoàn tiền   ---> Phiếu RMA -> Nhận kho -> Thẩm định lỗi E72 -> Hoàn tiền (Độc lập Kho)   |
 +-------------------------------------------------------------------------------------------------------------+
 ```
 
@@ -174,7 +176,7 @@ Dưới đây là kịch bản phân tích chi tiết từng bước chuyển đ
    * **Thực thi cơ chế Snapshot 3 điểm:**
      * Tạo bản ghi `OrderAddress` độc lập, sao chép toàn bộ tên người nhận, số điện thoại, địa chỉ chi tiết từ `CustomerAddress`. Thực thể này hoàn toàn không có khóa ngoại trỏ về sổ địa chỉ người dùng, giúp đơn hàng miễn nhiễm với việc khách sửa sổ địa chỉ sau này.
      * Lưu cứng đơn giá niêm yết tại thời điểm mua vào `OrderLine.UnitPrice`.
-     * Lưu vết thuộc tính biến thể vào chuỗi JSON bất biến `OrderLine.VariantAttributesSnapshot` (ví dụ: `{"Size": "L", "Color": "Navy Blue"}`).
+     * Lưu vết thuộc tính biến thể vào mảng JSON bất biến có định danh chuẩn hóa `OrderLine.VariantAttributesSnapshot` (ví dụ: `[{"attributeId": 1, "attributeCode": "SIZE", "valueId": 105, "valueCode": "L"}, {"attributeId": 2, "attributeCode": "COLOR", "valueId": 204, "valueCode": "NAVY"}]`, CORR-09).
 
 #### Chặng 2: Định tuyến Đa kho & Khóa giữ Tồn kho (Multi-Warehouse Split Allocation & Reservation)
 Do mặt hàng áo sơ mi có sẵn tại **Kho Hà Nội** (`WarehouseID = 1`), nhưng quần âu chỉ còn tồn tại **Kho TP.HCM** (`WarehouseID = 2`):
@@ -210,24 +212,27 @@ Do hàng nằm ở 2 kho cách xa nhau, hệ thống tự động tách thành 2
 Trong trường hợp khách hàng chọn phương thức thanh toán **COD (Trả tiền mặt khi nhận hàng)**:
 1. Khi xuất kho giao hàng: `OrderStatus = 'IN_TRANSIT'`, `ShipmentStatus = 'IN_TRANSIT'`, nhưng `PaymentStatus` vẫn là `'PENDING'`.
 2. Khi shipper giao thành công kiện hàng và nhận tiền mặt từ khách: `ShipmentStatus = 'DELIVERED'`, đơn hàng chuyển `OrderStatus = 'DELIVERED'`.
-3. **Độc lập máy trạng thái:** Mặc dù đơn đã giao xong, nhưng `Payment.PaymentStatus` **vẫn tiếp tục giữ trạng thái `'PENDING'`** vì tiền mặt đang nằm ở tài khoản trung gian của hãng vận chuyển chưa nộp về công ty.
-4. **Đối soát bưu tá:** Định kỳ 3 ngày, hãng vận chuyển chuyển khoản tiền COD và gửi bảng kê đối soát. Kế toán tải bảng kê lên hệ thống:
-   * Hệ thống ghi nhận một bản ghi `PaymentTransaction` loại `COD_SETTLEMENT` kèm mã bảng kê.
-   * `Payment.AmountPaid` được cập nhật đủ, lúc này `Payment.PaymentStatus` mới chính thức chuyển sang `'PAID'`.
+3. **Độc lập máy trạng thái & Đối soát COD Hai chặng (CORR-06 & CORR-07):**
+   * **Chặng 1 (Nghĩa vụ khách hàng):** Ngay khi bưu tá giao hàng thành công và thu tiền mặt (`ShipmentStatus = 'DELIVERED'`), nghĩa vụ của người mua hoàn tất 100%. Hệ thống cập nhật ngay `Payment.PaymentStatus = 'PAID'` và `Payment.PaidAt = DeliveredAt`.
+   * **Chặng 2 (Công nợ thu hộ từ Carrier):** Tiền mặt nằm tại đơn vị vận chuyển là khoản phải thu của doanh nghiệp, được quản lý độc lập qua `Payment.CarrierSettlementStatus`: chuyển sang `'COLLECTED_BY_CARRIER'`.
+4. **Đối soát bưu tá:** Định kỳ khi hãng vận chuyển chuyển khoản tiền COD và gửi bảng kê đối soát:
+   * Hệ thống ghi nhận bản ghi `PaymentTransaction` loại `COD_SETTLEMENT` kèm mã bảng kê.
+   * `Payment.CarrierSettlementStatus` chính thức chuyển sang `'RECONCILED'`.
 
 #### Chặng 6: Xử lý Khiếu nại Đổi trả & Hoàn tiền Bảo toàn Tài chính (Reverse Logistics RMA & Pro-rated Refund)
 Sau 2 ngày sử dụng, khách hàng thấy áo sơ mi bị rộng và tạo yêu cầu trả lại chiếc áo:
 1. **Khởi tạo yêu cầu RMA (`ReturnRequest`):** Khách gửi yêu cầu trả 1 áo sơ mi (`ReturnRequestLine` trỏ `OrderLineID` tương ứng). CSKH duyệt `APPROVED` và chỉ định duy nhất một kho tiếp nhận là Kho Hà Nội (`WarehouseID = 1`).
 2. **Tiếp nhận tại bến nhập (`ReturnReceipt`):** Shipper mang kiện hàng trả về kho Hà Nội. Thủ kho lập `ReturnReceipt` xác nhận thực nhận 1 áo.
-3. **Kiểm định chất lượng (Disposition):**
-   * Nhân viên KCS mở hàng kiểm tra: Tem mác nguyên vẹn, áo mới 100% $\to$ Đánh giá trạng thái `Disposition = 'SELLABLE'`.
-   * Khi biên bản được chốt (`PostedAt` NOT NULL), hệ thống sinh `InventoryTransaction` loại `CUSTOMER_RETURN_IN`, cộng lại 1 chiếc vào `OnHandQty` của Kho Hà Nội để tái lưu thông.
-4. **Kích hoạt Hoàn tiền Tự động & Chống Thất thoát Chiết khấu:**
-   * Hệ thống tự động kích hoạt tạo chứng từ `Refund` bên Subject Area 09.
-   * **Thuật toán bảo toàn tài chính:** Hệ thống truy vết ngược lại `PromotionUsage` ở Chặng 3: Chiếc áo sơ mi có giá niêm yết 300.000đ nhưng đã hưởng chiết khấu voucher 25.000đ, số tiền thực thu là 275.000đ.
-   * Số tiền duyệt hoàn trả `Refund.RefundAmount` được chốt chính xác là **275.000đ**, bảo vệ doanh nghiệp khỏi gian lận voucher khi trả hàng từng phần:
-     $$\text{RefundAmount} = \text{OrderLine.UnitPrice} - \text{AllocatedVoucherDiscount} = 300.000 - 25.000 = 275.000\text{ đ}$$
-   * Giao dịch hoàn tiền `RefundTransaction` được kích hoạt chuyển tiền về tài khoản ngân hàng của khách. Chu trình khép kín $100\%$.
+3. **Kiểm định chất lượng tại kho (Inventory Disposition, CORR-01 & CORR-02):**
+   * Nhân viên KCS mở hàng kiểm tra: Tem mác nguyên vẹn, áo mới 100% $\to$ Đánh giá trạng thái `ReturnReceiptLine.Disposition = 'SELLABLE'`.
+   * Khi biên bản được chốt (`PostedAt` NOT NULL), hệ thống sinh `InventoryTransaction` loại `CUSTOMER_RETURN_IN`, cộng lại 1 chiếc vào `OnHandQty` của Kho Hà Nội để tái lưu thông. (Nếu hàng hỏng chuyển `DISPOSED`, xuất hủy qua `SCRAP_OUT`).
+4. **Thẩm định Nguyên nhân lỗi & Hoàn tiền Độc lập (ReturnLineAssessment E72 & LRM):**
+   * Độc lập với xử lý kho, nhân viên thẩm định lập `ReturnLineAssessment` (E72) ghi nhận `AssessedQty = 1`, `FaultParty = 'CUSTOMER'`, `RefundEligibilityStatus = 'APPROVED'`.
+   * **Thuật toán bảo toàn tài chính nguyên số:** Hệ thống truy vết `OrderLine` ở Chặng 3: Chiếc áo sơ mi có `LineGrossAmount = 300.000đ`, chiết khấu voucher phân bổ theo LRM `AllocatedOrderDiscount = 25.000đ`, giá trị thanh toán ròng `LineNetAmount = 275.000đ`.
+   * Áp dụng công thức hoàn tiền lũy tiến nguyên số $F(q) = B \cdot q + \min(q, R)$: Với $Q = 1 \implies B = 275.000, R = 0 \implies F(1) = 275.000đ$.
+   * Số tiền duyệt hoàn trả `Refund.RefundAmount` được chốt chính xác là **275.000đ**, bảo vệ doanh nghiệp khỏi thất thoát chiết khấu và chống lệch tiền lẻ:
+     $$\text{RefundAmount} = \Delta F(1) = 275.000\text{ đ}$$
+   * Giao dịch hoàn tiền `RefundTransaction` được kích hoạt liên kết `OriginalPaymentTransactionID` để chuyển trả tiền cho khách. Chu trình khép kín $100\%$.
 
 ---
 
@@ -237,8 +242,8 @@ Sau 2 ngày sử dụng, khách hàng thấy áo sơ mi bị rộng và tạo y�
 | :--- | :--- | :--- |
 | **1. Khử triệt để Vòng lặp Khóa ngoại (Zero Circular Dependency)** | Thiết kế quan hệ vòng quanh giữa Bán hàng $\to$ Phân bổ kho $\to$ Giữ hàng $\to$ Bán hàng làm SQL Server báo lỗi vòng lặp khóa ngoại hoặc gây Deadlock khi cập nhật đồng thời. | **Kiến trúc phân rã 2 cấp Header–Line song song:** `SalesOrder` quản lý chứng từ tổng, `OrderLine` quản lý dòng hàng. `OrderWarehouseAllocation` và `StockReservationLine` liên kết qua `AllocationID`. Mối quan hệ luôn đi theo luồng đơn hướng, không có bất kỳ chu trình khép kín nào. |
 | **2. Tách rời 3 Máy trạng thái Giao dịch (Decoupled State Machines)** | Gộp chung trạng thái đơn hàng, thanh toán và vận chuyển làm một khiến hệ thống không thể xử lý đơn COD, đơn giao nhiều lần (Split Shipment) hoặc giao thất bại. | **3 máy trạng thái vận hành độc lập:** $\text{OrderStatus} \ne \text{PaymentStatus} \ne \text{ShipmentStatus}$. Đơn hàng có thể giao thành công trong khi thanh toán COD đang chờ đối soát; một đơn hàng có thể có nhiều kiện hàng với các tiến độ giao nhận khác nhau. |
-| **3. Cơ chế Đóng băng Snapshot Lịch sử Đa tầng** | Khách sửa địa chỉ trong sổ địa chỉ cá nhân, hoặc Catalog tăng giá/đổi tên thuộc tính biến thể làm sai lệch dữ liệu kế toán và hóa đơn cũ. | **Snapshot 3 điểm trọng yếu:** `OrderAddress` là thực thể yếu snapshot độc lập không trỏ FK về `CustomerAddress`. `OrderLine` lưu cứng đơn giá bán và chuỗi JSON `VariantAttributesSnapshot` (`{"Size": "L", "Color": "Navy"}`). `GoodsReceiptLine` lưu cứng giá vốn `UnitCost`. |
-| **4. Nguyên tắc Ghi sổ Kép Hai chiều (Append-Only Dual-Delta Ledger)** | Sửa trực tiếp số dư tồn kho hoặc số tiền thanh toán làm mất vết kiểm toán tài chính, không thể giải trình kế toán khi phát sinh sai lệch. | **Nguyên tắc Sổ cái Bất biến:** Mọi biến động tồn kho đều thông qua `InventoryTransactionLine` (`OnHandDelta`, `ReservedDelta`). Mọi biến động tiền đều thông qua `PaymentTransaction` và `RefundTransaction`. Cấm tuyệt đối lệnh `UPDATE` hoặc `DELETE` trên sổ cái. |
+| **3. Cơ chế Đóng băng Snapshot Lịch sử Đa tầng** | Khách sửa địa chỉ trong sổ địa chỉ cá nhân, hoặc Catalog tăng giá/đổi tên thuộc tính biến thể làm sai lệch dữ liệu kế toán và hóa đơn cũ. | **Snapshot 3 điểm trọng yếu:** `OrderAddress` là thực thể yếu snapshot độc lập không trỏ FK về `CustomerAddress`. `OrderLine` lưu cứng đơn giá bán và mảng JSON định danh `VariantAttributesSnapshot` (`[{"attributeId": 1, ...}]`, CORR-09). `GoodsReceiptLine` lưu cứng giá vốn `UnitCost`. |
+| **4. Nguyên tắc Ghi sổ Kép Hai chiều (Append-Only Dual-Delta Ledger)** | Sửa trực tiếp số dư tồn kho hoặc số tiền thanh toán làm mất vết kiểm toán tài chính, không thể giải trình kế toán khi phát sinh sai lệch. | **Nguyên tắc Sổ cái Bất biến:** Mọi biến động tồn kho đều thông qua `InventoryTransactionLine` (`OnHandDelta`, `ReservedDelta`, `QuarantinedDelta`, `DamagedDelta`). Mọi biến động tiền đều thông qua `PaymentTransaction` và `RefundTransaction`. Cấm tuyệt đối lệnh `UPDATE` hoặc `DELETE` trên sổ cái. |
 
 ---
 
