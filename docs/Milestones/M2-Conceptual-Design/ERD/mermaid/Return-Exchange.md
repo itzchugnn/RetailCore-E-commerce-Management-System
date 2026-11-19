@@ -16,7 +16,8 @@ erDiagram
     RETURN_RECEIPT ||--|{ RETURN_RECEIPT_LINE : "inspects (1..1 : 1..N)"
     RETURN_REQUEST_LINE ||--o{ RETURN_RECEIPT_LINE : "reconciles (1..1 : 0..N)"
 
-    RETURN_REQUEST ||--o{ REFUND : "triggers_refund (1..1 : 0..N)"
+    RETURN_RECEIPT_LINE ||--|{ RETURN_LINE_ASSESSMENT : "assessed_by (1..1 : 1..N)"
+    RETURN_LINE_ASSESSMENT ||--o| REFUND : "triggers_refund (1..1 : 0..1)"
 
     RETURN_REQUEST {
         bigint ReturnRequestID PK
@@ -59,8 +60,20 @@ erDiagram
         bigint ReturnRequestLineID FK
         int ReceivedQty
         varchar Disposition
-        varchar InspectionResult
-        nvarchar InspectionNote
+        nvarchar ConditionDescription
+    }
+    RETURN_LINE_ASSESSMENT {
+        bigint AssessmentID PK
+        bigint ReturnReceiptLineID FK
+        int AssessedQty
+        varchar FaultParty
+        varchar RefundEligibilityStatus
+        varchar ResolutionType
+        decimal ApprovedRefundAmount
+        decimal ShippingRefundAmount
+        bigint AssessedBy FK
+        datetimeoffset AssessedAt
+        nvarchar AssessmentNotes
     }
     RETURN_STATUS_HISTORY {
         bigint ReturnStatusHistoryID PK

@@ -1,4 +1,4 @@
-``` mermaid
+```mermaid
 erDiagram
     %% =========================================================================
     %% 1. HUB: PRODUCT CATALOG & CORE SKU
@@ -6,7 +6,7 @@ erDiagram
     PRODUCT ||--|{ PRODUCT_VARIANT : "specializes_into (1..1 : 1..N)"
     
     %% =========================================================================
-    %% 2. HUB: CUSTOMER & IDENTITY
+    %% 2. HUB: CUSTOMER & IDENTITY (TPT SUBTYPE INHERITANCE)
     %% =========================================================================
     ACCOUNT ||--o| CUSTOMER : "profile_of (1..1 : 0..1)"
     ACCOUNT ||--o| EMPLOYEE : "staff_of (1..1 : 0..1)"
@@ -36,7 +36,7 @@ erDiagram
     
     SALES_ORDER ||--o{ STOCK_RESERVATION : "reserves_stock (1..1 : 0..N)"
     STOCK_RESERVATION ||--|{ STOCK_RESERVATION_LINE : "specifies_hold (1..1 : 1..N)"
-    ORDER_WAREHOUSE_ALLOCATION ||--o| STOCK_RESERVATION_LINE : "locks_allocation (1..1 : 0..1)"
+    ORDER_WAREHOUSE_ALLOCATION ||--o{ STOCK_RESERVATION_LINE : "locks_allocation (1..1 : 0..N)"
     WAREHOUSE ||--o{ STOCK_RESERVATION_LINE : "holds_in_wh (1..1 : 0..N)"
     
     %% Tồn kho vật lý tức thời
@@ -91,9 +91,11 @@ erDiagram
     %% =========================================================================
     SALES_ORDER ||--|| PAYMENT : "settled_by (1..1 : 1..1)"
     PAYMENT_METHOD ||--o{ PAYMENT : "uses_method (1..1 : 0..N)"
+    PAYMENT_METHOD ||--o{ PAYMENT_WEBHOOK_LOG : "receives_webhook (1..1 : 0..N)"
     PAYMENT ||--o{ PAYMENT_TRANSACTION : "executes_attempts (1..1 : 0..N)"
     PAYMENT ||--o{ REFUND : "creates_refund (1..1 : 0..N)"
     REFUND ||--o{ REFUND_TRANSACTION : "executes_refund_tx (1..1 : 0..N)"
+    PAYMENT_TRANSACTION ||--o{ REFUND_TRANSACTION : "refunds_original_tx (1..1 : 0..N)"
     
     %% =========================================================================
     %% 10. CROSS-DOMAIN: RETURN & EXCHANGE (RMA)
@@ -109,7 +111,8 @@ erDiagram
     RETURN_RECEIPT ||--|{ RETURN_RECEIPT_LINE : "inspects_items (1..1 : 1..N)"
     RETURN_REQUEST_LINE ||--o{ RETURN_RECEIPT_LINE : "reconciles_rma_line (1..1 : 0..N)"
     
-    RETURN_REQUEST ||--o{ REFUND : "triggers_settlement (1..1 : 0..N)"
+    RETURN_RECEIPT_LINE ||--|{ RETURN_LINE_ASSESSMENT : "assessed_by (1..1 : 1..N)"
+    RETURN_LINE_ASSESSMENT ||--o| REFUND : "triggers_refund (1..1 : 0..1)"
     
     %% =========================================================================
     %% 11. CROSS-DOMAIN: AUDIT & REPORTING GOVERNANCE

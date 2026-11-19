@@ -9,7 +9,7 @@ erDiagram
 
     SALES_ORDER ||--o{ STOCK_RESERVATION : "reserves (1..1 : 0..N)"
     STOCK_RESERVATION ||--|{ STOCK_RESERVATION_LINE : "contains (1..1 : 1..N)"
-    ORDER_WAREHOUSE_ALLOCATION ||--o| STOCK_RESERVATION_LINE : "secures (1..1 : 0..1)"
+    ORDER_WAREHOUSE_ALLOCATION ||--o{ STOCK_RESERVATION_LINE : "secures (1..1 : 0..N)"
     WAREHOUSE ||--o{ STOCK_RESERVATION_LINE : "reserved_at (1..1 : 0..N)"
     PRODUCT_VARIANT ||--o{ STOCK_RESERVATION_LINE : "held_sku (1..1 : 0..N)"
 
@@ -39,6 +39,9 @@ erDiagram
         bigint VariantID PK
         int OnHandQty
         int ReservedQty
+        int QuarantinedQty
+        int DamagedQty
+        decimal CurrentAverageCost
         datetimeoffset LastUpdatedAt
     }
     ORDER_WAREHOUSE_ALLOCATION {
@@ -83,6 +86,11 @@ erDiagram
         bigint WarehouseID FK
         int OnHandDelta
         int ReservedDelta
+        int QuarantinedDelta
+        int DamagedDelta
+        varchar FromStockStatus
+        varchar ToStockStatus
+        decimal UnitCost
     }
     STOCK_COUNT {
         bigint StockCountID PK

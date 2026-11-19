@@ -15,16 +15,17 @@ erDiagram
 
     ACCOUNT {
         bigint AccountID PK
-        varchar Email UK_Filtered
-        varchar Phone UK_Filtered
+        varchar AccountType
+        varchar Email UK
+        varchar Phone UK
         varchar PasswordHash
         varchar AccountStatus
         datetimeoffset CreatedAt
         datetimeoffset LastLoginAt
     }
     CUSTOMER {
-        bigint CustomerID PK
-        bigint AccountID FK
+        bigint AccountID PK
+        bigint CustomerID UK
         nvarchar FullName
         date DateOfBirth
         varchar Gender
@@ -32,8 +33,8 @@ erDiagram
         datetimeoffset CreatedAt
     }
     EMPLOYEE {
-        bigint EmployeeID PK
-        bigint AccountID FK
+        bigint AccountID PK
+        bigint EmployeeID UK
         varchar EmployeeCode UK
         nvarchar FullName
         varchar Department

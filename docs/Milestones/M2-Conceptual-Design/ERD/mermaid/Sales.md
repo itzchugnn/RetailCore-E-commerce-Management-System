@@ -23,6 +23,8 @@ erDiagram
         nvarchar CustomerNote
         datetimeoffset CreatedAt
         datetimeoffset UpdatedAt
+        datetimeoffset DeliveredAt
+        datetimeoffset ClosedAt
     }
     ORDER_LINE {
         bigint OrderLineID PK
@@ -34,7 +36,12 @@ erDiagram
         nvarchar VariantAttributesSnapshot
         decimal UnitPrice
         int OrderedQty
-        decimal LineSubtotal
+        decimal LineGrossAmount
+        decimal LineProductDiscount
+        decimal AllocatedOrderDiscount
+        decimal LineNetAmount
+        int RefundedQty
+        decimal AccumulatedRefundedAmount
     }
     ORDER_ADDRESS {
         bigint OrderAddressID PK
