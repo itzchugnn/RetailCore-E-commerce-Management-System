@@ -82,7 +82,381 @@ graph TD
 
 ---
 
-## 3. THUYẾT MINH CHI TIẾT 10 PHƯƠNG ÁN KIẾN TRÚC (ĐÃ CHUẨN HOÁ THEO REVIEW v2.0)
+## 3. KIẾN TRÚC CÁC LUỒNG NGHIỆP VỤ HUYẾT MẠCH & BẢN ĐỒ THỰC THỂ HẠT NHÂN (END-TO-END SYSTEM FLOWS & ENTITY MAPPING)
+
+Toàn bộ hệ thống RetailCore được vận hành thông qua **8 Luồng nghiệp vụ huyết mạch** kết nối 72 thực thể quan niệm trên 11 Subject Areas. Dưới đây là phân tích chi tiết từng luồng, làm rõ sự tương tác dữ liệu, vai trò và ý nghĩa của từng thực thể tham gia.
+
+```mermaid
+flowchart TD
+    subgraph Core_Supply_Chain["Chuỗi Cung Ứng & Bán Hàng RetailCore"]
+        F1["1. Chuỗi Mua Hàng & Quản Lý Nhập Kho (Inbound)"]
+        F2["2. Mua Sắm, Giỏ Hàng & Khởi Tạo Đơn Hàng (Shopping to Order)"]
+        F3["3. Khuyến Mãi, Voucher & Phân Bổ LRM (Promotions)"]
+        F4["4. Phân Bổ Đa Kho & Khóa Giữ Tồn Kho (Allocation & Reservation)"]
+        F5["5. Đóng Gói Bưu Kiện, Split Shipment & Giao Vận (Fulfillment)"]
+        F6["6. Thanh Toán Trực Tuyến & Đối Soát COD (Payment & Settlement)"]
+        F7["7. Hậu Cần Ngược, Giám Định KCS & Hoàn Tiền (Reverse Logistics)"]
+        F8["8. Kiểm Toán Hệ Thống & Báo Cáo Quản Trị (Audit & Reporting)"]
+    end
+    F1 -->|Tạo tồn khả dụng| F2
+    F2 -->|Kích hoạt tính giá| F3
+    F3 -->|Xác nhận giữ kho| F4
+    F4 -->|Điều phối xuất kho| F5
+    F5 -->|Xác thực công nợ| F6
+    F6 -.->|Phát sinh khiếu nại| F7
+    F1 & F2 & F4 & F5 & F6 & F7 ==>|Ghi nhật ký kiểm tra| F8
+```
+
+---
+
+### 3.1. Luồng 1: Chuỗi Mua Hàng & Quản Lý Nhập Kho (Inbound Procurement & Inventory Storing Flow)
+
+#### 1. Mục tiêu & Hành trình nghiệp vụ:
+Đảm bảo hàng hóa từ các Nhà cung cấp được mua vào theo đúng hợp đồng thương mại, được kiểm đếm ngoại quan tại cửa kho (KCS), cập nhật tức thời vào sổ cái tồn kho vật lý và tính toán giá vốn bình quân di động (Moving Weighted Average Cost - WAC).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor ProcUser as Nhân viên Mua hàng
+    participant Sup as Supplier (E21)
+    participant PO as PurchaseOrder (E24/E25)
+    participant GR as GoodsReceipt (E26/E27)
+    participant Inv as InventoryBalance (E11)
+    participant Tx as InventoryTransaction (E15/E16)
+    
+    ProcUser->>PO: Tạo đơn mua hàng PO (Chỉ định Kho, SKU, Đơn giá mua)
+    PO->>Sup: Gửi đơn đặt hàng chính thức
+    Sup-->>GR: Giao hàng tới cửa kho (Biên bản giao hàng)
+    GR->>GR: Thủ kho kiểm đếm thực tế (ReceivedQty vs AcceptedQty)
+    GR->>Tx: Post biên bản -> Ghi sổ cái Transaction (Loại PO_RECEIPT_IN)
+    Tx->>Inv: Tăng OnHandQty, Cập nhật CurrentAverageCost (WAC)
+```
+
+#### 2. Bảng Tra cứu Thực thể Tham gia & Ý nghĩa Chi tiết:
+
+| Mã | Tên Thực thể | Phân loại | Vai trò & Ý nghĩa Nghiệp vụ trong Luồng | Thuộc tính Trọng yếu |
+| :---: | :--- | :--- | :--- | :--- |
+| **E21** | `Supplier` | Strong Entity | Đại diện cho đối tác cung ứng hàng hóa, theo dõi công nợ và xếp hạng đối tác. | `SupplierID`, `SupplierCode`, `SupplierName`, `TaxCode` |
+| **E22** | `SupplierContact` | Weak Entity | Đầu mối liên hệ trực tiếp phụ trách các đơn hàng mua. | `ContactID`, `SupplierID`, `ContactName`, `Phone`, `Email` |
+| **E23** | `PurchaseAgreement` | Document Entity | Thỏa thuận khung hoặc hợp đồng nguyên tắc quy định giá mua cố định và kỳ hạn. | `AgreementID`, `SupplierID`, `StartDate`, `EndDate`, `Terms` |
+| **E24** | `PurchaseOrder` | Strong / Document | Hồ sơ đơn mua hàng chính thức gửi NCC (PO Header). Quản lý trạng thái mua. | `PurchaseOrderID`, `PONumber`, `SupplierID`, `WarehouseID`, `POStatus` |
+| **E25** | `PurchaseOrderLine` | Weak / Detail | Chi tiết từng SKU cần mua, số lượng đặt hàng và đơn giá cam kết mua. | `POLineID`, `PurchaseOrderID`, `VariantID`, `OrderedQty`, `UnitPrice` |
+| **E26** | `GoodsReceipt` | Strong / Document | Biên bản tiếp nhận hàng hóa tại bến nhập kho (GRN Header). | `ReceiptID`, `ReceiptNumber`, `PurchaseOrderID`, `WarehouseID`, `PostedAt` |
+| **E27** | `GoodsReceiptLine` | Weak / Detail | Chi tiết số lượng thực nhận, số lượng đạt chuẩn (Accepted) và số lượng từ chối. | `ReceiptLineID`, `ReceiptID`, `POLineID`, `ReceivedQty`, `AcceptedQty`, `UnitCost` |
+| **E28** | `SupplierReturn` | Strong / Document | Phiếu xuất trả hàng cho nhà cung cấp khi hàng lỗi phát hiện sau nhập kho. | `ReturnID`, `SupplierID`, `WarehouseID`, `CostVariance`, `ReturnStatus` |
+| **E10** | `Warehouse` | Strong Entity | Kho hàng vật lý tiếp nhận lưu trữ hàng hóa. | `WarehouseID`, `WarehouseCode`, `WarehouseName` |
+| **E11** | `InventoryBalance` | Associative Entity | Bảng số dư tức thời của SKU tại kho. Tăng `OnHandQty` và cập nhật WAC. | `WarehouseID`, `VariantID`, `OnHandQty`, `CurrentAverageCost` |
+| **E15** | `InventoryTransaction` | Document Entity | Chứng từ sổ cái biến động kho loại `PO_RECEIPT_IN` hoặc `SUPPLIER_RETURN_OUT`. | `TransactionID`, `TransactionType`, `ReferenceID`, `PostedAt` |
+| **E16** | `InventoryTransactionLine` | Weak Entity | Dòng biến động số dư: `OnHandDelta > 0`, ghi nhận giá mua thực tế vào `UnitCost`. | `TransactionLineID`, `TransactionID`, `VariantID`, `OnHandDelta`, `UnitCost` |
+
+#### 3. Bất biến Kiến trúc & Nguyên tắc Chốt:
+* **Tính toán WAC tức thời:** Khi biên bản `GoodsReceipt` được chốt (`PostedAt` NOT NULL), giá vốn bình quân di động mới của tồn kho thương phẩm được tính theo công thức:
+  $$\text{WAC}_{\text{mới}} = \frac{(\text{OnHandQty}_{\text{cũ}} \times \text{WAC}_{\text{cũ}}) + (\text{AcceptedQty} \times \text{UnitCost}_{\text{PO}})}{\text{OnHandQty}_{\text{cũ}} + \text{AcceptedQty}}$$
+* **Xuất trả NCC (SupplierReturn):** Giảm tồn kho theo `CurrentAverageCost` hiện hành, chênh lệch so với giá PO được tính vào `CostVariance` để phục vụ phòng Kế toán hạch toán.
+
+---
+
+### 3.2. Luồng 2: Trải Nghiệm Mua Sắm, Chuyển Đổi Giỏ Hàng & Khởi Tạo Đơn Hàng (Shopping, Cart Conversion & Order Inception Flow)
+
+#### 1. Mục tiêu & Hành trình nghiệp vụ:
+Chuyển hóa nhu cầu mua sắm từ Giỏ hàng trực tuyến thành một Hợp đồng mua bán chính thức (`SalesOrder`). Toàn bộ thông tin thời điểm mua được đóng băng bất biến qua **Cơ chế Snapshot 3 Điểm** nhằm bảo vệ hệ thống trước sự biến động dữ liệu sau này.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Cust as Khách Hàng (Customer)
+    participant Cart as ShoppingCart / CartItem (E38/E39)
+    participant Order as SalesOrder / OrderLine (E40/E41)
+    participant Addr as OrderAddress (E42)
+    participant Hist as OrderStatusHistory (E43)
+    
+    Cust->>Cart: Thêm biến thể SKU vào Giỏ hàng (CartItem)
+    Cust->>Order: Bấm "Đặt Hàng" (Checkout)
+    Note over Cart,Order: Thực thi Giao dịch Nguyên tử (All-or-Nothing)
+    Cart->>Cart: CartStatus chuyển 'CONVERTED'
+    Order->>Order: Tạo SalesOrder (PENDING_PAYMENT)
+    Order->>Order: Tạo OrderLine (Đóng băng UnitPrice & VariantAttributesSnapshot JSON)
+    Order->>Addr: Tạo OrderAddress (Sao chép hoàn toàn từ CustomerAddress)
+    Order->>Hist: Ghi nhận OrderStatusHistory (Khởi tạo đơn hàng)
+```
+
+#### 2. Bảng Tra cứu Thực thể Tham gia & Ý nghĩa Chi tiết:
+
+| Mã | Tên Thực thể | Phân loại | Vai trò & Ý nghĩa Nghiệp vụ trong Luồng | Thuộc tính Trọng yếu |
+| :---: | :--- | :--- | :--- | :--- |
+| **E29** | `Account` | Strong Entity | Tài khoản định danh đăng nhập dùng chung (TPT Base). | `AccountID`, `Username`, `Email`, `AccountType` |
+| **E30** | `Customer` | Subtype Entity | Hồ sơ khách hàng thương mại, lưu cấp độ trung thành (Loyalty Tier). | `AccountID (PK_FK)`, `CustomerCode`, `LoyaltyTierID` |
+| **E32** | `CustomerAddress` | Weak Entity | Sổ địa chỉ cá nhân của khách hàng (có thể bị sửa hoặc xóa bất kỳ lúc nào). | `AddressID`, `CustomerID`, `RecipientName`, `StreetAddress` |
+| **E01** | `Product` | Strong Entity | Thông tin chung của sản phẩm thương mại. | `ProductID`, `ProductName`, `Brand` |
+| **E04** | `ProductVariant` | Core SKU Entity | Biến thể vật lý cụ thể (màu, size) mang mã SKU duy nhất để bán. | `VariantID`, `ProductID`, `SKU`, `SellingPrice` |
+| **E38** | `ShoppingCart` | Strong Entity | Giỏ hàng trực tuyến lưu trạng thái mua sắm của khách. | `CartID`, `CustomerID`, `CartStatus` (ACTIVE / CONVERTED) |
+| **E39** | `CartItem` | Weak Entity | Dòng hàng trong giỏ, lưu số lượng tạm chọn của từng SKU. | `CartItemID`, `CartID`, `VariantID`, `Quantity` |
+| **E40** | `SalesOrder` | Strong / Document | Hợp đồng mua bán chính thức giữa Khách hàng và RetailCore (Header). | `OrderID`, `OrderNumber`, `CustomerID`, `OrderStatus`, `TotalAmount` |
+| **E41** | `OrderLine` | Weak / Detail | Chi tiết từng mặt hàng được chốt mua, lưu snapshot giá và thuộc tính. | `OrderLineID`, `OrderID`, `VariantID`, `UnitPrice`, `VariantAttributesSnapshot` |
+| **E42** | `OrderAddress` | Snapshot Entity | Bản sao bất biến địa chỉ giao hàng, độc lập hoàn toàn với `CustomerAddress`. | `OrderAddressID`, `OrderID`, `RecipientName`, `RecipientPhone`, `StreetAddress` |
+| **E43** | `OrderStatusHistory` | Audit Entity | Nhật ký vết lưu chuyển trạng thái của đơn hàng phục vụ kiểm soát SLA. | `StatusHistoryID`, `OrderID`, `PreviousStatus`, `NewStatus`, `ChangedAt` |
+
+#### 3. Bất biến Kiến trúc & Nguyên tắc Chốt:
+* **Cơ chế Snapshot 3 Điểm:**
+  1. `OrderAddress` không có Foreign Key trỏ về `CustomerAddress`. Khi khách hàng sửa sổ địa chỉ cá nhân, địa chỉ đơn hàng đã đặt hoàn toàn không bị ảnh hưởng.
+  2. `OrderLine.UnitPrice` lưu cứng giá bán tại thời điểm bấm đặt hàng. Mọi thay đổi giá niêm yết trong danh mục sau đó không làm thay đổi giá trị đơn hàng.
+  3. `OrderLine.VariantAttributesSnapshot` lưu trữ mảng JSON chuẩn hoá (`attributeId`, `valueCode`, `displayValue`), đảm bảo 5 năm sau danh mục có xóa thuộc tính thì đơn hàng vẫn xem lại đúng thuộc tính lúc mua.
+
+---
+
+### 3.3. Luồng 3: Áp Mã Khuyến Mãi, Xếp Chồng Voucher & Phân Bổ Chiết Khấu LRM (Promotion Stacking & Discount Allocation Flow)
+
+#### 1. Mục tiêu & Hành trình nghiệp vụ:
+Xác thực tính hợp lệ của mã giảm giá (`Voucher`) và chương trình khuyến mãi (`Promotion`). Phân bổ chiết khấu tổng đơn về từng dòng hàng bằng **Thuật toán Số dư Lớn nhất (Largest Remainder Method - LRM)** để đảm bảo số tiền giảm giá và thanh toán ròng là các số nguyên đồng VNĐ chính xác tuyệt đối.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Order as SalesOrder / OrderLine (E40/E41)
+    participant Promo as Promotion / Voucher (E49/E52)
+    participant Rule as PromotionCondition (E50)
+    participant Usage as PromotionUsage (E53)
+    
+    Order->>Promo: Gửi mã Voucher và Giá trị Giỏ hàng
+    Promo->>Rule: Kiểm tra điều kiện (MinOrderAmount, TargetCustomer, Hạn dùng)
+    Rule-->>Promo: Hợp lệ -> Tính tổng tiền giảm giá (DiscountAmount)
+    Promo->>Order: Áp dụng LRM phân bổ DiscountAmount về từng OrderLine (AllocatedOrderDiscount)
+    Note over Promo,Order: Không làm tròn số lẻ - Phân bổ chính xác từng đồng VNĐ
+    Order->>Usage: Ghi sổ cái tiêu dùng PromotionUsage (Bất biến)
+    Order->>Order: Tính LineNetAmount = LineGrossAmount - ProductDiscount - AllocatedOrderDiscount
+```
+
+#### 2. Bảng Tra cứu Thực thể Tham gia & Ý nghĩa Chi tiết:
+
+| Mã | Tên Thực thể | Phân loại | Vai trò & Ý nghĩa Nghiệp vụ trong Luồng | Thuộc tính Trọng yếu |
+| :---: | :--- | :--- | :--- | :--- |
+| **E49** | `Promotion` | Strong / Document | Định nghĩa chương trình ưu đãi tổng thể (Header, có quản lý phiên bản). | `PromotionID`, `PromotionCode`, `DiscountType`, `DiscountValue`, `MaxDiscountAmount` |
+| **E50** | `PromotionCondition` | Weak Entity | Các quy tắc điều kiện đơn hàng/khách hàng phải thỏa mãn để được hưởng ưu đãi. | `ConditionID`, `PromotionID`, `ConditionType`, `ComparisonOperator`, `ConditionValue` |
+| **E51** | `PromotionProduct` | Associative Entity | Danh sách các SKU thuộc diện được áp dụng ưu đãi cấp sản phẩm. | `PromotionID`, `VariantID` |
+| **E52** | `Voucher` | Document Entity | Mã phiếu giảm giá cụ thể mà khách hàng nhập khi checkout (Public hoặc Cá nhân). | `VoucherID`, `PromotionID`, `VoucherCode`, `MaxUsage`, `UsedCount`, `EndAt` |
+| **E53** | `PromotionUsage` | Associative / Ledger | Sổ cái ghi nhận lịch sử áp dụng khuyến mại bất biến vào đơn hàng. | `PromotionUsageID`, `PromotionID`, `OrderID`, `OrderLineID`, `VoucherID`, `DiscountAmount` |
+| **E54** | `PromotionTargetCustomer` | Associative Entity | Phân quyền chương trình ưu đãi dành riêng cho nhóm khách hàng thân thiết/VIP. | `PromotionID`, `CustomerID` |
+| **E41** | `OrderLine` | Detail Entity | Tiếp nhận giá trị chiết khấu phân bổ vào trường `AllocatedOrderDiscount`. | `AllocatedOrderDiscount`, `LineNetAmount`, `LineGrossAmount` |
+
+#### 3. Bất biến Kiến trúc & Nguyên tắc Chốt:
+* **Triệt tiêu Sai số Làm tròn (LRM):** Thuật toán Hare-Niemeyer phân chia phần nguyên đồng trước, phần dư phân số được ưu tiên cộng 1 đồng cho các dòng có phần dư lớn nhất. Tổng chiết khấu phân bổ luôn bằng đúng 100% chiết khấu đơn:
+  $$\sum_{i=1}^N \text{AllocatedOrderDiscount}_i = \text{DiscountAmount}_{\text{Order}}$$
+* **Tính toán Giá trị Ròng:** Mỗi dòng `OrderLine` xác định chính xác số tiền thực thu `LineNetAmount` làm căn cứ pháp lý và tài chính cho việc hoàn tiền sau này.
+
+---
+
+### 3.4. Luồng 4: Phân Bổ Đa Kho & Khóa Giữ Tồn Kho 15 Phút (Multi-Warehouse Allocation & Stock Reservation Flow)
+
+#### 1. Mục tiêu & Hành trình nghiệp vụ:
+Đối với đơn hàng có nhiều mặt hàng nằm rải rác ở nhiều kho vật lý khác nhau, hệ thống tự động định tuyến xuất hàng (`OrderWarehouseAllocation`) và khóa giữ tạm thời tồn kho khả dụng (`StockReservation`) trong thời gian 15 phút để khách hoàn tất thanh toán, ngăn chặn triệt để tình trạng bán vượt tồn (Overselling).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Order as SalesOrder / OrderLine (E40/E41)
+    participant Alloc as OrderWarehouseAllocation (E12)
+    participant Res as StockReservation / Line (E13/E14)
+    participant Inv as InventoryBalance (E11)
+    
+    Order->>Alloc: Chạy thuật toán định tuyến kho (Tối ưu vị trí & Tồn kho)
+    Alloc->>Alloc: Tạo bản ghi Allocation (Phân bổ SKU về từng WarehouseID)
+    Alloc->>Res: Tạo StockReservation (ACTIVE, Hạn 15 phút)
+    Res->>Res: Tạo StockReservationLine liên kết từng AllocationID
+    Res->>Inv: Tăng ReservedQty, Giảm AvailableQty (OnHandQty giữ nguyên)
+    Note over Inv: AvailableQty = OnHandQty - ReservedQty - QuarantinedQty - DamagedQty
+```
+
+#### 2. Bảng Tra cứu Thực thể Tham gia & Ý nghĩa Chi tiết:
+
+| Mã | Tên Thực thể | Phân loại | Vai trò & Ý nghĩa Nghiệp vụ trong Luồng | Thuộc tính Trọng yếu |
+| :---: | :--- | :--- | :--- | :--- |
+| **E12** | `OrderWarehouseAllocation` | Associative Entity | Bản ghi định tuyến: Quyết định lấy bao nhiêu sản phẩm của dòng đơn từ kho nào. | `AllocationID`, `OrderLineID`, `WarehouseID`, `VariantID`, `AllocatedQty`, `AllocationStatus` |
+| **E13** | `StockReservation` | Document Entity | Phiếu khóa giữ hàng tạm thời gắn liền với đơn hàng (Header, quản lý thời gian hết hạn). | `ReservationID`, `OrderID`, `ReservationStatus`, `CreatedAt`, `ExpiresAt`, `ReleasedAt` |
+| **E14** | `StockReservationLine` | Weak Entity | Chi tiết số lượng SKU cụ thể bị khóa tại từng kho (Line). | `ReservationLineID`, `ReservationID`, `AllocationID`, `WarehouseID`, `ReservedQty` |
+| **E11** | `InventoryBalance` | Associative Entity | Bảng số dư kho: Tiếp nhận biến động tăng `ReservedQty`. | `WarehouseID`, `VariantID`, `ReservedQty`, `OnHandQty` |
+
+#### 3. Bất biến Kiến trúc & Nguyên tắc Chốt:
+* **Tách rời Quyết định Định tuyến khỏi Giữ hàng:** `OrderWarehouseAllocation` lưu quyết định logistics (kho nào xuất); trong khi `StockReservationLine` là công cụ khóa giữ tồn kho kỹ thuật. Một phân bổ có thể có nhiều đợt giữ hàng ($1 : 0..N$) nếu khách hàng thanh toán trễ và yêu cầu tái giữ hàng (Re-allocation).
+* **Bảo toàn Tồn kho Vật lý:** Thao tác khóa giữ kho **tuyệt đối không làm thay đổi `OnHandQty`**. Chỉ có `ReservedQty` tăng lên, dẫn đến `AvailableQty` giảm tức thời.
+
+---
+
+### 3.5. Luồng 5: Đóng Gói Bưu Kiện, Phân Tách Kiện Hàng & Giao Vận (Fulfillment, Split Shipment & Carrier Dispatch Flow)
+
+#### 1. Mục tiêu & Hành trình nghiệp vụ:
+Thực thi đóng gói bưu phẩm tại từng kho hàng theo đúng phân bổ. Nếu đơn hàng lấy từ nhiều kho, hệ thống tự động tách thành nhiều kiện độc lập (**Split Shipment**). Khi đơn vị vận chuyển tiếp nhận kiện (`DISPATCHED`), hệ thống mới chính thức xuất sổ trừ tồn kho vật lý và cập nhật tracking.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Alloc as OrderWarehouseAllocation (E12)
+    participant Ship as Shipment / ShipmentLine (E45/E46)
+    participant Carrier as Carrier / Tracking (E44/E48)
+    participant Tx as InventoryTransaction (E15/E16)
+    participant Inv as InventoryBalance (E11)
+    
+    Alloc->>Ship: Tạo Shipment theo từng Warehouse (Split Shipment nếu khác kho)
+    Ship->>Ship: Tạo ShipmentLine gắn trực tiếp với AllocationID
+    Ship->>Carrier: Bàn giao bưu tá (Ghi nhận TrackingNumber)
+    Carrier->>Ship: Trạng thái chuyển 'DISPATCHED' (Xuất bãi)
+    Ship->>Tx: Ghi sổ cái Transaction (Loại SHIPMENT_OUT)
+    Tx->>Inv: Trừ OnHandQty (-ShipmentQty) & Giải phóng ReservedQty (-ShipmentQty)
+    Carrier->>Ship: Giao hàng thành công -> Cập nhật DeliveredAt
+```
+
+#### 2. Bảng Tra cứu Thực thể Tham gia & Ý nghĩa Chi tiết:
+
+| Mã | Tên Thực thể | Phân loại | Vai trò & Ý nghĩa Nghiệp vụ trong Luồng | Thuộc tính Trọng yếu |
+| :---: | :--- | :--- | :--- | :--- |
+| **E44** | `Carrier` | Strong Entity | Đối tác giao vận (GHTK, GHN, Viettel Post, Shopee Xpress...). | `CarrierID`, `CarrierCode`, `CarrierName`, `ContactPhone` |
+| **E45** | `Shipment` | Strong / Document | Kiện hàng giao vận thực tế được đóng gói từ một kho xuất phát (Header). | `ShipmentID`, `ShipmentNumber`, `OrderID`, `WarehouseID`, `CarrierID`, `TrackingNumber`, `ShipmentStatus`, `DeliveredAt` |
+| **E46** | `ShipmentLine` | Associative / Detail | Chi tiết số lượng mặt hàng nằm trong kiện hàng, gắn liền với phân bổ kho. | `ShipmentLineID`, `ShipmentID`, `OrderLineID`, `AllocationID`, `ShipmentQty` |
+| **E47** | `DeliveryAttempt` | Weak Entity | Ghi nhận các lần bưu tá phát hàng thực tế (lần 1, 2, 3 kèm nguyên nhân nếu thất bại). | `AttemptID`, `ShipmentID`, `AttemptNumber`, `AttemptStatus`, `FailureReason` |
+| **E48** | `ShipmentStatusHistory` | Audit Entity | Nhật ký vết chuyển đổi trạng thái của kiện hàng phục vụ đối soát SLA giao vận. | `ShipmentStatusHistoryID`, `ShipmentID`, `PreviousStatus`, `NewStatus`, `ChangedAt` |
+| **E15** | `InventoryTransaction` | Document Entity | Chứng từ xuất kho loại `SHIPMENT_OUT`. | `TransactionID`, `TransactionType`, `ReferenceID`, `PostedAt` |
+| **E16** | `InventoryTransactionLine` | Weak Entity | Dòng biến động kép: `OnHandDelta = -Qty`, `ReservedDelta = -Qty`. | `TransactionLineID`, `TransactionID`, `VariantID`, `OnHandDelta`, `ReservedDelta` |
+
+#### 3. Bất biến Kiến trúc & Nguyên tắc Chốt:
+* **Ghi sổ Kép Xuất Kho (Atomic Dual-Delta):** Chỉ khi bưu phẩm chính thức rời khỏi cửa kho, hệ thống mới ghi sổ:
+  $$\text{OnHandDelta} = -\text{ShipmentQty}, \quad \text{ReservedDelta} = -\text{ShipmentQty}$$
+  Thao tác này đồng thời giảm tồn kho vật lý và giải phóng khóa giữ hàng trong cùng một Database Transaction.
+* **Độc lập Mốc Giao theo Kiện:** Trong Split Shipment, mỗi `Shipment` có thời điểm giao thành công `DeliveredAt` hoàn toàn độc lập, làm căn cứ tính thời hạn đổi trả riêng cho kiện hàng đó.
+
+---
+
+### 3.6. Luồng 6: Thanh Toán Trực Tuyến, Xử Lý Webhook & Đối Soát COD Hai Chặng (Payment Settlement, Webhook Idempotency & COD Flow)
+
+#### 1. Mục tiêu & Hành trình nghiệp vụ:
+Quản lý nghĩa vụ tài chính của đơn hàng thông qua mô hình trạng thái hai tầng. Hỗ trợ thanh toán trực tuyến với bộ đệm Webhook chống xử lý trùng lặp (Idempotent), đồng thời vận hành đối soát COD hai chặng độc lập bảo vệ doanh thu bưu cục thu hộ.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Cust as Khách Hàng
+    participant Pay as Payment (E56)
+    participant Tx as PaymentTransaction (E57)
+    participant Log as PaymentWebhookLog (E71)
+    participant Carrier as Bưu Cục COD (Carrier)
+    
+    alt Thanh toán Điện tử (Online Gateway)
+        Pay->>Tx: Khởi tạo lần thử thanh toán (INITIATED)
+        Tx->>Log: Cổng thanh toán gửi Webhook kết quả
+        Log->>Log: Kiểm tra Unique Idempotency (ProviderID, EventID)
+        Log->>Tx: Xử lý thành công -> Cập nhật Tx = SUCCEEDED
+        Tx->>Pay: Cập nhật PaymentStatus = PAID
+    else Thanh toán Tiền mặt khi Nhận hàng (COD)
+        Cust->>Carrier: Trả tiền mặt cho Shipper lúc nhận kiện
+        Carrier-->>Pay: Chặng 1: Nghĩa vụ khách xong -> PaymentStatus = PAID
+        Carrier-->>Pay: Chặng 2: Công nợ bưu cục -> CarrierSettlementStatus = COLLECTED_BY_CARRIER
+        Carrier->>Pay: Chuyển khoản tiền thu hộ & Bảng kê -> CarrierSettlementStatus = RECONCILED
+    end
+```
+
+#### 2. Bảng Tra cứu Thực thể Tham gia & Ý nghĩa Chi tiết:
+
+| Mã | Tên Thực thể | Phân loại | Vai trò & Ý nghĩa Nghiệp vụ trong Luồng | Thuộc tính Trọng yếu |
+| :---: | :--- | :--- | :--- | :--- |
+| **E55** | `PaymentMethod` | Strong Entity | Danh mục phương thức thanh toán: COD, VNPAY, MOMO, ZALOPAY, CREDIT_CARD. | `PaymentMethodID`, `MethodCode`, `MethodName`, `MethodType` |
+| **E56** | `Payment` | Strong / Document | Hồ sơ nghĩa vụ tài chính tổng thể của đơn hàng ($1:1$ với `SalesOrder`). | `PaymentID`, `OrderID`, `PaymentMethodID`, `PaymentStatus`, `CarrierSettlementStatus`, `AmountDue`, `AmountPaid` |
+| **E57** | `PaymentTransaction` | Weak / Event | Nhật ký từng lần thử thu tiền qua cổng thanh toán (hỗ trợ thử lại nhiều lần). | `PaymentTransactionID`, `PaymentID`, `GatewayTransactionID`, `TransactionStatus`, `Amount` |
+| **E71** | `PaymentWebhookLog` | Support / Audit | Bộ đệm raw payload webhook từ cổng thanh toán, ngăn chặn tấn công Replay. | `WebhookLogID`, `PaymentMethodID`, `MerchantAccountID`, `ProviderEventID`, `ProcessingStatus` |
+
+#### 3. Bất biến Kiến trúc & Nguyên tắc Chốt:
+* **Mô hình Trạng thái Hai Tầng:** `Payment` đại diện cho nghĩa vụ tài chính tổng thể; trong khi `PaymentTransaction` đại diện cho từng nỗ lực thanh toán. Một giao dịch thử nghiệm thất bại không được làm hủy toàn bộ hồ sơ `Payment` nếu khách hàng vẫn có quyền đổi thẻ hoặc chọn phương thức khác.
+* **Đối soát COD Hai Chặng (Two-Sided COD):** 
+  * Ngay khi bưu tá giao hàng và nhận tiền mặt: Nghĩa vụ của khách hàng hoàn tất 100% (`Payment.PaymentStatus = 'PAID'`).
+  * Trách nhiệm nợ chuyển sang hãng vận chuyển: Quản lý độc lập qua `CarrierSettlementStatus` từ `COLLECTED_BY_CARRIER` đến khi tiền về tài khoản ngân hàng và khớp bảng kê đối soát (`RECONCILED`).
+
+---
+
+### 3.7. Luồng 7: Hậu Cần Ngược, Giám Định Lỗi & Hoàn Tiền Bảo Toàn Tài Chính (Reverse Logistics, Assessment & Refund Flow)
+
+#### 1. Mục tiêu & Hành trình nghiệp vụ:
+Xử lý khiếu nại đổi trả hàng (RMA) sau bán hàng. Tiếp nhận bưu phẩm hoàn trả tại kho, thực hiện giám định độc lập lỗi KCS thông qua `ReturnLineAssessment` (E72) và hoàn trả tiền chính xác theo công thức lũy tiến số nguyên $F(q)$.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Cust as Khách Hàng
+    participant RMA as ReturnRequest / Line (E60/E61)
+    participant Rec as ReturnReceipt / Line (E62/E63)
+    participant Ass as ReturnLineAssessment (E72)
+    participant Inv as Inventory (E11/E16)
+    participant Ref as Refund / RefundTx (E58/E59)
+    
+    Cust->>RMA: Mở yêu cầu RMA (Kiểm tra hạn đổi trả theo Shipment.DeliveredAt)
+    RMA->>Rec: Tiếp nhận hàng tại bến nhập kho
+    Rec->>Ass: Giám định độc lập (FaultParty, ResolutionType, ApprovedRefundAmount)
+    par Xử lý Kho Vật lý (Tùy theo hiện trạng chất lượng)
+        Ass->>Inv: Hàng đạt chuẩn -> Nhập lại kho SELLABLE (CUSTOMER_RETURN_IN)
+        Ass->>Inv: Hàng lỗi tiêu huỷ -> Xuất hủy phế phẩm (SCRAP_OUT)
+    and Xử lý Tài chính (Độc lập Kho)
+        Ass->>Ref: Tạo phiếu hoàn tiền Refund
+        Ref->>Ref: Thực thi RefundTransaction (Liên kết OriginalPaymentTransactionID)
+    end
+```
+
+#### 2. Bảng Tra cứu Thực thể Tham gia & Ý nghĩa Chi tiết:
+
+| Mã | Tên Thực thể | Phân loại | Vai trò & Ý nghĩa Nghiệp vụ trong Luồng | Thuộc tính Trọng yếu |
+| :---: | :--- | :--- | :--- | :--- |
+| **E60** | `ReturnRequest` | Strong / Document | Yêu cầu đổi trả hàng chính thức do khách hoặc CSKH lập (RMA Header). | `ReturnRequestID`, `ReturnNumber`, `OrderID`, `CustomerID`, `WarehouseID`, `ReturnStatus` |
+| **E61** | `ReturnRequestLine` | Weak / Detail | Chi tiết từng SKU và số lượng yêu cầu trả, gắn với dòng đơn hàng gốc. | `ReturnRequestLineID`, `ReturnRequestID`, `OrderLineID`, `RequestedQty`, `ApprovedQty` |
+| **E62** | `ReturnReceipt` | Strong / Document | Biên bản tiếp nhận bưu kiện hoàn trả thực tế tại kho được chỉ định. | `ReturnReceiptID`, `ReceiptNumber`, `ReturnRequestID`, `WarehouseID`, `PostedAt` |
+| **E63** | `ReturnReceiptLine` | Weak / Detail | Chi tiết số lượng thực tế mở gói tiếp nhận tại bến nhập kho. | `ReturnReceiptLineID`, `ReturnReceiptID`, `ReturnRequestLineID`, `ReceivedQty` |
+| **E64** | `ReturnStatusHistory` | Audit Entity | Nhật ký vết chuyển đổi trạng thái của yêu cầu đổi trả phục vụ đối soát SLA. | `ReturnStatusHistoryID`, `ReturnRequestID`, `PreviousStatus`, `NewStatus`, `ChangedAt` |
+| **E72** | `ReturnLineAssessment` | Assessment Entity | Bản ghi thẩm định trách nhiệm lỗi, điều kiện hoàn tiền và lưu vết Audit Trail. | `AssessmentID`, `ReturnReceiptLineID`, `AssessedQty`, `FaultParty`, `ResolutionType`, `ApprovedRefundAmount`, `IsCurrent` |
+| **E58** | `Refund` | Strong / Document | Hồ sơ phê duyệt lệnh hoàn tiền gắn với hồ sơ thanh toán thực thu ban đầu. | `RefundID`, `PaymentID`, `RefundReference`, `RefundAmount`, `RefundStatus` |
+| **E59** | `RefundTransaction` | Weak / Event | Giao dịch thực thi chuyển tiền hoàn qua cổng, liên kết giao dịch gốc. | `RefundTransactionID`, `RefundID`, `OriginalPaymentTransactionID`, `Amount`, `TransactionStatus` |
+
+#### 3. Bất biến Kiến trúc & Nguyên tắc Chốt:
+* **Tách Biệt Quyền Hoàn Tiền khỏi Định Đoạt Kho:** `ReturnLineAssessment` (E72) cho phép khách hàng được bồi hoàn 100% nếu lỗi thuộc về Nhà sản xuất hoặc Đơn vị vận chuyển dù hàng hóa bị biến dạng và phải tiêu hủy tại chỗ (`SCRAP_OUT`).
+* **Công thức Hoàn tiền Tích luỹ Nguyên số $F(q)$:** Triệt tiêu hoàn toàn sai số phân số khi khách trả hàng lẻ từng đợt, đảm bảo số tiền hoàn tích lũy bằng đúng số tiền ròng thực trả.
+* **Kiểm soát Ngân quỹ Hoàn tiền:** Mọi `RefundTransaction` bắt buộc trỏ về `OriginalPaymentTransactionID` thành công và được kiểm soát không hoàn vượt quá số tiền thực thu.
+
+---
+
+### 3.8. Luồng 8: Quản Trị Hệ Thống, Kiểm Toán Vết & Báo Cáo Doanh Nghiệp (System Audit & Enterprise Reporting Flow)
+
+#### 1. Mục tiêu & Hành trình nghiệp vụ:
+Ghi vết bất biến toàn bộ các thao tác nghiệp vụ nhạy cảm (thay đổi giá, can thiệp tồn kho, điều chỉnh hoàn tiền) để đáp ứng chuẩn mực kiểm toán SOX/ISO. Cung cấp cơ chế đóng băng dữ liệu báo cáo tài chính/quản trị (`ReportSnapshot`) theo kỳ kế toán cố định, giảm tải truy vấn trực tiếp lên cơ sở dữ liệu giao dịch OLTP.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor AdminUser as Quản trị viên / Kế toán
+    participant App as Ứng Dụng RetailCore
+    participant Audit as AuditLog / Detail (E65/E66)
+    participant Rep as ReportDefinition / Exec (E67/E68)
+    participant Snap as ReportSnapshot (E69)
+    
+    AdminUser->>App: Thực hiện thao tác nghiệp vụ nhạy cảm (Sửa giá / Phê duyệt hoàn tiền)
+    App->>Audit: Ghi AuditLog (AccountID, IP, ActionType, EntityName, RecordID)
+    App->>Audit: Ghi AuditLogDetail (FieldName, OldValue, NewValue)
+    
+    AdminUser->>Rep: Yêu cầu chạy báo cáo doanh thu / tồn kho cuối tháng
+    Rep->>Rep: Ghi ReportExecution (Parameters, RequestedAt)
+    Rep->>Snap: Chốt số liệu kỳ kế toán -> Tạo ReportSnapshot (Đóng băng dữ liệu)
+```
+
+#### 2. Bảng Tra cứu Thực thể Tham gia & Ý nghĩa Chi tiết:
+
+| Mã | Tên Thực thể | Phân loại | Vai trò & Ý nghĩa Nghiệp vụ trong Luồng | Thuộc tính Trọng yếu |
+| :---: | :--- | :--- | :--- | :--- |
+| **E65** | `AuditLog` | Audit Entity | Nhật ký ghi nhận các thao tác nghiệp vụ và sự kiện an ninh quan trọng (Header). | `AuditLogID`, `AccountID`, `ActionType`, `EntityName`, `RecordID`, `ActionAt`, `IPAddress` |
+| **E66** | `AuditLogDetail` | Weak / Detail | Chi tiết các thuộc tính bị thay đổi (giá trị trước và sau khi chỉnh sửa). | `AuditLogDetailID`, `AuditLogID`, `FieldName`, `OldValue`, `NewValue` |
+| **E67** | `ReportDefinition` | Catalog Entity | Danh mục định nghĩa các mẫu báo cáo quản trị và nghiệp vụ trong hệ thống. | `ReportDefinitionID`, `ReportCode`, `ReportName`, `DataSource`, `ReportType` |
+| **E68** | `ReportExecution` | Event Entity | Nhật ký theo dõi mỗi lần người dùng kích hoạt chạy hoặc tải xuất báo cáo. | `ReportExecutionID`, `ReportDefinitionID`, `AccountID`, `ExecutionStatus`, `CompletedAt` |
+| **E69** | `ReportSnapshot` | Document / Snapshot | Ảnh chụp dữ liệu báo cáo được chốt cố định theo kỳ kế toán, bảo đảm bất biến. | `ReportSnapshotID`, `ReportDefinitionID`, `SnapshotCode`, `PeriodStart`, `PeriodEnd`, `DataLocation` |
+| **E70** | `ReportPermission` | Associative Entity | Phân quyền chi tiết cho phép nhóm vai trò (`Role`) được xem hoặc xuất báo cáo. | `ReportDefinitionID`, `RoleID`, `CanView`, `CanExport`, `CanCreateSnapshot` |
+
+#### 3. Bất biến Kiến trúc & Nguyên tắc Chốt:
+* **Ghi vết Kiểm toán Bất biến (Tamper-evident Audit):** Bản ghi `AuditLog` và `AuditLogDetail` chỉ cho phép quyền `INSERT`. Không một tài khoản người dùng ứng dụng nào có quyền `UPDATE` hoặc `DELETE` trên bảng audit.
+* **Đóng băng Ảnh chụp Báo cáo (Report Freezing):** Số liệu báo cáo tài chính cuối tháng được chốt vào `ReportSnapshot`. Các truy vấn phân tích của ban giám đốc sẽ đọc từ snapshot này, ngăn chặn nguy cơ các giao dịch mới phát sinh làm sai lệch số liệu của kỳ kế toán đã khóa sổ.
+
+---
+
+## 4. THUYẾT MINH CHI TIẾT 10 PHƯƠNG ÁN KIẾN TRÚC (ĐÃ CHUẨN HOÁ THEO REVIEW v2.0)
 
 ---
 
@@ -109,7 +483,7 @@ Bên cạnh đó, việc giám định thực tế thường trải qua nhiều 
 
 ```mermaid
 flowchart TD
-    RL["ReturnReceiptLine (E49)<br>ReceivedQty = 5"] --> A1["Assessment 1 (E72)<br>AssessedQty = 3<br>FaultParty: VENDOR<br>Resolution: REFUND<br>Status: APPROVED<br>ApprovedRefundAmount = 300.000đ"]
+    RL["ReturnReceiptLine (E63)<br>ReceivedQty = 5"] --> A1["Assessment 1 (E72)<br>AssessedQty = 3<br>FaultParty: VENDOR<br>Resolution: REFUND<br>Status: APPROVED<br>ApprovedRefundAmount = 300.000đ"]
     RL --> A2["Assessment 2 (E72)<br>AssessedQty = 2<br>FaultParty: CUSTOMER<br>Resolution: NO_ACTION<br>Status: REJECTED<br>Reason: Rách tem niêm phong"]
     A1 --> INV["Kho vật lý: SCRAP_OUT<br>(Tiêu huỷ phế phẩm)"]
     A1 --> FIN["Kế toán: Lập RefundTransaction<br>(Hoàn tiền đợt 1: 300.000đ)"]
@@ -357,7 +731,7 @@ WHERE ReservationStatus = 'ACTIVE';
 
 ---
 
-## 4. LỘ TRÌNH ĐIỀU CHỈNH MILESTONE 3 (LOGICAL DATABASE DESIGN)
+## 5. LỘ TRÌNH ĐIỀU CHỈNH MILESTONE 3 (LOGICAL DATABASE DESIGN)
 
 Trước những phản hồi chuyên môn xác đáng, mục tiêu và phương pháp luận triển khai Milestone 3 được điều chỉnh theo hướng tiếp cận học thuật và kỹ thuật thực chứng:
 
@@ -401,9 +775,9 @@ flowchart LR
 
 ---
 
-## 5. GATE CHECKLIST KIỂM CHỨNG & QUYẾT ĐỊNH CỦA LEAD DATABASE ENGINEER
+## 6. GATE CHECKLIST KIỂM CHỨNG & QUYẾT ĐỊNH CỦA LEAD DATABASE ENGINEER
 
-### 5.1. Bảng Tiêu chí Kiểm chứng Cổng Chuyển giao (Gate Verification Checklist)
+### 6.1. Bảng Tiêu chí Kiểm chứng Cổng Chuyển giao (Gate Verification Checklist)
 
 | STT | Tiêu chí Kiểm chứng Kiến trúc | Kết quả Đánh giá | Bằng chứng / Cơ sở Kỹ thuật | Trạng thái Chuyển tiếp M3 |
 | :---: | :--- | :---: | :--- | :--- |
@@ -420,7 +794,7 @@ flowchart LR
 
 ---
 
-### 5.2. Quyết định Nghiệm thu Cổng Chuyển giao (Gate Sign-off Decision)
+### 6.2. Quyết định Nghiệm thu Cổng Chuyển giao (Gate Sign-off Decision)
 
 ```
 ========================================================================================
