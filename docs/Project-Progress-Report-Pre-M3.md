@@ -1,373 +1,447 @@
-# BÁO CÁO TIẾN ĐỘ DỰ ÁN RETAILCORE & THUYẾT MINH KIẾN TRÚC PRE-M3
-## PROJECT PROGRESS REPORT & ARCHITECTURAL BASELINE FOR MILESTONE 3
+# BÁO CÁO TIẾN ĐỘ DỰ ÁN RETAILCORE & THUYẾT MINH KIẾN TRÚC PRE-M3 (PHIÊN BẢN v2.0)
+## PROJECT PROGRESS REPORT & ARCHITECTURAL BASELINE FOR MILESTONE 3 - CONDITIONAL GATE REVIEW
 
-* **Tên dự án:** RetailCore – E-commerce Management System
-* **Cột mốc báo cáo:** Chuyển giao từ Milestone 2 (Conceptual Design) sang Milestone 3 (Logical Design)
-* **Thời điểm lập báo cáo:** 20/11/2026
-* **Đơn vị lập báo cáo:** Lead Enterprise Database Engineer & Solution Architect
-* **Hệ quản trị CSDL mục tiêu:** Microsoft SQL Server Enterprise Edition
-* **Căn cứ pháp lý & kỹ thuật:**
-  * Toàn bộ bộ tài liệu Milestone 1: [01-Project-Charter.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M1-Business-Analysis/01-Project-Charter.md) đến [11-Business-Decisions.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M1-Business-Analysis/11-Business-Decisions.md).
-  * Toàn bộ bộ tài liệu Milestone 2: [01-Entity-Catalog.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/01-Entity-Catalog.md) đến [08-Architectural-Correction-Log.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/08-Architectural-Correction-Log.md).
+* **Hệ thống Quản trị:** RetailCore Enterprise E-Commerce Management System
+* **Cơ sở dữ liệu Mục tiêu:** Microsoft SQL Server Enterprise Edition
+* **Quy mô Dự phóng:** 1.000.000 đơn hàng/năm, 10.000.000 biến động kho/năm, tính sẵn sàng 99.99%
+* **Phiên bản Báo cáo:** v2.0 (Cập nhật và hoàn thiện theo Đánh giá Kiến trúc Chuyên sâu ngày 20/11/2026)
+* **Trạng thái Cổng M2:** **CONDITIONAL APPROVAL FOR M3 (Nghiệm thu Chuyển giao Có Điều kiện)**
+* **Phê duyệt:** Lead Enterprise Database Engineer & Solution Architect
 
 ---
 
-## 1. TỔNG QUAN ĐIỀU HÀNH & TIẾN ĐỘ DỰ ÁN (EXECUTIVE SUMMARY)
+## 1. TỔNG QUAN ĐIỀU HÀNH & ĐÁNH GIÁ CỔNG M2 (EXECUTIVE SUMMARY & GATE REVIEW)
 
-Dự án **RetailCore – Hệ thống Quản trị Bán lẻ & Thương mại Điện tử Đa kênh** đã hoàn thành toàn diện giai đoạn Nghiên cứu Phân tích Nghiệp vụ (Milestone 1) và Thiết kế Cơ sở Dữ liệu Quan niệm (Milestone 2). Hệ thống đã trải qua các đợt thẩm định độc lập nghiêm ngặt, rà soát 6 chiều kích thước kỹ thuật (Entity Ownership, Cross-domain Relationships, Cardinality, Business Rule Consistency, Lifecycle, Completeness) và chuẩn hóa dứt điểm 10 khiếm khuyết cốt lõi ở cấp độ nghiệp vụ, cấu trúc dữ liệu và giải thuật toán học.
-
-### Bảng theo dõi tiến độ tổng thể các Cột mốc (Milestone Scorecard)
-
-| Cột mốc (Milestone) | Phạm vi công việc | Khối lượng bàn giao | Tỷ lệ hoàn thành | Đánh giá chất lượng | Trạng thái nghiệm thu |
-| :--- | :--- | :---: | :---: | :---: | :---: |
-| **Milestone 1 (M1)**<br>Business Analysis | Phân tích nghiệp vụ, use cases, quy tắc nghiệp vụ, ma trận truy vết | 11 tài liệu kỹ thuật, 55 Use Cases, ~200 Business Rules, 7 Quyết định nghiệp vụ nền tảng (BD-01..07) | **100%** | Chuẩn IEEE/BABOK | **ĐÃ NGHIỆM THU ĐÓNG** |
-| **Milestone 2 (M2)**<br>Conceptual Design | Mô hình hóa thực thể, quan hệ Crow's Foot, ERD, rà soát kiến trúc | 8 tài liệu kỹ thuật (v1.2), **72 Thực thể chuẩn hóa**, 40 liên kết Backbone, 12 sơ đồ Mermaid & PNG render | **100%** | Zero Defect, Zero Drift | **ĐÃ NGHIỆM THU ĐÓNG** *(Kèm M2.08 Amendment)* |
-| **Milestone 3 (M3)**<br>Logical Design | Ánh xạ Relational Schema, chuẩn hóa 3NF/BCNF, định kiểu T-SQL, ràng buộc | 72 Tables, ma trận FDs, T-SQL Constraints DDL, Sizing Estimation | **0%** | — | **SẴN SÀNG KHỞI ĐỘNG** |
-| **Milestone 4 (M4)**<br>Physical Design | Phân vùng (Partitioning), Indexing strategy, Concurrency, Backup/DR | SQL Server Filegroups, Columnstore, CI/CD DACPAC, High Availability | **0%** | — | Chờ M3 hoàn tất |
-| **Milestone 5 – 8**<br>App Dev & Deployment | Backend API, Admin Frontend, Storefront, E2E Testing, UAT, Production Go-Live | Source code NestJS/Next.js, Test Suites, Docker, Monitoring | **0%** | — | Kế hoạch tương lai |
+### 1.1. Tinh thần Quản trị Kiến trúc và Nguyên tắc Chuyển giao
+Phiên bản báo cáo **v2.0** được điều chỉnh toàn diện nhằm phản ánh trung thực, khách quan hiện trạng kỹ thuật của hệ thống RetailCore. Thay vì đưa ra các khẳng định mang tính tuyệt đối như *"100% Zero Defect"* hay xem Milestone 2 (M2 - Conceptual Design) là một thiết kế đóng băng bất khả biến, đội ngũ kỹ thuật xác lập nguyên tắc quản trị kiến trúc xuyên suốt:
+1. **M2 Baseline là nền tảng quan niệm vững chắc nhưng mở:** M2 đóng vai trò xác lập ranh giới nghiệp vụ (bounded contexts), định danh thực thể cốt lõi và các mối quan hệ nghiệp vụ liên miền. 
+2. **Milestone 3 (M3 - Logical Database Design) là giai đoạn kiểm chứng và phát hiện:** Quá trình chuyển từ mô hình khái niệm sang mô hình quan hệ toán học (Candidate Keys, Functional Dependencies, 3NF/BCNF, Physical Data Types, Declarative Constraints) sẽ tiếp tục thử thách, kiểm chứng và hoàn thiện các quyết định của M2.
+3. **Chấp thuận Cổng có Điều kiện (Conditional Gate Approval):** Dự án được phép bắt đầu ngay công đoạn **M3.01 (Relational Schema Mapping)**; đồng thời giữ tính linh hoạt và mở đối với các công đoạn **M3.02 (Normalization)**, **M3.03 (Data Types & Sizing)**, và **M3.04 (Constraints DDL & SPs)** cho đến khi các quy tắc chi tiết về kiểm toán, đối soát COD đa kiện và phân bổ dòng giao hàng được chốt hạ hoàn toàn.
 
 ---
 
-## 2. KẾT QUẢ ĐẠT ĐƯỢC TẠI MILESTONE 1 VÀ MILESTONE 2
+### 1.2. Bảng theo dõi tiến độ tổng thể các Cột mốc (Milestone Scorecard)
 
-### 2.1. Thành quả Milestone 1 (Business Analysis)
-Milestone 1 đã thiết lập nền móng vững chắc với hệ thống yêu cầu nghiệp vụ được văn bản hóa chi tiết và khóa cứng phạm vi (Scope Baseline):
-1. **7 Quyết định Nghiệp vụ Nền tảng (BD-01 đến BD-07):**
-   * `BD-01`: Cấu trúc Danh mục sản phẩm đa tầng ($N:N$) bắt buộc đúng 1 danh mục chính (`IsPrimary = 1`).
-   * `BD-02`: Bắt buộc đăng nhập xác thực tài khoản (`No Guest Checkout`).
-   * `BD-03`: Hỗ trợ chia đơn giao nhiều kho (`Split Shipment`).
-   * `BD-04`: Cơ chế khóa giữ tồn kho logic có thời hạn (`Reservation Timeout 15 phút`) theo nguyên tắc All-or-Nothing.
-   * `BD-05`: Kiến trúc khuyến mãi & Stacking 2 tầng (cấp SKU và cấp Đơn).
-   * `BD-06`: Mô hình thuộc tính biến thể động có kiểm soát (phân định `AttributeRole`, Whitelist giá trị).
-   * `BD-07`: Mô hình tồn kho 4 tầng và nguyên tắc cô lập hàng giao thất bại (`DELIVERY_RETURN_IN`).
-2. **55 Yêu cầu Chức năng (FR-CAT, FR-INV, FR-PO, FR-AUTH, FR-CRT, FR-ORD, FR-SHP, FR-PRM, FR-PAY, FR-RET, FR-AUD):** Được ánh xạ 100% hai chiều vào các bảng và ràng buộc CSDL.
-3. **Bộ Quy tắc Nghiệp vụ (~200 Business Rules):** Định nghĩa tường minh các điều kiện biên của mọi luồng vận hành thương mại điện tử.
-
-### 2.2. Thành quả Milestone 2 (Conceptual Database Design)
-Milestone 2 đã chuyển hóa toàn bộ các yêu cầu phi cấu trúc từ M1 thành mô hình khái niệm chuẩn mực quốc tế:
-1. **Chuẩn hóa Danh mục 72 Thực thể (E01 đến E72):**
-   * Phân bổ đều trên 11 Phân hệ (Subject Areas 01 đến 11).
-   * Bổ sung **E71 (`PaymentWebhookLog`)** tại Phân hệ 09 nhằm bảo đảm Idempotency cổng thanh toán.
-   * Bổ sung **E72 (`ReturnLineAssessment`)** tại Phân hệ 10 nhằm tách rời hoàn toàn quyền hoàn tiền khỏi phân loại kho vật lý.
-2. **Quy hoạch Trục Xương sống Liên miền (Cross-Domain Backbone):**
-   * 40 Liên kết liên miền chuẩn hóa (CR-01 đến CR-40) kết nối các Hub Entities hạt nhân theo mô hình Hub-and-Spoke, triệt tiêu phụ thuộc vòng (Circular Dependencies) và ngăn chặn Deadlock.
-3. **Hệ thống Sơ đồ Mermaid ERD & Hình ảnh Render:**
-   * 12 Sơ đồ Mermaid chi tiết được chuẩn hóa cú pháp tuyệt đối (chỉ sử dụng `PK`, `FK`, `UK` đơn nhất, loại bỏ hoàn toàn các hậu tố gây lỗi render).
-   * 12 File hình ảnh PNG render tương ứng được cập nhật đồng bộ trong thư mục `docs/Milestones/M2-Conceptual-Design/ERD/images/`.
+| Cột mốc (Milestone) | Trọng số | Trạng thái Hiện tại | Kết quả Nghiệm thu Kỹ thuật | Ghi chú Quản trị Cổng |
+| :--- | :---: | :---: | :--- | :--- |
+| **M1: Phân tích Nghiệp vụ & Yêu cầu** *(Business Analysis)* | 20% | **HOÀN THÀNH (100%)** | • 10 Phân hệ nghiệp vụ cốt lõi.<br>• 112 Quy tắc nghiệp vụ (BR) được mã hóa.<br>• Từ điển dữ liệu nghiệp vụ chuẩn hóa. | Đã ký nghiệm thu Baseline M1. |
+| **M2: Thiết kế Cơ sở Dữ liệu Mức Quan niệm** *(Conceptual Design)* | 30% | **NGHIỆM THU CÓ ĐIỀU KIỆN (Conditional Approval)** | • 72 Thực thể quan niệm (E01 – E72) chuẩn hóa.<br>• 11 Vùng nghiệp vụ (Subject Areas).<br>• 12 Lược đồ Mermaid ERD chuẩn hóa cú pháp (`PK`, `FK`, `UK`).<br>• 10 Quyết định kiến trúc xử lý lỗi gốc (P0–P2). | Phê duyệt bắt đầu M3.01; mở các hạng mục truy vết đa kiện và đối soát chi tiết tại M3. |
+| **M3: Thiết kế Cơ sở Dữ liệu Mức Logic** *(Logical Design)* | 25% | **KHỞI ĐỘNG (Starting M3.01)** | • Ánh xạ Lược đồ Quan hệ (Schema Mapping).<br>• Chuẩn hóa dữ liệu toán học (3NF / BCNF Evaluation).<br>• Định cỡ dữ liệu vật lý SQL Server & Sizing.<br>• Đặc tả Ràng buộc DDL & Stored Procedures giao dịch. | Triển khai từ M3.01 ngay sau báo cáo này. |
+| **M4: Thiết kế Vật lý & Tối ưu Hiệu năng** *(Physical & Performance)* | 15% | **CHỜ THỰC HIỆN (Pending)** | • Partitioning Scheme (theo quý/năm).<br>• Chỉ mục chuyên sâu (Filtered, Columnstore, Covering).<br>• Kế hoạch sao lưu phục hồi (HA/DR, Availability Groups). | Triển khai sau khi M3 được nghiệm thu. |
+| **M5: DDL Triển khai & Kiểm thử Toàn diện** *(Implementation & Testing)* | 10% | **CHỜ THỰC HIỆN (Pending)** | • Script T-SQL tạo Schema hoàn chỉnh.<br>• Bộ dữ liệu Seed/Mock 1.000.000 dòng kiểm thử tải.<br>• Kiểm thử tự động tính toàn vẹn (Stress test / Concurrency). | Giai đoạn bàn giao cuối cùng. |
 
 ---
 
-## 3. THUYẾT MINH CHI TIẾT 10 PHƯƠNG ÁN KIẾN TRÚC ĐÃ CHỐT TRƯỚC M3
+## 2. PHÂN LOẠI QUẢN TRỊ KIẾN TRÚC PRE-M3 (GOVERNANCE TAXONOMY)
 
-Dưới đây là phần thuyết minh chi tiết, chuyên sâu về 10 phương án kỹ thuật đã được Hội đồng Kiến trúc phê duyệt tại [08-Architectural-Correction-Log.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/08-Architectural-Correction-Log.md), sẵn sàng để hiện thực hóa thành Relational Schema tại Milestone 3:
+Để đảm bảo tính minh bạch tuyệt đối trước khi bước vào chi tiết kỹ thuật, toàn bộ các nội dung kiến trúc được phân loại theo 4 nhóm chuẩn mực:
 
-```
-+--------------------------------------------------------------------------------------------------------------------+
-|                                    10 KIẾN TRÚC BẢO CHỨNG TOÀN VẸN TRƯỚC M3                                        |
-+--------------------------------------------------------------------------------------------------------------------+
-| P0-01. Tách Hoàn tiền khỏi Tồn kho     ---> Thực thể E72: ReturnLineAssessment (FaultParty / RefundEligibility)    |
-| P0-02. Tồn kho Cách ly & Hư hỏng       ---> QuarantinedQty, DamagedQty, 5 CHECK Constraints trên InventoryBalance |
-| P0-03. Thuật toán LRM & Hoàn tiền F(q) ---> Largest Remainder Method, công thức số nguyên VNĐ F(q) trên OrderLine  |
-| P1-04. Mandatory 1:1 & TPT Account     ---> Stored Procedure Transaction Atomic, AccountType (CUSTOMER / EMPLOYEE) |
-| P1-05. Bảng đệm Webhook & Idempotency  ---> Thực thể E71: PaymentWebhookLog, OriginalPaymentTransactionID          |
-| P1-06. Độc lập 3 Máy Trạng thái        ---> SalesOrder, Payment, Shipment độc lập; DeliveredAt, ClosedAt           |
-| P1-07. Đối soát COD Hai Chặng          ---> Chặng 1: Khách trả (PAID); Chặng 2: Công nợ Carrier (SettlementStatus) |
-| P2-08. Giá vốn WAC khi Trả hàng NCC    ---> SupplierReturn giảm tồn theo CurrentAverageCost, ghi nhận Cost Variance|
-| P2-09. Chuẩn hóa JSON Snapshot         ---> VariantAttributesSnapshot lưu mảng JSON định danh attributeId / valueId|
-| P2-10. Vòng đời Giữ hàng & Return Win  ---> Allocation-Reservation 1:0..N (Filtered Index ACTIVE), Hạn theo Kiện    |
-+--------------------------------------------------------------------------------------------------------------------+
+```mermaid
+graph TD
+    subgraph Architecture_Governance["Quản trị Kiến trúc RetailCore"]
+        A["Quyết định đã chốt<br>(Finalized Decisions)"]
+        B["Quyết định mở / Nghiên cứu tại M3<br>(Open / M3 Investigation)"]
+        C["Giả định Nghiệp vụ<br>(Business Assumptions)"]
+        D["Rủi ro & Biện pháp Giảm thiểu<br>(Risks & Controls)"]
+    end
+    A --> A1["10 Quyết định Nền tảng (CORR-01..10)"]
+    B --> B1["Truy vết ShipmentLine trong RMA<br>Đối soát COD Split Shipment đa đợt<br>Lịch sử Tái thẩm định Assessment"]
+    C --> C1["Chính sách Đổi trả/Hoàn tiền theo Brand<br>Tài khoản hạch toán Chênh lệch PPV<br>Cơ chế Retry Webhook nội bộ"]
+    D --> D1["Lệch làm tròn tiền tệ VNĐ<br>Race conditions khi giữ kho<br>Suy giảm hiệu năng JSON Snapshot"]
 ```
 
+### 2.1. Nhóm 1: Các Quyết định Kiến trúc Đã Chốt (Finalized Decisions)
+1. **Tách biệt Đánh giá Giám định và Tồn kho:** Sử dụng `ReturnLineAssessment` (E72) làm thực thể trung gian phân định trách nhiệm lỗi và điều kiện hoàn tiền, tách khỏi vị trí vật lý trong kho.
+2. **Mô hình Số dư Tồn kho & 5 CHECK Constraints:** Khống chế toán học nghiêm ngặt trên `InventoryBalance` (E11) với:
+   $$\text{AvailableQty} = \text{OnHandQty} - \text{ReservedQty} - \text{QuarantinedQty} - \text{DamagedQty} \ge 0$$
+3. **Chuẩn hóa Chất lượng Tồn kho & Ghi sổ Biến động:** Thống nhất 3 trạng thái chất lượng (`SELLABLE`, `QUARANTINED`, `DAMAGED`) và nghiệp vụ xuất hủy phế phẩm (`SCRAP_OUT`). Mọi biến động số dư phải ghi sổ giao dịch kép qua `InventoryTransactionLine` (E16) với tính nguyên tử (atomic) tuyệt đối.
+4. **Thuật toán Phân bổ Giảm giá LRM:** Áp dụng phương pháp Số dư Lớn nhất (Largest Remainder Method - Hare-Niemeyer) để phân bổ chiết khấu nguyên đồng VND, triệt tiêu hoàn toàn sai số phân số.
+5. **Công thức Hoàn tiền Nguyên số Tích luỹ $F(q)$:** Sử dụng hàm nguyên xác định số tiền hoàn lũy tiến theo số lượng, đảm bảo khi hoàn tất cả số lượng thì số tiền hoàn đúng bằng tổng chiết khấu thực nhận.
+6. **Thực thi Quan hệ Bắt buộc 1:1 qua Stored Procedure:** Phối hợp `UNIQUE FK` tại DDL và Transactional SPs (`BEGIN TRANSACTION ... COMMIT`) để đảm bảo cả hai đầu thực thể đều bắt buộc tham gia ($\ge 1$ và $\le 1$). Triển khai Table-Per-Type (TPT) cho cấu trúc `Account` $\to$ `Customer` / `Employee`.
+7. **Độc lập Ba Máy Trạng thái:** Phân định độc lập tuyệt đối giữa $\text{OrderStatus} \ne \text{PaymentStatus} \ne \text{ShipmentStatus}$.
+8. **Phân định Mốc Đóng hồ sơ Đơn hàng:** Tách biệt rõ `DeliveredAt` (hoàn tất giao vận), `ReturnEligibleUntil` (hạn đổi trả), và `ClosedAt` (đóng hồ sơ tài chính/lưu trữ).
+9. **Định giá Xuất trả NCC theo WAC:** Xuất trả NCC ghi giảm tồn kho theo giá vốn bình quân di động hiện hành `CurrentAverageCost`.
+10. **Quản lý Giữ hàng $1 : 0..N$ qua Filtered Unique Index:** Cho phép giữ hàng phân đoạn hoặc giải phóng từng phần, khống chế một dòng giữ hàng duy nhất ở trạng thái `ACTIVE`.
+
+### 2.2. Nhóm 2: Quyết định Mở / Chuyển tiếp Nghiên cứu Chuyên sâu tại M3 (Open / M3 Items)
+1. **Cơ chế Truy vết Dòng giao hàng trong Đơn đổi trả (Split Shipment Traceability):** Trong đơn hàng chia nhiều kiện giao lệch ngày, một `OrderLine` có thể nằm ở nhiều `ShipmentLine`. M3 sẽ thiết kế liên kết trực tiếp `ShipmentLineID` hoặc thực thể phân bổ `ReturnShipmentAllocation` để xác thực chính xác hạn đổi trả từng kiện.
+2. **Mô hình Lịch sử Giám định (Assessment Audit Trail):** Thiết kế cấu trúc phiên bản hóa (`IsCurrent`, `AssessmentStatus`: DRAFT, SUBMITTED, FINAL, SUPERSEDED) cho E72 để hỗ trợ quy trình tái thẩm định, kiểm định từ phòng thí nghiệm/hãng và kiểm toán viên.
+3. **Mô hình Đối soát COD Đa kiện Đa đợt:** Thiết kế bảng giao dịch COD cấp kiện hàng/giao dịch (`CODCollection`, `CODRemittance`, `CODReconciliation`) để thay thế cột trạng thái đơn lẻ `Payment.CarrierSettlementStatus` khi xử lý đơn hàng Split Shipment.
+4. **Khung Chuẩn hóa 3NF/BCNF Thực tế:** Không ép buộc 100% bảng phải đạt BCNF; M3 sẽ phân tích từng bảng theo Candidate Keys $\to$ FDs $\to$ 3NF $\to$ BCNF test, đánh giá tính bảo toàn phụ thuộc hàm (Dependency Preservation) và ghi nhận rõ các đánh đổi phi chuẩn hóa có chủ đích.
+5. **Thống nhất Kiểu Dữ liệu Tiền tệ VNĐ:** Lựa chọn `DECIMAL(19,0)` hoặc `BIGINT` cho các trường tiền tệ giao dịch nguyên số đồng; và `DECIMAL(19,4)` cho đơn giá, tỷ lệ chiết khấu, giá vốn bình quân WAC.
+
+### 2.3. Nhóm 3: Giả định Nghiệp vụ Cần Làm rõ Cấp Chính sách (Business Assumptions)
+1. **Chính sách Hoàn phí Vận chuyển & Tỷ lệ Bồi hoàn:** Tỷ lệ hoàn tiền (100% hay một phần) và việc có hoàn phí giao hàng hay không thuộc phạm vi **Chính sách Khách hàng / Bảo hành (Policy Engine)**, không mặc định gắn cứng vào lỗi của Nhà cung cấp (VENDOR) hay Hãng vận chuyển (CARRIER).
+2. **Tài khoản Hạch toán Chênh lệch Giá vốn:** Khoản chênh lệch $CostVariance = SupplierRefundAmount - InventoryValueDecrease$ được lưu vết kỹ thuật; tài khoản ghi nhận cụ thể (Chi phí tài chính, Chênh lệch giá mua PPV, hay Giảm trừ giá vốn hàng bán COGS) do chính sách kế toán doanh nghiệp quy định.
+3. **Cơ chế Retry Webhook Cổng Thanh toán:** Phân định rạch ròi giữa việc Tiếp nhận Webhook (`RECEIVED`, trả HTTP 200) và Xử lý Nghiệp vụ (`PROCESSED` / `FAILED`). Các webhook xử lý thất bại phải được phép tái xử lý (idempotent replay) qua background worker thay vì bỏ qua vô điều kiện.
+
+### 2.4. Nhóm 4: Rủi ro Kỹ thuật & Biện pháp Giảm thiểu (Risks & Controls)
+1. **Rủi ro Sai số Làm tròn:** Triệt tiêu hoàn toàn nhờ việc kết hợp LRM, công thức tích luỹ nguyên $F(q)$ và kiểu dữ liệu `DECIMAL(19,0)`.
+2. **Rủi ro Tranh chấp Ghi sổ Tồn kho:** Kiểm soát qua Transaction Isolation Level `SNAPSHOT` hoặc `READ COMMITTED SNAPSHOT (RCSI)` kết hợp locking cục bộ theo `(WarehouseID, ProductVariantID)`.
+3. **Rủi ro Hiệu năng JSON Snapshot:** Không quét trực tiếp `OPENJSON` trên bảng giao dịch lớn; thiết kế Persisted Computed Columns + Index cho các thuộc tính cần tra cứu và trích xuất bảng phân tích chuẩn hóa cho báo cáo BI.
+
 ---
 
-### Phương án 1 (P0): Tách biệt Tuyệt đối Quyền Hoàn tiền (`RefundEligibility`) khỏi Định đoạt Kho (`InventoryDisposition`) qua `ReturnLineAssessment` (E72)
-
-#### 1. Rủi ro nếu thiết kế non tay:
-Trước đây, mô hình quy định: *"Chỉ sau khi ReturnReceipt có dòng Disposition = SELLABLE được POSTED, hệ thống mới tự động tạo Refund"*. Đây là một sai sót nghiệp vụ nghiêm trọng. Xét tình huống khách mua áo bị lỗi đường chỉ từ nhà sản xuất; khi trả hàng về kho, kiểm định xác nhận lỗi và phân loại `DISPOSED` (tiêu hủy). Nếu bắt buộc hàng phải `SELLABLE` mới hoàn tiền thì khách hàng bị tước đoạt quyền lợi hợp pháp, dẫn đến khiếu nại gay gắt và vi phạm luật bảo vệ người tiêu dùng.
-
-#### 2. Quyết định kiến trúc đã chốt:
-Tách rời hoàn toàn hai chiều thẩm định độc lập:
-* **Định đoạt vật lý tại kho (`InventoryDisposition`):** Xử lý số lượng hàng hóa thực nhận trong kho vật lý: `SELLABLE`, `QUARANTINE`, `DISPOSED`.
-* **Xét duyệt điều kiện hoàn tiền (`RefundEligibility`):** Đánh giá nguyên nhân lỗi và chính sách bảo hành của RetailCore: `PENDING`, `APPROVED`, `REJECTED`.
-
-#### 3. Cấu trúc thực thể mới `ReturnLineAssessment` (E72):
-Bổ sung thực thể E72 trực thuộc Subject Area 10, đóng vai trò liên kết giữa tiếp nhận hàng trả tại kho (`ReturnReceiptLine`) với hồ sơ hoàn tiền (`Refund`):
-* `AssessmentID` (bigint PK)
-* `ReturnReceiptLineID` (bigint FK trỏ về E63)
-* `AssessedQty` (int, $\sum \text{AssessedQty} \le \text{ReturnReceiptLine.ReceivedQty}$)
-* `FaultParty` (varchar: `VENDOR`, `CARRIER`, `CUSTOMER`, `NO_FAULT`)
-* `RefundEligibilityStatus` (varchar: `PENDING`, `APPROVED`, `REJECTED`)
-* `ResolutionType` (varchar: `REFUND`, `EXCHANGE`, `REPAIR`, `NO_ACTION`)
-* `ApprovedRefundAmount` (decimal(18,2))
-* `ShippingRefundAmount` (decimal(18,2))
-* `AssessedBy` (bigint FK), `AssessedAt` (datetimeoffset), `AssessmentNotes` (nvarchar)
-
-#### 4. Quy tắc vận hành & Chuyển tiếp M3:
-* **Hàng lỗi do Nhà sản xuất (`VENDOR`) hoặc Vận chuyển (`CARRIER`):** Dù `Disposition = 'DISPOSED'` (hàng nát không thể bán lại), `RefundEligibilityStatus` vẫn được duyệt `APPROVED` và hoàn trả 100% tiền hàng kèm phí vận chuyển.
-* **Hỗ trợ hoàn tiền từng mốc (Milestone Partial Refund):** Hệ thống kích hoạt tạo chứng từ `Refund` ngay khi có dòng `ReturnLineAssessment` được `APPROVED` cho số lượng thực nhận, không bắt buộc phải chờ toàn bộ bưu kiện của yêu cầu RMA về hết kho mới được hoàn tiền.
+## 3. THUYẾT MINH CHI TIẾT 10 PHƯƠNG ÁN KIẾN TRÚC (ĐÃ CHUẨN HOÁ THEO REVIEW v2.0)
 
 ---
 
-### Phương án 2 (P0): Quản lý Tồn kho Cách ly (Quarantine) & Hư hỏng (Damaged) với Bộ 5 Ràng buộc CHECK
+### Phương án 1 (P0): Mô hình Giám định `ReturnLineAssessment` (E72) & Lịch sử Đánh giá (Audit Trail)
 
-#### 1. Rủi ro nếu thiết kế non tay:
-Ở Subject Area 02, RetailCore quản lý tồn kho ở cấp độ Warehouse (không quản lý chi tiết đến vị trí Kệ/Bin/Pallet). Nếu chỉ có 2 trường `OnHandQty` và `ReservedQty`, toàn bộ hàng lỗi chờ thẩm định hãng hoặc hàng hỏng chờ thanh lý sẽ bị gộp chung vào `OnHandQty`. Kết quả là hàng hỏng vẫn được tính vào `AvailableQty` và hệ thống tiếp tục bán món đồ hỏng đó cho khách hàng mới, gây tê liệt vận hành.
+#### 1. Bối cảnh & Điểm cần chuẩn hoá:
+Trong thiết kế ban đầu, việc hoàn tiền bị ràng buộc cứng vào việc hàng đã nhập lại kho hay chưa (`Restocked`). Khi hàng bị hư hỏng do vận chuyển hoặc lỗi sản xuất nghiêm trọng phải tiêu hủy tại chỗ (`SCRAP_OUT`), nếu không có cơ chế phân tách, hệ thống sẽ chặn hoàn tiền hoặc ép buộc nhập hàng ảo vào kho.
+Bên cạnh đó, việc giám định thực tế thường trải qua nhiều giai đoạn: duyệt một phần, chờ kiểm tra từ hãng, từ chối, hoặc đổi hàng thay vì hoàn tiền.
 
-#### 2. Quyết định kiến trúc đã chốt:
-Phân rã số dư tồn kho tại từng kho vật lý thành **3 trạng thái chất lượng nội bộ**:
-1. `SELLABLE` (Hàng đạt chuẩn, sẵn sàng mở bán).
-2. `QUARANTINED` (Hàng đang cách ly, chờ giám định hãng hoặc hàng hoàn trả chưa thẩm định).
-3. `DAMAGED` (Hàng xác định hư hỏng, chờ lập thủ tục xuất hủy hoặc thanh lý phụ tùng).
+#### 2. Quyết định kiến trúc chuẩn hoá:
+* Tách độc lập quyết định tài chính khỏi định đoạt kho hàng bằng thực thể trung gian **`ReturnLineAssessment` (E72)**.
+* **Tách bạch Thuộc tính Trách nhiệm và Hướng Xử lý:**
+  * `FaultParty`: VENDOR, CARRIER, CUSTOMER, NO_FAULT, SHARED.
+  * `ResolutionType`: REFUND, EXCHANGE, REPAIR, NO_ACTION.
+  * `RefundEligibilityStatus`: PENDING, APPROVED, PARTIALLY_APPROVED, REJECTED.
+  * `ApprovedRefundAmount`: Số tiền hàng được duyệt hoàn.
+  * `ShippingRefundAmount`: Phí vận chuyển được duyệt hoàn (theo chính sách).
+* **Loại bỏ quy tắc cứng 100%:** Trách nhiệm của VENDOR/CARRIER không mặc định sinh ra quyền hoàn tiền 100% kèm phí ship ở tầng DDL; đây là tham số cấu hình của Policy Engine.
+* **Mô hình Lịch sử Đánh giá (Audit Trail):** E72 hỗ trợ lưu vết phiên bản (`AssessmentVersion`, `IsCurrent`, `AssessmentStatus`: DRAFT, SUBMITTED, FINAL, SUPERSEDED). Khi cần tái thẩm định, bản ghi cũ chuyển `IsCurrent = 0` và bản ghi mới ghi nhận kết quả điều chỉnh.
+* **Bộ ràng buộc toán học:**
+  $$\sum \text{AssessedQty} \le \text{ReceivedQty}$$
+  $$\text{ApprovedRefundQty} \le \text{AssessedEligibleQty}$$
+  $$\text{ApprovedRefundAmount} \le \text{AllocatedNetAmount}(\text{ApprovedRefundQty})$$
 
-#### 3. Cấu trúc dữ liệu & Bộ 5 Declarative CHECK Constraints trên `InventoryBalance` (E11):
-Mở rộng bảng `InventoryBalance` gồm: `OnHandQty`, `ReservedQty`, `QuarantinedQty`, `DamagedQty`, `CurrentAverageCost`.  
-Trên SQL Server, cài đặt bộ 5 ràng buộc `CHECK`:
-1. `CHECK (OnHandQty >= 0)`
-2. `CHECK (ReservedQty >= 0)`
-3. `CHECK (QuarantinedQty >= 0)`
-4. `CHECK (DamagedQty >= 0)`
-5. `CHECK (OnHandQty >= ReservedQty + QuarantinedQty + DamagedQty)`
+```mermaid
+flowchart TD
+    RL["ReturnReceiptLine (E49)<br>ReceivedQty = 5"] --> A1["Assessment 1 (E72)<br>AssessedQty = 3<br>FaultParty: VENDOR<br>Resolution: REFUND<br>Status: APPROVED<br>ApprovedRefundAmount = 300.000đ"]
+    RL --> A2["Assessment 2 (E72)<br>AssessedQty = 2<br>FaultParty: CUSTOMER<br>Resolution: NO_ACTION<br>Status: REJECTED<br>Reason: Rách tem niêm phong"]
+    A1 --> INV["Kho vật lý: SCRAP_OUT<br>(Tiêu huỷ phế phẩm)"]
+    A1 --> FIN["Kế toán: Lập RefundTransaction<br>(Hoàn tiền đợt 1: 300.000đ)"]
+```
 
-Công thức tồn khả dụng mở bán an toàn:
+---
+
+### Phương án 2 (P0): Quản lý Tồn kho Cách ly & Hư hỏng - Chuẩn hoá Ngữ nghĩa & Ghi sổ Biến động
+
+#### 1. Bối cảnh & Chuẩn hoá Ngữ nghĩa:
+Tồn kho vật lý trong kho bao gồm nhiều trạng thái chất lượng khác nhau. Cần tránh nhập nhằng giữa **Trạng thái chất lượng tồn kho** và **Loại giao dịch xuất kho**.
+* **Chuẩn hóa Chất lượng Tồn kho:**
+  * `SELLABLE`: Hàng thương phẩm đạt chuẩn, sẵn sàng kinh doanh.
+  * `QUARANTINED`: Hàng cách ly chờ kiểm tra, thẩm định chất lượng hoặc tranh chấp.
+  * `DAMAGED`: Hàng xác định hư hỏng, lỗi, không thể bán thương mại.
+* **Chuẩn hóa Nghiệp vụ Xuất hủy:**
+  * `SCRAP_OUT` là **Loại nghiệp vụ giao dịch (Transaction Type)** ghi nhận việc đưa hàng phế phẩm ra khỏi kho để tiêu hủy. Hàng sau khi `SCRAP_OUT` đã rời khỏi kho nên **KHÔNG** tồn tại trạng thái tồn kho vật lý mang tên "DISPOSED".
+
+#### 2. Cấu trúc Số dư & Bộ 5 Declarative CHECK Constraints trên `InventoryBalance` (E11):
+Tất cả các đại lượng trong bảng số dư phải thỏa mãn hệ tiên đề:
+1. `OnHandQty >= 0` (Tổng tồn kho vật lý không âm).
+2. `ReservedQty >= 0` (Số lượng giữ hàng cho đơn chưa xuất không âm).
+3. `QuarantinedQty >= 0` (Số lượng cách ly kiểm định không âm).
+4. `DamagedQty >= 0` (Số lượng hư hại xác định không âm).
+5. `OnHandQty >= (ReservedQty + QuarantinedQty + DamagedQty)` (Tổng các trạng thái thành phần không được vượt quá tổng tồn kho vật lý).
+
+Công thức Khả dụng Thương mại (Available to Promise):
 $$\text{AvailableQty} = \text{OnHandQty} - \text{ReservedQty} - \text{QuarantinedQty} - \text{DamagedQty} \ge 0$$
 
-#### 4. Ghi sổ kép đa chiều trên `InventoryTransactionLine` (E16):
-Bổ sung các cột: `QuarantinedDelta`, `DamagedDelta`, `FromStockStatus`, `ToStockStatus`, `UnitCost`.
-* **Luồng chuyển trạng thái nội bộ:** Khi chuyển 5 cái từ Cách ly sang Hỏng: `QuarantinedDelta = -5`, `DamagedDelta = +5`, `OnHandDelta = 0`, `FromStockStatus = 'QUARANTINED'`, `ToStockStatus = 'DAMAGED'`.
-* **Luồng xuất hủy (`SCRAP_OUT`):** Khi tiêu hủy 5 cái hỏng khỏi kho: `OnHandDelta = -5`, `DamagedDelta = -5`, `FromStockStatus = 'DAMAGED'`, `ToStockStatus = NULL`.
+#### 3. Nguyên tắc Ghi sổ Biến động Kép trên `InventoryTransactionLine` (E16):
+Mọi thay đổi số dư kho bắt buộc phải gắn liền với một bản ghi `InventoryTransactionLine`. Giao dịch ghi sổ và cập nhật `InventoryBalance` phải được thực thi trong cùng một Database Transaction nguyên tử:
+* **Chuyển trạng thái nội bộ (VD: Chuyển 5 sản phẩm từ QUARANTINED sang DAMAGED):** Không làm thay đổi tổng tồn kho vật lý `OnHand`.
+  $$\text{OnHandDelta} = 0, \quad \text{QuarantinedDelta} = -5, \quad \text{DamagedDelta} = +5$$
+* **Xuất hủy phế phẩm (SCRAP_OUT 5 sản phẩm DAMAGED):** Giảm trực tiếp tồn kho vật lý và giảm trạng thái nguồn tương ứng.
+  $$\text{OnHandDelta} = -5, \quad \text{DamagedDelta} = -5, \quad \text{QuarantinedDelta} = 0$$
 
 ---
 
-### Phương án 3 (P0): Thuật toán Phân bổ Chiết khấu Đơn hàng LRM & Công thức Hoàn tiền Nguyên số $F(q)$
+### Phương án 3 (P0): Thuật toán Phân bổ Chiết khấu Đơn hàng LRM & Công thức Hoàn tiền Nguyên số VND
 
-#### 1. Rủi ro nếu thiết kế non tay:
-Đơn hàng áp Voucher cấp đơn (Order-level Voucher). Nếu phân bổ tiền giảm giá xuống từng dòng hàng bằng hàm `Round()` thông thường thì tổng chiết khấu các dòng sẽ lệch từ vài đồng đến vài trăm đồng so với giá trị voucher do lỗi làm tròn (Rounding Error). Hơn nữa, khi khách trả hàng lẻ từng cái (ví dụ: mua 3 cái áo cùng dòng được giảm tổng cộng 50.000đ, nhưng khách chỉ trả 1 cái trước, 2 cái trả sau), việc thiếu công thức toán học xác định sẽ gây tranh chấp số tiền hoàn và làm vỡ sổ cái kế toán.
+#### 1. Bối cảnh & Thống nhất Kiểu Dữ liệu Tiền tệ:
+Khi khách hàng áp mã giảm giá tổng đơn (Order-level Discount), khoản chiết khấu phải được phân bổ về từng dòng hàng (`OrderLine`) để phục vụ tính giá vốn, thuế và hoàn tiền.
+Do đơn vị tiền tệ giao dịch của RetailCore là Việt Nam Đồng (VND) - loại tiền tệ không có phần thập phân lẻ, việc chia tỷ lệ rất dễ phát sinh phần dư (ví dụ: 100.000đ chia cho 3 sản phẩm = 33.333,333...đ).
+* **Quy chuẩn Kiểu dữ liệu Tiền tệ:**
+  * Toàn bộ các trường tiền tệ giao dịch nghiệp vụ (`LineGrossAmount`, `LineNetAmount`, `AllocatedOrderDiscount`, `ApprovedRefundAmount`, `TotalAmount`) sử dụng kiểu **`DECIMAL(19,0)`** (hoặc `BIGINT`).
+  * Các trường đơn giá trung gian, tỷ lệ chiết khấu, giá vốn bình quân di động (`UnitPrice`, `CurrentAverageCost`) sử dụng kiểu **`DECIMAL(19,4)`** để bảo toàn độ chính xác trong các phép tính toán học.
 
-#### 2. Quyết định kiến trúc đã chốt:
-1. **Thuật toán Largest Remainder Method (Hamilton/Hare-Niemeyer):**
-   * Tính phần nguyên và phần dư tiền giảm giá voucher cho từng `OrderLine` theo tỷ trọng giá trị.
-   * Phân bổ phần nguyên, sau đó xếp hạng phần dư giảm dần và chia bù mỗi dòng 1 VNĐ cho đến khi khớp 100% giá trị voucher:
-     $$\sum_{i=1}^{n} \text{AllocatedOrderDiscount}_i \equiv \text{VoucherDiscountAmount}$$
-2. **Lưu trữ trực tiếp trên `OrderLine` (E41):**
-   * `LineGrossAmount = UnitPrice * OrderedQty`
-   * `LineProductDiscount` (giảm giá tầng 1 theo SKU)
-   * `AllocatedOrderDiscount` (giảm giá tầng 2 từ voucher phân bổ theo LRM)
-   * `LineNetAmount = LineGrossAmount - LineProductDiscount - AllocatedOrderDiscount`
-   * `RefundedQty` (số lượng lũy kế đã hoàn trả)
-   * `AccumulatedRefundedAmount` (số tiền lũy kế đã hoàn trả)
-3. **Công thức Hoàn tiền Lũy tiến Nguyên số (Unit-Level Progressive Refund Formula):**
-   Với dòng hàng có số lượng đặt $Q$ và giá trị thanh toán ròng $\text{LineNetAmount}$:
-   $$B = \left\lfloor \frac{\text{LineNetAmount}}{Q} \right\rfloor \quad (\text{Mức hoàn cơ bản mỗi cái}), \quad R = \text{LineNetAmount} \pmod{Q} \quad (\text{Số tiền dư lẻ})$$
-   Hàm số xác định tổng tiền hoàn khi khách trả $q$ đơn vị ($1 \le q \le Q$):
-   $$F(q) = B \cdot q + \min(q, R)$$
-   Khi khách trả thêm $b$ đơn vị sau khi đã từng hoàn $a$ đơn vị trước đó:
-   $$\Delta \text{Refund} = F(a + b) - F(a)$$
+#### 2. Thuật toán Largest Remainder Method (Hare-Niemeyer):
+Phân bổ giá trị giảm giá tổng $D$ cho $N$ dòng đơn hàng dựa trên tỷ trọng giá trị dòng $G_i$:
+1. Tính phần giảm giá cơ sở nguyên (Base Integer Discount):
+   $$B_i = \left\lfloor \frac{G_i \times D}{\sum_{j=1}^N G_j} \right\rfloor$$
+2. Tính phần dư phân số (Fractional Remainder):
+   $$R_i = \left(\frac{G_i \times D}{\sum_{j=1}^N G_j}\right) - B_i$$
+3. Tính tổng số tiền đồng nguyên còn thiếu:
+   $$K = D - \sum_{i=1}^N B_i$$
+4. Sắp xếp các dòng theo $R_i$ giảm dần; cộng thêm $1$ VNĐ vào $B_i$ cho $K$ dòng đầu tiên.
+5. **Đảm bảo tuyệt đối:** $\sum_{i=1}^N \text{AllocatedDiscount}_i = D$ chính xác 100%, không lệch dù chỉ 1 đồng.
 
-#### 3. Minh chứng toán học:
-* Mọi khoản hoàn tiền $\Delta \text{Refund}$ luôn là **số nguyên VNĐ** tuyệt đối.
-* Khi khách trả hết hàng ($q = Q$): $F(Q) = B \cdot Q + R \equiv \text{LineNetAmount}$ (bảo đảm hoàn đúng 100% số tiền thực thu, không lệch một xu).
+#### 3. Công thức Hoàn tiền Tích luỹ Nguyên số $F(q)$ cho Hoàn tiền Từng phần:
+Khi dòng đơn hàng có số lượng $Q$, tổng số tiền thực trả sau phân bổ là $A$ (`LineNetAmount`). Khách hàng trả lại $q$ món ($1 \le q \le Q$).
+Số tiền hoàn lũy tiến cho $q$ món được tính bằng hàm nguyên đơn điệu:
+$$F(q) = \left\lfloor \frac{A}{Q} \right\rfloor \cdot q + \min\left(q,\; A \pmod Q\right)$$
 
----
+Số tiền duyệt hoàn cho lần trả thứ $k$ với số lượng $\Delta q_k = q_k - q_{k-1}$:
+$$\Delta \text{Refund}_k = F(q_k) - F(q_{k-1})$$
 
-### Phương án 4 (P1): Ràng buộc Bắt buộc 1:1 qua Stored Procedure Giao dịch Nguyên tử & Kế thừa Table-Per-Type (TPT)
-
-#### 1. Rủi ro nếu thiết kế non tay:
-Nhiều kỹ sư CSDL lầm tưởng rằng chỉ cần khai báo `FOREIGN KEY` kèm `UNIQUE` trên bảng con (ví dụ: `Payment.OrderID UNIQUE REFERENCES SalesOrder(OrderID)`) là đã đảm bảo quan hệ Bắt buộc 1:1 (Mandatory 1:1). Trên thực tế, DDL Declarative chỉ đảm bảo cận trên $\le 1$ (tối đa 1 bản ghi thanh toán cho mỗi đơn), nhưng **không thể ngăn chặn một SalesOrder tồn tại mà không có Payment nào** (cận dưới vẫn là $0$). Tương tự với mô hình chuyên biệt hóa `Account` $\leftrightarrow$ `Customer`/`Employee`.
-
-#### 2. Quyết định kiến trúc đã chốt:
-1. **Kiểm soát Mandatory 1:1 qua Stored Procedure giao dịch nguyên tử:**
-   * Nghiêm cấm ứng dụng gọi lệnh `INSERT` riêng rẽ vào bảng `SalesOrder` hoặc `Account`.
-   * Mọi thao tác tạo đơn hoặc tạo tài khoản bắt buộc phải đi qua Stored Procedure trung tâm (`sp_CreateSalesOrder`, `sp_CreateAccount`).
-   * Sử dụng Transaction nguyên tử (`BEGIN TRANSACTION ... COMMIT TRANSACTION`) với `XACT_ABORT ON`: Tạo đồng thời `SalesOrder` + `Payment` + `OrderAddress` trong một transaction duy nhất. Bất kỳ lỗi nào phát sinh sẽ rollback 100%, triệt tiêu nguy cơ đơn hàng mồ côi không có hồ sơ thanh toán.
-2. **Mô hình Kế thừa Table-Per-Type (TPT) cho Account:**
-   * Bảng cha `Account` chứa thuộc tính phân loại subtype: `AccountType VARCHAR(10) NOT NULL` (`'CUSTOMER'` hoặc `'EMPLOYEE'`).
-   * Bảng con `Customer` và `Employee` sử dụng `AccountID PK_FK` làm khóa chính kiêm khóa ngoại trỏ về `Account(AccountID)`.
-   * Cài đặt Trigger hoặc Check Constraint loại trừ: Khi `AccountType = 'CUSTOMER'` thì chỉ được phép tồn tại bản ghi ở bảng `Customer`, cấm xuất hiện ở bảng `Employee` và ngược lại.
+**Chứng minh tính toàn vẹn:**
+* Khi $q = 0 \implies F(0) = 0$.
+* Khi $q = Q \implies F(Q) = \lfloor A/Q \rfloor \cdot Q + (A \pmod Q) = A$ (Hoàn đúng 100% số tiền thực trả khi trả đủ hàng, không thất thoát ngân quỹ).
 
 ---
 
-### Phương án 5 (P1): Bảng đệm `PaymentWebhookLog` (E71), Xử lý Idempotent & Tự tham chiếu Hoàn tiền
+### Phương án 4 (P1): Ràng buộc Bắt buộc 1:1 qua Stored Procedure Giao dịch & Kế thừa Table-Per-Type (TPT)
 
-#### 1. Rủi ro nếu thiết kế non tay:
-Các cổng thanh toán trực tuyến (VNPAY, MoMo, ZaloPay, Stripe) luôn gửi Webhook Callback với cơ chế retry (gửi lại nhiều lần nếu mạng chậm). Nếu ghi nhận trực tiếp vào bảng giao dịch mà không có bảng đệm Idempotent, hệ thống sẽ gặp rủi ro xử lý 2 lần (Double-crediting), ghi nhận thừa tiền cho khách hoặc bị hacker tấn công Replay Attack. Ngoài ra, các giao dịch hoàn tiền (`RefundTransaction`) nếu không liên kết với giao dịch thanh toán gốc sẽ không thể đối soát phí cổng khi hoàn tiền.
+#### 1. Giới hạn Kỹ thuật của DDL trong Ràng buộc Bắt buộc 1:1:
+Trong chuẩn SQL, một quan hệ 1:1 tùy chọn ở một đầu có thể khống chế bằng `FOREIGN KEY ... UNIQUE`. Tuy nhiên, DDL thuần túy **chỉ khống chế cận trên $\le 1$, không thể khống chế cận dưới $\ge 1$** (tính bắt buộc). Nếu không có cơ chế transactional, dòng cha có thể tồn tại vĩnh viễn mà không có dòng con tương ứng (Orphan Parent).
 
-#### 2. Quyết định kiến trúc đã chốt:
-1. **Bổ sung thực thể `PaymentWebhookLog` (E71):**
-   * Đóng vai trò là bảng đệm (Staging Buffer) tiếp nhận payload thô trước khi xử lý nghiệp vụ:
-     `WebhookLogID` (PK), `PaymentMethodID` (FK), `PaymentProvider`, `EventID`, `EventType`, `RawPayload`, `Signature`, `ProcessedStatus` (`PENDING`, `PROCESSED`, `FAILED`, `IGNORED`), `ReceivedAt`, `ProcessedAt`, `ErrorMessage`.
-   * Cài đặt Filtered Unique Index trên SQL Server:
-     ```sql
-     CREATE UNIQUE INDEX UX_WebhookLog_ProviderEvent 
-     ON PaymentWebhookLog(PaymentProvider, EventID) 
-     WHERE EventID IS NOT NULL;
-     ```
-   * Khi Webhook thứ hai có cùng `EventID` gửi đến, lệnh Insert sẽ kích hoạt vi phạm Unique Index ngay lập tức, hệ thống trả về mã HTTP 200 OK cho cổng và bỏ qua việc xử lý lặp lại (Idempotency).
-2. **Liên kết giao dịch hoàn tiền gốc (`RefundTransaction.OriginalPaymentTransactionID`):**
-   * `RefundTransaction` bổ sung cột `OriginalPaymentTransactionID BIGINT NOT NULL REFERENCES PaymentTransaction(PaymentTransactionID)`.
-   * Đảm bảo mọi giao dịch hoàn tiền đều truy vết ngược được chính xác giao dịch thu tiền ban đầu để đối soát hoàn phí cổng (Gateway Fee Reversal).
+#### 2. Giải pháp Kiến trúc Phối hợp DDL và Stored Procedure:
+* **Tầng DDL:** Khai báo khóa ngoại kèm ràng buộc duy nhất để chặn việc gán trùng lặp:
+  `Customer (AccountID PK_FK REFERENCES Account(AccountID) UNIQUE)`
+* **Tầng Xử lý Giao dịch:** Bắt buộc toàn bộ thao tác tạo mới thực thể 1:1 phải thông qua **Stored Procedure nghiệp vụ nguyên tử**:
+  ```sql
+  BEGIN TRANSACTION;
+      -- 1. Tạo bản ghi Account (Parent)
+      INSERT INTO Account (AccountID, Username, Email, AccountType, CreatedAt)
+      VALUES (@AccountID, @Username, @Email, 'CUSTOMER', SYSDATETIMEOFFSET());
 
----
-
-### Phương án 6 (P1): Tách biệt Ba Máy Trạng thái Độc lập & Quản lý Đóng sổ Đơn hàng
-
-#### 1. Rủi ro nếu thiết kế non tay:
-Gộp chung trạng thái đơn hàng, trạng thái thanh toán và trạng thái giao hàng vào một cột `OrderStatus` duy nhất khiến hệ thống rơi vào trạng thái bế tắc (State explosion): Không thể mô hình hóa được đơn COD (đã giao nhưng chưa nhận tiền từ shipper), đơn Split Shipment (giao 2 kiện thì 1 kiện thành công, 1 kiện giao thất bại), hoặc đơn giao lại nhiều lần.
-
-#### 2. Quyết định kiến trúc đã chốt:
-1. **Tách biệt 3 máy trạng thái giao dịch độc lập tuyệt đối:**
-   $$\text{SalesOrder.OrderStatus} \neq \text{Payment.PaymentStatus} \neq \text{Shipment.ShipmentStatus}$$
-   * `SalesOrder.OrderStatus`: Phản ánh tiến độ giao kết hợp đồng bán hàng: `PENDING_PAYMENT` $\to$ `CONFIRMED` $\to$ `PROCESSING` $\to$ `PARTIALLY_SHIPPED` $\to$ `SHIPPED` $\to$ `DELIVERED` $\to$ `COMPLETED` (hoặc `CANCELLED`).
-   * `Payment.PaymentStatus`: Phản ánh nghĩa vụ thanh toán của khách: `PENDING` $\to$ `PAID` $\to$ `PARTIALLY_REFUNDED` $\to$ `REFUNDED` (hoặc `FAILED`).
-   * `Shipment.ShipmentStatus`: Phản ánh quá trình vận chuyển bưu kiện: `PREPARING` $\to$ `READY_TO_DISPATCH` $\to$ `IN_TRANSIT` $\to$ `DELIVERED` (hoặc `DELIVERY_FAILED` $\to$ `RETURNING` $\to$ `RETURNED`).
-2. **Quy tắc chuyển trạng thái & Mốc thời gian đóng sổ (`DeliveredAt`, `ClosedAt`):**
-   * Đơn hàng COD được chuyển sang `CONFIRMED` ngay khi duyệt đơn hợp lệ, không phụ thuộc vào `PaymentStatus`.
-   * Cột `SalesOrder.DeliveredAt`: Cập nhật tự động bằng $\max(\text{Shipment.DeliveredAt})$ khi toàn bộ các kiện hàng của đơn đã giao thành công. Mốc này dùng làm căn cứ tính thời hạn đổi trả hàng (Return Window).
-   * Cột `SalesOrder.ClosedAt`: Sau khi hết thời hạn khiếu nại (ví dụ: 7 ngày sau `DeliveredAt`), Job tự động chuyển `OrderStatus = 'COMPLETED'` và đóng dấu `ClosedAt = NOW()`. Khi đã `COMPLETED`, khóa vĩnh viễn không cho phép tạo thêm RMA.
+      -- 2. Tạo bản ghi Customer (Child subtype) bắt buộc trong cùng Transaction
+      INSERT INTO Customer (AccountID, CustomerCode, LoyaltyTierID)
+      VALUES (@AccountID, @CustomerCode, @LoyaltyTierID);
+  COMMIT TRANSACTION;
+  ```
+* **Kế thừa Table-Per-Type (TPT):** Phân định `Account` làm bảng cha lưu thông tin xác thực dùng chung; `Customer` và `Employee` kế thừa thông qua `AccountID` vừa là Primary Key vừa là Foreign Key (`PK_FK`). Thuộc tính `AccountType` đóng vai trò Type Discriminator.
 
 ---
 
-### Phương án 7 (P1): Mô hình Đối soát COD Hai Chặng Độc lập (Two-Sided Reconciliation)
+### Phương án 5 (P1): Quản lý Webhook, Idempotency & Hai Tầng Trạng thái Thanh toán
 
-#### 1. Rủi ro nếu thiết kế non tay:
-Nếu coi việc khách trả tiền mặt cho shipper là công ty đã nhận được tiền thì kế toán sẽ bị ghi nhận thừa doanh thu tiền mặt khả dụng. Ngược lại, nếu coi khi nào shipper nộp tiền về công ty thì khách mới được coi là thanh toán thì đơn hàng của khách sẽ bị treo ở trạng thái nợ tiền (`PENDING`) dù khách đã trả tiền đầy đủ, tước đoạt quyền tạo RMA đổi trả của khách.
+#### 1. Mở rộng Phạm vi Định danh `PaymentWebhookLog` (E71):
+Để hỗ trợ môi trường đa tài khoản cổng thanh toán (Multi-Merchant Accounts) và tách biệt môi trường Sandbox/Production, phạm vi Unique Index được mở rộng:
+$$\text{UNIQUE}(\text{ProviderID},\; \text{MerchantAccountID},\; \text{ProviderEventID},\; \text{Environment})$$
 
-#### 2. Quyết định kiến trúc đã chốt:
-Phân rã chu trình COD thành **2 chặng kế toán độc lập**:
-* **Chặng 1 (Nghĩa vụ thanh toán của Người mua):**
-  * Ngay khi shipper giao hàng thành công và thu tiền mặt (`ShipmentStatus = 'DELIVERED'`): Người mua đã hoàn tất 100% nghĩa vụ tài chính theo pháp luật thương mại.
-  * Hệ thống cập nhật ngay: `Payment.PaymentStatus = 'PAID'` và `Payment.PaidAt = DeliveredAt`. Khách hàng lập tức có đầy đủ quyền lợi đánh giá sản phẩm hoặc yêu cầu đổi trả theo chính sách.
-* **Chặng 2 (Công nợ thu hộ giữa RetailCore và Đối tác Vận chuyển):**
-  * Khoản tiền mặt đang do shipper/hãng vận chuyển nắm giữ là tài sản thuộc Khoản phải thu (Accounts Receivable) của sàn.
-  * Quản lý độc lập qua thuộc tính `Payment.CarrierSettlementStatus`:
-    $$\text{NOT\_COLLECTED} \longrightarrow \text{COLLECTED\_BY\_CARRIER} \longrightarrow \text{REMITTED} \longrightarrow \text{RECONCILED}$$
-  * Khi đối soát bưu tá định kỳ, kế toán tải bảng kê đối soát lên hệ thống: Ghi nhận bản ghi `PaymentTransaction` loại `COD_SETTLEMENT` và chuyển `CarrierSettlementStatus = 'RECONCILED'`.
+#### 2. Tách biệt Webhook Receipt và Webhook Processing:
+* **Webhook Receipt:** Tiếp nhận raw payload, lưu log thô và phản hồi HTTP 200 ngay lập tức cho đối tác (tránh timeout và hạn chế retry không cần thiết).
+* **Webhook Processing:** Thực thi nghiệp vụ cập nhật trạng thái đơn hàng. Bổ sung trạng thái xử lý: `PENDING`, `PROCESSED`, `FAILED`.
+* **Cơ chế Retry/Replay Idempotent:** Khi webhook trước đó xử lý `FAILED` và đối tác gửi lại cùng `ProviderEventID`, hệ thống **không bỏ qua vô điều kiện**, mà kích hoạt luồng tái xử lý có kiểm soát.
+* **Phân biệt với Client Idempotency:** Webhook Idempotency giải quyết gửi lặp từ cổng thanh toán; trong khi Client Idempotency (`IdempotencyKey` gửi từ Web/App Checkout) giải quyết bài toán người dùng double-click thanh toán.
 
----
+#### 3. Mô hình Trạng thái Hai Tầng (Payment vs PaymentTransaction):
+* **`Payment` (Hồ sơ nghĩa vụ thanh toán tổng thể của đơn hàng):**
+  `PENDING` $\to$ `AUTHORIZED` $\to$ `PAID` $\to$ `PARTIALLY_REFUNDED` $\to$ `REFUNDED` $\to$ `EXPIRED` $\to$ `CANCELLED`.
+* **`PaymentTransaction` (Từng lần thử thanh toán cụ thể):**
+  `INITIATED` $\to$ `PENDING` $\to$ `SUCCEEDED` / `FAILED` / `EXPIRED` / `CANCELLED`.
+* Một giao dịch thử nghiệm thất bại (`PaymentTransaction.Status = 'FAILED'`) không làm hủy toàn bộ nghĩa vụ thanh toán `Payment` nếu khách hàng còn thời gian chọn phương thức thanh toán khác.
 
-### Phương án 8 (P2): Giá vốn Bình quân Di động (Moving Weighted Average - WAC) khi Xuất trả Nhà Cung cấp
-
-#### 1. Rủi ro nếu thiết kế non tay:
-Khi xuất trả hàng cho nhà cung cấp (`SupplierReturn`), nếu trừ giá trị tồn kho theo giá mua ban đầu trên đơn đặt hàng PO (`PurchaseOrderLine.UnitPrice`), trong khi tồn kho trong kho đang được định giá theo phương pháp Giá vốn Bình quân Di động (WAC), thì tổng giá trị tài sản trên sổ cái kế toán kho sẽ bị lệch nghiêm trọng so với thực tế, gây méo mó báo cáo tài chính và giá vốn hàng bán (COGS).
-
-#### 2. Quyết định kiến trúc đã chốt:
-1. **Nguyên tắc hạch toán xuất trả hàng nhà cung cấp:**
-   * Khi thực hiện xuất trả hàng cho nhà cung cấp, hệ thống ghi nhận giao dịch xuất kho với đơn giá vốn xuất kho bằng đúng **Giá vốn Bình quân Di động tại thời điểm xuất trả** (`InventoryBalance.CurrentAverageCost`).
-   * Giá trị tồn kho bị giảm = $\text{ReturnedQty} \times \text{CurrentAverageCost}$.
-2. **Xử lý chênh lệch giá vốn (Cost Variance Adjustment):**
-   * Số tiền thực tế nhà cung cấp hoàn trả cho RetailCore tính theo đơn giá mua thỏa thuận ban đầu trên PO (`PurchaseOrderLine.UnitPrice`).
-   * Khoản chênh lệch giữa giá trị PO hoàn lại và giá trị tồn kho bị giảm được hạch toán tự động vào tài khoản điều chỉnh chênh lệch giá vốn:
-     $$\text{CostVariance} = \text{ReturnedQty} \times (\text{POLine.UnitPrice} - \text{CurrentAverageCost})$$
-   * Đảm bảo sổ cái kho luôn cân bằng tuyệt đối với tổng số dư vật lý nhân đơn giá bình quân di động.
+#### 4. Khóa Ngoại Tự Tham chiếu Hoàn tiền (`OriginalPaymentTransactionID`):
+Mỗi bản ghi giao dịch hoàn tiền (`TransactionType = 'REFUND'`) bắt buộc phải lưu `OriginalPaymentTransactionID` trỏ về giao dịch thu tiền gốc với các quy tắc:
+* Giao dịch gốc phải có trạng thái `SUCCEEDED`.
+* Giao dịch hoàn phải thuộc cùng hồ sơ `Payment` cha.
+* Ràng buộc kiểm soát ngân quỹ:
+  $$\sum \text{RefundTransaction.Amount} \le \text{OriginalPaymentTransaction.Amount} - \sum \text{PriorRefunds}$$
 
 ---
 
-### Phương án 9 (P2): Chuẩn hóa JSON Snapshot Biến thể có Định danh Cấu trúc
+### Phương án 6 (P1): Ba Máy Trạng thái Tách biệt & Phân định Mốc Đóng Đơn hàng
 
-#### 1. Rủi ro nếu thiết kế non tay:
-Nhiều hệ thống lưu snapshot thuộc tính biến thể bằng chuỗi văn bản tự do hoặc JSON phi cấu trúc, ví dụ: `{"Size": "L", "Color": "Navy Blue"}`. Thiết kế này có 2 nhược điểm chết người: (1) Nếu danh mục đổi tên nhãn "Color" thành "Màu sắc", hệ thống không thể chạy truy vấn tổng hợp hoặc tìm kiếm thống nhất; (2) Không thể ánh xạ ngược lại `AttributeID` và `AttributeValueID` phục vụ phân tích dữ liệu mua sắm (Faceted Analytics) hoặc tái sinh SKU.
+#### 1. Độc lập Ba Máy Trạng thái:
+Tách rời hoàn toàn các chiều vận hành:
+$$\text{OrderStatus (Thương mại)} \ne \text{PaymentStatus (Tài chính)} \ne \text{ShipmentStatus (Hậu cần)}$$
 
-#### 2. Quyết định kiến trúc đã chốt:
-Chuẩn hóa trường `OrderLine.VariantAttributesSnapshot NVARCHAR(MAX)` thành **mảng JSON có định danh ID và mã Code cấu trúc chuẩn**:
+#### 2. Phân định Ba Mốc Thời gian trên `SalesOrder`:
+Để tránh mâu thuẫn giữa thời điểm giao vận thành công và thời điểm hết hạn đổi trả, `SalesOrder` quản lý 3 mốc thời gian độc lập:
+1. **`DeliveredAt`:** Thời điểm hoàn tất giao hàng (được cập nhật bằng thời điểm giao thành công của kiện hàng cuối cùng). Trạng thái vận hành giao hàng chuyển sang `DELIVERED`.
+2. **`ReturnEligibleUntil`:** Hạn cuối cùng khách hàng được quyền mở yêu cầu đổi trả (RMA) theo chính sách (xác định bằng $\max(\text{Shipment.DeliveredAt} + \text{PolicyDays})$).
+3. **`ClosedAt`:** Thời điểm chính thức đóng hồ sơ đơn hàng. Chuyển `OrderStatus = 'CLOSED'` sau khi:
+   * Thời gian hiện tại $> \text{ReturnEligibleUntil}$; VÀ
+   * Không có yêu cầu RMA nào đang trong trạng thái xử lý dang dở.
+
+```mermaid
+stateDiagram-v2
+    [*] --> DRAFT
+    DRAFT --> CONFIRMED: Khách đặt hàng thành công
+    CONFIRMED --> PROCESSING: Điều phối kho & Đóng gói
+    PROCESSING --> DELIVERED: Tất cả Shipment giao thành công (DeliveredAt ghi nhận)
+    DELIVERED --> CLOSED: Quá hạn ReturnEligibleUntil & Không có RMA mở (ClosedAt ghi nhận)
+    DELIVERED --> RMA_PROCESSING: Khách tạo yêu cầu RMA hợp lệ
+    RMA_PROCESSING --> CLOSED: Hoàn tất giải quyết khiếu nại RMA
+    CLOSED --> [*]
+```
+
+---
+
+### Phương án 7 (P1): Mô hình Đối soát COD Đa Chặng & Hỗ trợ Split Shipment
+
+#### 1. Bản chất Nghiệp vụ COD Hai Chặng:
+* **Chặng 1 (Quan hệ Khách hàng - RetailCore):** Khách hàng thanh toán tiền mặt cho Shipper lúc nhận hàng. Về mặt thương mại, nghĩa vụ nợ của khách hàng đã hoàn tất ngay tại thời điểm giao kiện: `PaymentStatus` ghi nhận thanh toán thành công cho phần giá trị kiện hàng đó.
+* **Chặng 2 (Quan hệ Hãng Vận chuyển - RetailCore):** Tiền COD nằm tại tài khoản tạm giữ của hãng vận chuyển. Hãng vận chuyển có nghĩa vụ chuyển tiền về tài khoản ngân hàng của RetailCore kèm theo Bảng kê đối soát (Reconciliation Sheet).
+
+#### 2. Khắc phục Giới hạn Đơn cột đối với Đơn hàng Split Shipment:
+Trong đơn hàng chia thành nhiều kiện hàng (`Shipment A`, `Shipment B`):
+* `Shipment A` có thể được giao và hãng đã chuyển tiền đối soát ngày 05/10.
+* `Shipment B` giao chậm hơn và đang chờ hãng đối soát ngày 12/10.
+Do đó, một cột duy nhất `Payment.CarrierSettlementStatus` không thể phản ánh chính xác trạng thái nếu không làm méo mó dòng tiền.
+* **Định hướng M3:** Bổ sung thực thể hoặc mở rộng theo dõi COD ở cấp **Giao dịch / Kiện hàng**:
+  * `CODCollection`: Số tiền Shipper thực thu của khách theo từng kiện `Shipment`.
+  * `CODRemittance`: Bản ghi tiền về theo từng đợt chuyển khoản của nhà vận chuyển.
+  * `CODReconciliation`: Kết quả đối soát chênh lệch bảng kê (khớp đúng, thiếu hụt cước, hay giữ lại đền bù).
+
+---
+
+### Phương án 8 (P2): Giá vốn Bình quân Di động (WAC) khi Xuất trả NCC & Định giá Tồn kho Độc lập
+
+#### 1. Nguyên lý Định giá khi Xuất trả Nhà Cung cấp (Supplier Return):
+Khi xuất trả hàng lỗi hoặc tồn kho cho Nhà cung cấp, kế toán kho bắt buộc phải ghi giảm giá trị tồn kho theo **Giá vốn Bình quân Di động hiện hành (`CurrentAverageCost`)**, tuyệt đối không ghi giảm theo giá mua trên đơn PO gốc (tránh làm sai lệch tổng giá trị sổ sách của lượng tồn còn lại trong kho).
+
+#### 2. Công thức Hạch toán Chênh lệch (Cost Variance):
+Khoản chênh lệch giữa giá trị nhà cung cấp hoàn lại (thường theo giá mua PO) và giá trị giảm tồn kho WAC:
+$$\text{InventoryValueDecrease} = \text{ReturnedQty} \times \text{CurrentAverageCost}$$
+$$\text{SupplierRefundAmount} = \text{ReturnedQty} \times \text{POLine.UnitPrice}$$
+$$\text{CostVariance} = \text{SupplierRefundAmount} - \text{InventoryValueDecrease}$$
+
+* **Tính độc lập kế toán:** Bảng dữ liệu lưu trữ các cấu phần giá trị `InventoryValueDecrease`, `SupplierRefundAmount` và `CostVariance`. Việc định khoản vào tài khoản cụ thể (Chênh lệch giá mua PPV, Giảm giá vốn hàng bán, hay Thu nhập khác) do Business Rules của phân hệ kế toán đảm trách, không ép cứng vào cấu trúc schema.
+* **Định giá Tồn kho theo Trạng thái Chất lượng:** `CurrentAverageCost` phản ánh giá vốn bình quân trên toàn bộ lượng tồn vật lý `OnHand`. Hàng `QUARANTINED` hay `DAMAGED` vẫn mang giá trị sổ sách kế toán cho đến khi có quyết định xử lý bằng chứng từ xuất hủy `SCRAP_OUT` (chuyển sang tài khoản chi phí tổn thất hàng hỏng).
+* **Hàng Khách Trả Lại:** Khôi phục theo giá vốn xuất kho ban đầu (Original COGS) của đơn hàng đó nếu truy vết được; trường hợp không thể truy vết mới nhập theo WAC hiện hành.
+
+---
+
+### Phương án 9 (P2): Chuẩn hoá JSON Snapshot Biến thể & Chuẩn mực Lập chỉ mục SQL Server
+
+#### 1. Cấu trúc JSON Snapshot Chuẩn hóa:
+Để bảo đảm tính bất biến khi thuộc tính sản phẩm trong danh mục thay đổi sau 5-10 năm, `OrderLine.VariantAttributesSnapshot` lưu trữ mảng JSON cấu trúc chặt chẽ:
 ```json
 [
   {
-    "attributeId": 1,
-    "attributeCode": "SIZE",
-    "attributeName": "Kích cỡ",
-    "valueId": 105,
-    "valueCode": "L",
-    "displayValue": "Size L"
-  },
-  {
-    "attributeId": 2,
+    "attributeId": 101,
     "attributeCode": "COLOR",
     "attributeName": "Màu sắc",
-    "valueId": 204,
-    "valueCode": "NAVY",
+    "valueId": 502,
+    "valueCode": "NAVY_BLUE",
     "displayValue": "Xanh Navy"
+  },
+  {
+    "attributeId": 102,
+    "attributeCode": "SIZE",
+    "attributeName": "Kích cỡ",
+    "valueId": 604,
+    "valueCode": "XL",
+    "displayValue": "XL"
   }
 ]
 ```
-* **Lợi ích kỹ thuật:** Cho phép lập chỉ mục và truy vấn tốc độ cao trên SQL Server thông qua các hàm tích hợp sẵn như `JSON_VALUE`, `JSON_QUERY` và `OPENJSON()`, phục vụ các báo cáo phân tích xu hướng tiêu dùng theo thuộc tính mà không làm chậm hệ thống.
+
+#### 2. Chuẩn mực Kỹ thuật về Truy vấn & Indexing trên SQL Server:
+* Các hàm nội tạo của SQL Server như `JSON_VALUE`, `JSON_QUERY`, `OPENJSON` cung cấp khả năng phân tích cú pháp JSON linh hoạt, nhưng **không tự động làm cho câu truy vấn đạt hiệu năng cao**.
+* **Nguyên tắc Indexing JSON trên SQL Server:** Nếu có nhu cầu lọc hoặc tìm kiếm thường xuyên trên một thuộc tính JSON cụ thể, hệ thống sẽ sử dụng **Persisted Computed Column** kết hợp B-Tree Index:
+  ```sql
+  -- Ví dụ mẫu thiết kế tại M3:
+  ALTER TABLE OrderLine ADD ColorCode AS CAST(JSON_VALUE(VariantAttributesSnapshot, '$[0].valueCode') AS VARCHAR(50)) PERSISTED;
+  CREATE NONCLUSTERED INDEX IX_OrderLine_ColorCode ON OrderLine(ColorCode);
+  ```
+* **Phân định Phân tích và Giao dịch:** Báo cáo phân tích chuyên sâu (BI/OLAP) sẽ đọc từ các bảng dữ liệu trích xuất (Star Schema / Fact-Dimension), không quét trực tiếp JSON trên bảng giao dịch `OrderLine`.
 
 ---
 
-### Phương án 10: Vòng đời Giữ hàng $1 : 0..N$ qua Filtered Index & Hạn Đổi trả theo Từng Kiện hàng
+### Phương án 10 (P0/P2): Return Window Tính theo Từng Kiện hàng (Split Shipment) & Truy vết ShipmentLine
 
-#### 1. Rủi ro nếu thiết kế non tay:
-* **Về giữ hàng:** Nếu ép quan hệ giữa `OrderWarehouseAllocation` và `StockReservationLine` là $1:0..1$ bằng ràng buộc `AllocationID UNIQUE`, hệ thống sẽ không thể lưu vết lịch sử nếu khách hàng thanh toán lỗi lần đầu dẫn đến hết hạn giữ hàng (EXPIRED), sau đó khách bấm thanh toán lại và tạo lượt giữ hàng mới.
-* **Về thời hạn đổi trả:** Đối với đơn chia nhiều kiện xuất từ nhiều kho (Split Shipment), kiện thứ nhất giao ngày 01/10, kiện thứ hai giao ngày 05/10. Nếu tính thời hạn đổi trả 7 ngày chung cho cả đơn theo ngày giao của kiện cuối cùng thì kiện thứ nhất được hưởng thời hạn trả hàng lên tới 11 ngày; ngược lại nếu tính theo kiện đầu tiên thì kiện thứ hai chỉ còn 3 ngày để đổi trả.
+#### 1. Chốt Phương án Hạn Đổi trả theo Từng Kiện hàng:
+Trong đơn hàng phân tách kiện (Split Shipment), mỗi kiện hàng có lộ trình và thời điểm giao thực tế khác nhau. Do đó, thời hạn đổi trả được tính độc lập cho từng kiện dựa trên **`Shipment.DeliveredAt`**.
+$$\text{ShipmentReturnWindowCutoff} = \text{Shipment.DeliveredAt} + \text{ReturnWindowDays}$$
 
-#### 2. Quyết định kiến trúc đã chốt:
-1. **Quan hệ $1 : 0..N$ với Filtered Unique Index cho Giữ hàng tồn kho:**
-   * Một dòng phân bổ `OrderWarehouseAllocation` có thể liên kết với nhiều dòng giữ hàng `StockReservationLine` theo thời gian ($1 : 0..N$), lưu vết đầy đủ các dòng giữ hàng cũ đã hết hạn (`EXPIRED`) hoặc đã hủy (`RELEASED`).
-   * Cài đặt Filtered Unique Index trên SQL Server để bảo đảm **tại một thời điểm chỉ có tối đa 1 dòng giữ hàng đang hoạt động**:
-     ```sql
-     CREATE UNIQUE INDEX UX_ReservationLine_ActiveAlloc 
-     ON StockReservationLine(OrderWarehouseAllocationID) 
-     WHERE ReservationLineStatus = 'ACTIVE';
-     ```
-2. **Tính thời hạn đổi trả hàng theo từng kiện hàng (`Shipment.DeliveredAt`):**
-   * Ràng buộc ứng dụng kiểm tra thời hạn đổi trả RMA tính theo ngày giao thành công của chính kiện hàng chứa dòng sản phẩm đó:
-     $$\text{DATEDIFF}(\text{day}, \text{Shipment.DeliveredAt}, \text{ReturnRequest.RequestedAt}) \le \text{PolicyDays}$$
-   * Đảm bảo sự công bằng tuyệt đối cho khách hàng và tính chặt chẽ trong kiểm soát rủi ro của từng kho xuất hàng.
+#### 2. Giải bài toán Truy vết Dòng Đơn hàng Phân bổ nhiều Kiện:
+* **Vấn đề thực tế:** Một `OrderLine` có số lượng 5 sản phẩm. `Shipment A` giao 2 sản phẩm ngày 01/10; `Shipment B` giao 3 sản phẩm ngày 05/10. Ngày 12/10 khách gửi RMA trả 2 sản phẩm (với chính sách đổi trả 7 ngày thì hàng của Shipment A đã hết hạn, hàng của Shipment B vẫn còn hạn).
+* **Giải pháp Kiến trúc M3:** Đơn đổi trả không thể chỉ liên kết mù quáng với `OrderLine`. M3 sẽ bổ sung liên kết truy vết dòng giao hàng:
+  * Cách 1: Bổ sung `ShipmentLineID` vào `ReturnRequestLine`.
+  * Cách 2: Bổ sung thực thể phân bổ `ReturnShipmentAllocation` liên kết `ReturnRequestLineID` và `ShipmentLineID` kèm số lượng tương ứng.
+  * Cơ chế này đảm bảo xác thực chính xác sản phẩm khách trả thuộc kiện hàng nào và còn trong thời hạn đổi trả hợp lệ hay không.
 
----
-
-## 4. KẾ HOẠCH HÀNH ĐỘNG CHI TIẾT CHO MILESTONE 3 (LOGICAL DATABASE DESIGN)
-
-Sau khi toàn bộ 10 phương án kiến trúc M2 đã được khóa cứng, các hạng mục kỹ thuật của **Milestone 3 (Logical Database Design)** sẽ được khởi động ngay theo lộ trình 4 bước chuẩn mực:
-
+#### 3. Vòng đời Giữ hàng $1 : 0..N$ qua Filtered Unique Index:
+Một `OrderLine` có thể trải qua nhiều lần giữ hàng (do tách kho, hủy giữ hàng một phần để re-allocate sang kho khác). Hệ thống khống chế một dòng duy nhất đang hoạt động bằng Filtered Unique Index:
+```sql
+CREATE UNIQUE NONCLUSTERED INDEX UX_InventoryReservation_ActiveLine
+ON InventoryReservation(OrderLineID)
+WHERE ReservationStatus = 'ACTIVE';
 ```
-+-------------------------------------------------------------------------------------------------------------+
-|                                    LỘ TRÌNH THỰC THI MILESTONE 3                                            |
-+-------------------------------------------------------------------------------------------------------------+
-| M3.01: Relational Schema Mapping    ---> Chuyển đổi 72 Thực thể thành 72 Bảng quan hệ trên SQL Server       |
-| M3.02: 3NF & BCNF Normalization     ---> Chứng minh toán học mọi bảng đạt chuẩn BCNF qua Phụ thuộc hàm (FD) |
-| M3.03: SQL Server Types & Sizing    ---> Định kiểu dữ liệu tối ưu & Ước tính dung lượng lưu trữ 1M đơn/năm  |
-| M3.04: Declarative Constraints DDL  ---> Đặc tả chi tiết mã T-SQL: CHECK, Filtered Unique Index, Stored Proc|
-+-------------------------------------------------------------------------------------------------------------+
+
+---
+
+## 4. LỘ TRÌNH ĐIỀU CHỈNH MILESTONE 3 (LOGICAL DATABASE DESIGN)
+
+Trước những phản hồi chuyên môn xác đáng, mục tiêu và phương pháp luận triển khai Milestone 3 được điều chỉnh theo hướng tiếp cận học thuật và kỹ thuật thực chứng:
+
+```mermaid
+flowchart LR
+    M301["M3.01: Relational Schema Mapping<br>(72 Thực thể Khái niệm -> Schema Quan hệ Tối ưu)"] --> M302["M3.02: Chuẩn hoá Dữ liệu Toán học<br>(Candidate Keys -> FDs -> 3NF -> BCNF Test)"]
+    M302 --> M303["M3.03: SQL Server Sizing & Data Types<br>(DECIMAL 19,0 cho VNĐ, 19,4 cho Đơn giá/WAC)"]
+    M303 --> M304["M3.04: Declarative Constraints & SPs<br>(DDL CHECK, Filtered Index, Transactional SPs)"]
 ```
 
 ### Bước 1 (M3.01) – Relational Schema Mapping (Ánh xạ Lược đồ Quan hệ)
-* Chuyển đổi 72 thực thể thành 72 bảng dữ liệu quan hệ (Relations/Tables) thuộc schema quản lý chuẩn hóa (ví dụ: `sales.*`, `inventory.*`, `customer.*`, `payment.*`, `catalog.*`, `audit.*`).
-* Xác định chính xác chiến lược Khóa chính: Khóa thay thế tự tăng (`BIGINT IDENTITY(1,1)`) cho toàn bộ các chứng từ giao dịch; Khóa tự nhiên duy nhất (`Natural Business Key UK`) cho các mã nghiệp vụ (`OrderNumber`, `SKU`, `WarehouseCode`, `PONumber`).
-* Thiết lập hệ thống Khóa ngoại (Foreign Keys) với quy tắc toàn vẹn tham chiếu nghiêm ngặt: Mặc định `ON DELETE NO ACTION` đối với toàn bộ các chứng từ lịch sử và sổ cái tài chính.
+* **Mục tiêu:** Chuyển đổi toàn diện 72 thực thể quan niệm thành Lược đồ Quan hệ (Relational Schema) tương thích hoàn hảo với SQL Server.
+* **Không ép buộc cứng số lượng:** Số lượng bảng vật lý không bắt buộc phải đúng bằng 72. Hệ thống sẽ giải trình rõ lý do cho từng trường hợp:
+  * Ánh xạ 1:1 độc lập thành bảng riêng.
+  * Tách bảng phục vụ lưu vết lịch sử (Audit Trail / Versions).
+  * Gộp thực thể nếu các phụ thuộc hàm và quan hệ cho phép mà không làm phát sinh dị thường dữ liệu.
+  * Lưu trữ cấu trúc JSON snapshot đối với dữ liệu lịch sử mang tính đóng băng.
 
-### Bước 2 (M3.02) – Chuẩn hóa Dữ liệu Toán học (3NF & BCNF Normalization)
-* Xây dựng ma trận Phụ thuộc hàm (Functional Dependencies - FDs) cho từng bảng.
-* Chứng minh toán học rằng mọi quan hệ đều đạt **Chuẩn 3 (3NF)** và **Chuẩn Boyce-Codd (BCNF)**: Mọi thuộc tính không khóa đều phụ thuộc đầy đủ và trực tiếp vào khóa chính, loại bỏ hoàn toàn các phụ thuộc bắc cầu và dư thừa dữ liệu bất hợp lý.
-* Ghi nhận và bảo vệ các trường Denormalization có kiểm soát (như `CurrentAverageCost` trên `InventoryBalance` hoặc các cột snapshot bất biến trên `OrderLine`) với các cơ chế kiểm soát đồng bộ chặt chẽ.
+### Bước 2 (M3.02) – Chuẩn hóa Dữ liệu Toán học (3NF & BCNF Evaluation)
+* **Quy trình chuẩn hóa 6 bước nghiêm ngặt:**
+  1. Xác định toàn bộ Khóa ứng viên (Candidate Keys) của từng quan hệ.
+  2. Xác định tập Phụ thuộc hàm đầy đủ (Full Functional Dependencies - FDs).
+  3. Kiểm tra và chứng minh 1NF, 2NF và 3NF.
+  4. Kiểm tra điều kiện Boyce-Codd Normal Form (BCNF): Với mọi phụ thuộc hàm $X \to Y$, $X$ bắt buộc phải là Superkey.
+  5. Đánh giá tính Bảo toàn Phụ thuộc hàm (Dependency Preservation) và Nối không mất mát thông tin (Lossless Join) khi phân rã.
+  6. Trường hợp giữ lại thiết kế 3NF không đạt BCNF hoặc phi chuẩn hóa có chủ đích (Aggregates, Denormalized Snapshots), bắt buộc phải lập biên bản đánh đổi kỹ thuật (Technical Trade-off Justification).
 
-### Bước 3 (M3.03) – Định kiểu Dữ liệu SQL Server & Ước tính Dung lượng Lưu trữ (Data Types & Sizing)
-* Lựa chọn kiểu dữ liệu tối ưu trên Microsoft SQL Server:
-  * Khóa chính/Khóa ngoại: `BIGINT` (8 bytes).
-  * Tiền tệ & Giá trị tài chính: `DECIMAL(18,2)` (9 bytes) - nghiêm cấm dùng `FLOAT`/`REAL` để tránh sai số dấu phẩy động.
-  * Chuỗi văn bản Unicode: `NVARCHAR(n)` (họ tên, địa chỉ, mô tả); Chuỗi mã hệ thống: `VARCHAR(n)` (`Status`, `Code`, `Type`).
-  * Thời gian & Múi giờ: `DATETIMEOFFSET` (10 bytes) - đảm bảo chuẩn hóa thời gian đa múi giờ cho hệ thống bán lẻ đa kênh.
-  * Kiểm soát Concurrency: Cột `ROWVERSION` (`TIMESTAMP`) cho các bảng giao dịch có tần suất cập nhật cao để hỗ trợ Optimistic Concurrency Control.
-* Bảng tính toán dung lượng lưu trữ chi tiết: Ước tính kích thước hàng (Row Size), dung lượng bảng và dung lượng chỉ mục cho quy mô vận hành chuẩn **1.000.000 đơn hàng/năm**, tính toán tốc độ tăng trưởng của Transaction Log và phân bổ Filegroup.
+### Bước 3 (M3.03) – Định kiểu Dữ liệu SQL Server & Ước tính Dung lượng (Sizing)
+* **Chuẩn hóa Kiểu Tiền tệ & Định lượng:**
+  * Tiền tệ giao dịch VNĐ: `DECIMAL(19,0)` hoặc `BIGINT`.
+  * Đơn giá chi tiết, Tỷ lệ chiết khấu, Giá vốn bình quân: `DECIMAL(19,4)`.
+  * Khóa chính (Surrogate Keys): `BIGINT IDENTITY(1,1)` cho các bảng giao dịch lớn; `INT` cho danh mục trung bình; `TINYINT` cho bảng trạng thái/loại.
+  * Chuỗi văn bản Unicode: `NVARCHAR` có giới hạn độ dài xác định (`NVARCHAR(50)`, `NVARCHAR(255)`, `NVARCHAR(500)`), tránh sử dụng tràn lan `NVARCHAR(MAX)`.
+  * Thời gian toàn cầu: `DATETIMEOFFSET(7)` để lưu trữ chính xác múi giờ Việt Nam (+07:00) và đồng bộ hệ thống.
+* **Tính toán Dung lượng 3 năm (Capacity Planning):** Tính kích thước dòng trung bình (Row Size), dung lượng bảng (Data Space), dung lượng chỉ mục (Index Space) dựa trên tải 1.000.000 đơn hàng/năm.
 
-### Bước 4 (M3.04) – Đặc tả Chi tiết Ràng buộc Kỹ thuật & Chỉ mục có lọc (Constraints & Filtered Indexes Specification)
-* Soạn thảo chi tiết mã lệnh DDL của:
-  * Bộ 5 Declarative CHECK Constraints trên bảng `InventoryBalance`.
-  * Bộ 8 Filtered Unique Indexes (Active cart, Active reservation, Webhook raw buffer, Primary category, Unique email/phone).
-  * Khung mã lệnh Stored Procedure chuẩn cho giao dịch nguyên tử tạo đơn hàng (Mandatory 1:1 `SalesOrder` + `Payment` + `OrderAddress`).
+### Bước 4 (M3.04) – Đặc tả Chi tiết Ràng buộc Kỹ thuật & Stored Procedures
+* Đặc tả đầy đủ mã nguồn DDL cho toàn bộ các ràng buộc khai báo: `PRIMARY KEY`, `FOREIGN KEY` (kèm hành vi `ON DELETE NO ACTION`), `CHECK Constraints`, `DEFAULT Constraints`.
+* Đặc tả các chỉ mục có lọc (`Filtered Indexes`) giải quyết các bài toán trạng thái duy nhất.
+* Đặc tả chữ ký và luồng thực thi của các Stored Procedures giao dịch cốt lõi: Đặt hàng, Giữ kho, Nhập/Xuất kho, Ghi nhận Webhook, Giám định đổi trả.
 
 ---
 
-## 5. ĐÁNH GIÁ RỦI RO & TUYÊN BỐ SẴN SÀNG (RISK & READINESS SIGN-OFF)
+## 5. GATE CHECKLIST KIỂM CHỨNG & QUYẾT ĐỊNH CỦA LEAD DATABASE ENGINEER
 
-| Rủi ro kỹ thuật khi chuyển giao M3 | Mức độ | Biện pháp kiểm soát & Giảm thiểu tại M3 |
-| :--- | :---: | :--- |
-| **1. Tranh chấp khóa giữ hàng (Concurrency Lock Contention)** | Trung bình | Sử dụng Pessimistic Locking với gợi ý khóa `UPDLOCK, ROWLOCK` trong Stored Procedure checkout để tránh Deadlock khi nhiều khách cùng mua 1 SKU cuối cùng. |
-| **2. Phân bổ chiết khấu lẻ VNĐ** | Thấp | Giải thuật LRM và công thức $F(q)$ đã được chứng minh toán học khép kín; M3 chỉ cần chuyển dịch nguyên văn thành hàm Scalar User-Defined Function (UDF) hoặc xử lý trong Stored Procedure. |
-| **3. Phình to dung lượng Webhook Log** | Thấp | Cấu hình chính sách Retention Policy tại M4: Tự động dọn dẹp hoặc chuyển archive các bản ghi `PaymentWebhookLog` đã xử lý thành công (`PROCESSED`) sau 90 ngày. |
+### 5.1. Bảng Tiêu chí Kiểm chứng Cổng Chuyển giao (Gate Verification Checklist)
 
-### Tuyên bố Nghiệm thu của Lead Database Engineer
-> **KẾT LUẬN CUỐI CÙNG:**
-> 
-> Giai đoạn **Milestone 2 – Conceptual Database Design** của dự án RetailCore đã hoàn thành xuất sắc, đạt độ hoàn thiện **100% Zero Defect**. Toàn bộ 72 thực thể, 40 liên kết liên miền và 10 phương án kiến trúc cốt lõi đã được kiểm chứng chéo và phê duyệt đồng thuận.
-> 
-> **Hệ thống chính thức đủ điều kiện đóng Gate và chuyển giao toàn diện sang Milestone 3 – Logical Database Design.**
+| STT | Tiêu chí Kiểm chứng Kiến trúc | Kết quả Đánh giá | Bằng chứng / Cơ sở Kỹ thuật | Trạng thái Chuyển tiếp M3 |
+| :---: | :--- | :---: | :--- | :--- |
+| **01** | **Bảo tồn Ranh giới 72 Thực thể** | **ĐẠT (Passed)** | 72 thực thể (E01-E72) bao phủ 11 phân hệ, không bỏ sót nghiệp vụ cốt lõi. | Cho phép chuyển sang M3.01 Schema Mapping. |
+| **02** | **Đồng bộ Sơ đồ Mermaid ERD** | **ĐẠT (Passed)** | 12 file Mermaid đã loại bỏ toàn bộ hậu tố lỗi, chuẩn hóa cú pháp thuần `PK`, `FK`, `UK`. | Sơ đồ sẵn sàng làm tài liệu trực quan cho M3. |
+| **03** | **Độc lập Giám định vs Kho (P0-01)** | **ĐẠT (Passed)** | `ReturnLineAssessment` (E72) tách hoàn tiền khỏi nhập kho; tách bạch `FaultParty` và `ResolutionType`. | Hoàn thiện cấu trúc Audit Trail tại M3.01. |
+| **04** | **Toán học Tồn kho & 5 CHECK (P0-02)** | **ĐẠT (Passed)** | Công thức $AvailableQty \ge 0$; chuẩn hóa Quality Status (`SELLABLE`, `QUARANTINED`, `DAMAGED`) và nghiệp vụ `SCRAP_OUT`. | Sẵn sàng chuyển thành DDL CHECK Constraints tại M3.04. |
+| **05** | **Triệt tiêu Sai số Làm tròn (P0-03)** | **ĐẠT (Passed)** | Kết hợp LRM, công thức tích luỹ nguyên $F(q)$ và kiểu tiền tệ nguyên số `DECIMAL(19,0)`. | Chuyển thành đặc tả kiểm thử logic (Test Specs) tại M3. |
+| **06** | **Thực thi Bắt buộc 1:1 (P1-04)** | **ĐẠT (Passed)** | DDL Unique FK kết hợp Transactional SPs khống chế cả 2 cận; triển khai TPT cho Account. | Đặc tả kịch bản SP tại M3.04. |
+| **07** | **Webhook Log & Idempotency (P1-05)** | **ĐẠT CÓ ĐIỀU KIỆN (Conditional)** | Mở rộng Unique key `(ProviderID, MerchantAccountID, ProviderEventID, Environment)`; tách biệt Receipt và Processing. | M3 thiết kế bảng trạng thái Webhook và luồng retry. |
+| **08** | **Độc lập 3 Máy Trạng thái (P1-06)** | **ĐẠT (Passed)** | Tách biệt `DeliveredAt`, `ReturnEligibleUntil`, và `ClosedAt`. Xóa bỏ nhập nhằng của trạng thái `COMPLETED`. | Thiết kế cột thời gian và State Transition Matrix tại M3. |
+| **09** | **Đối soát COD Split Shipment (P1-07)** | **CẦN MỞ RỘNG TẠI M3 (Open Item)** | Nhận diện rõ hạn chế của cột đơn lẻ `CarrierSettlementStatus` khi giao nhiều kiện lệch ngày. | M3 sẽ thiết kế theo dõi COD cấp Kiện hàng/Giao dịch. |
+| **10** | **Truy vết Kiện hàng khi RMA (P2-10)** | **CẦN MỞ RỘNG TẠI M3 (Open Item)** | Nhận diện sự cần thiết của việc truy vết `ReturnRequestLine` về `ShipmentLineID` trong Split Shipment. | M3.01 sẽ thiết kế cấu trúc quan hệ truy vết phù hợp. |
 
+---
+
+### 5.2. Quyết định Nghiệm thu Cổng Chuyển giao (Gate Sign-off Decision)
+
+```
+========================================================================================
+                      GATE REVIEW SIGN-OFF: CONDITIONAL APPROVAL
+========================================================================================
+Dự án:                 RetailCore Enterprise E-Commerce Management System
+Giai đoạn Đánh giá:    Kết thúc Milestone 2 (M2) -> Chuyển giao Milestone 3 (M3)
+Quyết định:            CONDITIONAL APPROVAL FOR M3 (Chấp thuận Có Điều kiện)
+----------------------------------------------------------------------------------------
+ĐIỀU KIỆN THỰC THI:
+1. ĐƯỢC PHÉP KHỞI ĐỘNG: 
+   - Tiến hành ngay công đoạn M3.01 (Relational Schema Mapping) cho toàn bộ 72 thực thể.
+2. NGUYÊN TẮC GIỮ MỞ (NON-BLOCKING ITERATION):
+   - Không áp đặt cứng nhắc số lượng 72 bảng vật lý nếu thiết kế chuẩn hóa và kiểm toán 
+     đòi hỏi tách/gộp hợp lý.
+   - Không áp đặt 100% bảng phải đạt BCNF nếu việc phân rã làm mất phụ thuộc hàm hoặc 
+     làm suy giảm nghiêm trọng hiệu năng nghiệp vụ.
+   - Thiết kế chi tiết cơ chế truy vết ShipmentLine và đối soát COD đa kiện trong quá trình
+     triển khai M3.
+3. TIẾP TỤC BẢO TRÌ VÀ CẬP NHẬT:
+   - Mọi điều chỉnh cấu trúc phát sinh trong M3 sẽ được đồng bộ ngược (Reverse-Sync) vào
+     tài liệu M2 để bảo đảm tính nhất quán xuyên suốt vòng đời dự án.
+========================================================================================
+```
