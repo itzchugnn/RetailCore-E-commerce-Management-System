@@ -8,7 +8,7 @@ Hệ thống đặt **Cơ sở dữ liệu làm trung tâm (Database-Centric)**,
 
 ## Tech Stack
 
-* **DBMS:** Microsoft SQL Server
+* **Cơ sở dữ liệu mục tiêu:** Microsoft SQL Server
 * **Quản lý Schema Migration:** Flyway
 * **Backend:** Java Spring Boot (RESTful API, Spring Security, Spring Data JPA / JDBC Client)
 * **Frontend:** React, TypeScript, Tailwind CSS
