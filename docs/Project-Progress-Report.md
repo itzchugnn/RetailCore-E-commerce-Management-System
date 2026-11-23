@@ -6,7 +6,7 @@
 * **Mô hình Kiến trúc:** Monolithic Layered Architecture, Database-Centric (EIS)
 * **Quy mô Dự phóng:** 1.000.000 đơn hàng/năm, 10.000.000 biến động kho/năm, tính sẵn sàng 99.99%
 * **Phiên bản Tài liệu:** v3.1 – Tiến trình Xây dựng theo Milestone (Milestone-by-Milestone Engineering Chronicle)
-* **Trạng thái:** **Hoàn thành M1 & M2, Giải quyết 10 Pre-M3 Issues, Chuẩn bị M3.01**
+* **Trạng thái:** **Hoàn thành M1 & M2, Hoàn thành M3.01 cho SA01 - Product Catalog, Tiếp tục SA02**
 * **Quản lý:** Lead Enterprise Database Engineer & Solution Architect
 
 ---
@@ -29,7 +29,7 @@ Tiến trình xây dựng toàn diện của dự án được phân định qua
 | **M1: Phân tích Nghiệp vụ & Yêu cầu** *(Business Analysis)* | 20% | **100%** | **NGHIỆM THU BASELINE (Signed Off)** | • Hoàn thành bộ 11 tài liệu đặc tả nghiệp vụ (`M1.01` – `M1.11`).<br>• Mã hóa 112 Quy tắc nghiệp vụ (`BR-01` – `BR-112`).<br>• Thiết lập 7 Quyết định nghiệp vụ nền tảng (`BD-01` – `BD-07`). |
 | **M2: Thiết kế CSDL Mức Quan niệm** *(Conceptual Design)* | 30% | **100%** | **CONDITIONAL APPROVAL (Nghiệm thu Có Điều kiện)** | • Định danh và chuẩn hóa 72 thực thể quan niệm (**E01 – E72**) trên 11 Subject Areas (**SA01 – SA11**).<br>• Đóng gói 12 sơ đồ Mermaid ERD và 12 ảnh PNG render tương ứng.<br>• Ban hành Bản ghi hiệu chỉnh `M2.08` xử lý 10 lỗi gốc (CORR-01..10). |
 | **Giai đoạn Tiền M3 (Pre-M3 Gate Resolution)** | — | **100%** | **APPROVED & FULLY ALIGNED (Đã Giải quyết 100%)** | • Tháo gỡ triệt để 10 Open Issues kỹ thuật (B1–B7, C1–C4, D1–D4).<br>• Đặc tả DDL schema cho `ReturnShipmentAllocation`, COD 3 lớp, Audit Trail E72.<br>• Ban hành chính sách chuẩn hóa 3NF/BCNF thực tế và chuẩn kiểu tiền tệ VNĐ. |
-| **M3: Thiết kế CSDL Mức Logic** *(Logical Design)* | 25% | **0%** | **KHỞI ĐỘNG (Starting M3.01)** | • Khởi động công đoạn **M3.01 (Relational Schema Mapping)** cho `SA01 – Product Catalog`.<br>• Lộ trình gồm 4 bước: Ánh xạ quan hệ $\to$ Chuẩn hóa 3NF/BCNF $\to$ Định cỡ dữ liệu Sizing $\to$ DDL Constraints & Stored Procedures. |
+| **M3: Thiết kế CSDL Mức Logic** *(Logical Design)* | 25% | **5%** | **ĐANG TRIỂN KHAI (In Progress)** | • Ban hành Phương pháp luận ánh xạ `M3.01.01`.<br>• Hoàn thành ánh xạ 9 thực thể `SA01 – Product Catalog` (E01–E09) sang 9 bảng quan hệ `M3.01.02`.<br>• Chuẩn bị triển khai `SA02 – Warehouse & Inventory`. |
 | **M4: Thiết kế Vật lý & Tối ưu Hiệu năng** *(Physical Design)* | 15% | **0%** | **CHỜ THỰC HIỆN** | • Partitioning Scheme theo quý/năm, Chỉ mục chuyên sâu (Filtered/Columnstore), Chiến lược HA/DR. |
 | **M5: DDL Triển khai & Backend API** | 10% | **0%** | **CHỜ THỰC HIỆN** | • Script T-SQL tạo Schema hoàn chỉnh, Flyway Migration, Seed Data 1.000.000 dòng tải thử nghiệm, Spring Boot REST API. |
 | **M6: Frontend (React / TypeScript)** | — | **0%** | **CHỜ THỰC HIỆN** | • Giao diện Web App điều hành & bán hàng đa kênh (Admin, Staff, Customer). |
