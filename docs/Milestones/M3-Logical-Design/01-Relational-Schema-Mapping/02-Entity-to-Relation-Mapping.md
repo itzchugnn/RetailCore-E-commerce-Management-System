@@ -1,24 +1,17 @@
 # M3.01.02 - ENTITY-TO-RELATION MAPPING: SUBJECT AREA 01 (PRODUCT CATALOG)
 ## ĐẶC TẢ ÁNH XẠ THỰC THỂ SANG BẢNG QUAN HỆ: PHÂN HỆ PRODUCT CATALOG
 
-* **Hệ thống Quản trị:** RetailCore Enterprise E-Commerce Management System
-* **Cơ sở dữ liệu Mục tiêu:** Microsoft SQL Server 2022+ Enterprise Edition
+* **Dự án:** RetailCore Enterprise E-Commerce Management System
+* **Cơ sở dữ liệu mục tiêu:** Microsoft SQL Server 2022+ Enterprise Edition
 * **Cột mốc:** Milestone 3 (Logical Database Design) – Công đoạn M3.01
 * **Phiên bản:** v1.0 – Official Relational Mapping Baseline
-* **Phân hệ Triển khai:** `Subject Area 01 – Product Catalog` (E01 đến E09)
-* **Kế thừa trực tiếp:**
-  * Bộ quy tắc kiến trúc luôn có hiệu lực [GEMINI.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/GEMINI.md)
-  * [01-Entity-Catalog.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/01-Entity-Catalog.md) (E01 đến E09)
-  * [02-Relationship-Analysis.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/02-Relationship-Analysis.md) & [03-Cardinality-and-Constraints.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/03-Cardinality-and-Constraints.md)
-  * Quyết định nền tảng BD-01 (Category N:N & Primary Flag) và BD-06 (Thuộc tính động 2 lớp)
-
----
+* **Phân hệ:** `Subject Area 01 – Product Catalog` (E01 đến E09)
 
 ## 1. TỔNG QUAN PHÂN HỆ PRODUCT CATALOG (SA01)
 
 Phân hệ **Product Catalog** là hạt nhân quản lý toàn bộ danh mục sản phẩm thương mại, cấu trúc phân cấp danh mục, từ điển thuộc tính động và định danh biến thể sản phẩm (SKU) có thể bán và lưu kho. 
 
-### Ma trận chuyển đổi 9 Thực thể sang 9 Bảng Quan hệ:
+### Ma trận chuyển đổi 9 thực thể sang 9 quan hệ:
 | Mã Thực thể | Tên Thực thể Quan niệm | Loại hình Thực thể (Conceptual) | Tên Bảng Quan hệ (Relational Table) | Khóa Chính (Primary Key) | Khóa Tự nhiên / Ứng viên (Candidate Key) |
 | :---: | :--- | :--- | :--- | :--- | :--- |
 | **E01** | `Product` | Strong Entity | `Product` | `ProductID (INT IDENTITY)` | `ProductCode (VARCHAR(50))` |
@@ -37,18 +30,16 @@ Phân hệ **Product Catalog** là hạt nhân quản lý toàn bộ danh mục 
 
 ![SA01 Product Catalog Logical ERD](../images/SA01-Product-Catalog.png)
 
-*(Sơ đồ lược đồ quan hệ logic cho Phân hệ 01: Product Catalog được lưu trữ tại `docs/Milestones/M3-Logical-Design/images/SA01-Product-Catalog.png`)*
-
 ---
 
 ## 3. ĐẶC TẢ CHI TIẾT LƯỢC ĐỒ 9 BẢNG QUAN HỆ
 
 ### 3.1. Bảng `Category` (E02 - Danh mục Sản phẩm Đa tầng)
-* **Ý nghĩa Nghiệp vụ:** Đại diện cho cây phân loại hàng hóa đa cấp (đồ nam $\to$ áo $\to$ áo sơ mi).
-* **Đặc tính Kỹ thuật:** Strong Entity với cấu trúc đệ quy (Adjacency List).
+* **Ý nghĩa:** Đại diện cho cây phân loại hàng hóa đa cấp (đồ nam $\to$ áo $\to$ áo sơ mi).
+* **Đặc tính:** Strong Entity với cấu trúc đệ quy (Adjacency List).
 * **Khóa chính:** `CategoryID INT IDENTITY(1,1)` (Surrogate Key Clustered).
 
-#### Định nghĩa Cột (Column Definitions):
+#### Column Definitions:
 | Tên Cột (Column Name) | Kiểu Dữ liệu SQL Server | Nullable | Giá trị Mặc định | Ý nghĩa & Mô tả Nghiệp vụ |
 | :--- | :--- | :---: | :--- | :--- |
 | `CategoryID` | `INT IDENTITY(1,1)` | **NO** | Auto increment | Khóa chính surrogate định danh danh mục |
@@ -62,7 +53,7 @@ Phân hệ **Product Catalog** là hạt nhân quản lý toàn bộ danh mục 
 | `CreatedAt` | `DATETIMEOFFSET(7)` | **NO** | `SYSDATETIMEOFFSET()` | Thời điểm tạo bản ghi hệ thống kèm múi giờ |
 | `UpdatedAt` | `DATETIMEOFFSET(7)` | **NO** | `SYSDATETIMEOFFSET()` | Thời điểm cập nhật bản ghi lần cuối |
 
-#### Danh mục Ràng buộc Kỹ thuật (Named Constraints):
+#### Constraints:
 * `PK_Category`: `PRIMARY KEY CLUSTERED (CategoryID)`
 * `UQ_Category_Slug`: `UNIQUE NONCLUSTERED (Slug)`
 * `FK_Category_Category_Parent`: `FOREIGN KEY (ParentCategoryID) REFERENCES Category(CategoryID) ON DELETE NO ACTION`
@@ -77,11 +68,11 @@ Phân hệ **Product Catalog** là hạt nhân quản lý toàn bộ danh mục 
 ---
 
 ### 3.2. Bảng `Product` (E01 - Sản phẩm Thương mại)
-* **Ý nghĩa Nghiệp vụ:** Đại diện cho sản phẩm ở cấp độ thương mại chung, chứa thông tin nhận diện thương hiệu, bài viết mô tả tổng quan.
-* **Đặc tính Kỹ thuật:** Strong Entity. Quản lý vòng đời trạng thái (`DRAFT`, `PUBLISHED`, `ARCHIVED`).
+* **Ý nghĩa:** Đại diện cho sản phẩm ở cấp độ thương mại chung, chứa thông tin nhận diện thương hiệu, bài viết mô tả tổng quan.
+* **Đặc tính:** Strong Entity. Quản lý vòng đời trạng thái (`DRAFT`, `PUBLISHED`, `ARCHIVED`).
 * **Khóa chính:** `ProductID INT IDENTITY(1,1)` (Surrogate Key Clustered).
 
-#### Định nghĩa Cột (Column Definitions):
+#### Column Definitions:
 | Tên Cột (Column Name) | Kiểu Dữ liệu SQL Server | Nullable | Giá trị Mặc định | Ý nghĩa & Mô tả Nghiệp vụ |
 | :--- | :--- | :---: | :--- | :--- |
 | `ProductID` | `INT IDENTITY(1,1)` | **NO** | Auto increment | Khóa chính surrogate định danh sản phẩm |
@@ -94,7 +85,7 @@ Phân hệ **Product Catalog** là hạt nhân quản lý toàn bộ danh mục 
 | `CreatedAt` | `DATETIMEOFFSET(7)` | **NO** | `SYSDATETIMEOFFSET()` | Thời điểm tạo sản phẩm trong hệ thống |
 | `UpdatedAt` | `DATETIMEOFFSET(7)` | **NO** | `SYSDATETIMEOFFSET()` | Thời điểm chỉnh sửa thông tin lần cuối |
 
-#### Danh mục Ràng buộc Kỹ thuật (Named Constraints):
+#### Constraints:
 * `PK_Product`: `PRIMARY KEY CLUSTERED (ProductID)`
 * `UQ_Product_ProductCode`: `UNIQUE NONCLUSTERED (ProductCode)`
 * `CK_Product_ProductStatus`: `CHECK (ProductStatus IN ('DRAFT', 'PUBLISHED', 'ARCHIVED'))`
@@ -106,11 +97,11 @@ Phân hệ **Product Catalog** là hạt nhân quản lý toàn bộ danh mục 
 ---
 
 ### 3.3. Bảng `ProductCategory` (E03 - Liên kết Sản phẩm & Danh mục)
-* **Ý nghĩa Nghiệp vụ:** Giải quyết quan hệ nhiều - nhiều ($N:N$) giữa sản phẩm và danh mục. Mang cờ xác định danh mục chính `IsPrimary` theo **BD-01**.
-* **Đặc tính Kỹ thuật:** Associative Entity (Pure Junction with Attribute).
+* **Ý nghĩa:** Giải quyết quan hệ nhiều - nhiều ($N:N$) giữa sản phẩm và danh mục. Mang cờ xác định danh mục chính `IsPrimary` theo **BD-01**.
+* **Đặc tính:** Associative Entity (Pure Junction with Attribute).
 * **Khóa chính:** `(ProductID, CategoryID)` (Composite Clustered Primary Key).
 
-#### Định nghĩa Cột (Column Definitions):
+#### Column Definitions:
 | Tên Cột (Column Name) | Kiểu Dữ liệu SQL Server | Nullable | Giá trị Mặc định | Ý nghĩa & Mô tả Nghiệp vụ |
 | :--- | :--- | :---: | :--- | :--- |
 | `ProductID` | `INT` | **NO** | — | Khóa ngoại trỏ về `Product.ProductID` |
@@ -118,7 +109,7 @@ Phân hệ **Product Catalog** là hạt nhân quản lý toàn bộ danh mục 
 | `IsPrimary` | `BIT` | **NO** | `0` | Cờ danh mục chính: 1 (Là danh mục chính duy nhất), 0 (Danh mục phụ) |
 | `AssignedAt` | `DATETIMEOFFSET(7)` | **NO** | `SYSDATETIMEOFFSET()` | Thời điểm gán sản phẩm vào danh mục |
 
-#### Danh mục Ràng buộc & Chỉ mục Chuyên sâu (Named Constraints & Filtered Index):
+#### Constraints & Filtered Index:
 * `PK_ProductCategory`: `PRIMARY KEY CLUSTERED (ProductID, CategoryID)`
 * `FK_ProductCategory_Product`: `FOREIGN KEY (ProductID) REFERENCES Product(ProductID) ON DELETE NO ACTION`
 * `FK_ProductCategory_Category`: `FOREIGN KEY (CategoryID) REFERENCES Category(CategoryID) ON DELETE NO ACTION`
@@ -135,11 +126,11 @@ Phân hệ **Product Catalog** là hạt nhân quản lý toàn bộ danh mục 
 ---
 
 ### 3.4. Bảng `ProductVariant` (E04 - Hạt nhân Biến thể Bán & Tồn kho SKU)
-* **Ý nghĩa Nghiệp vụ:** Là thực thể giao dịch trung tâm (Core SKU Entity) biểu diễn một phiên bản cụ thể có thể bán, áp giá và lưu trữ trong kho (ví dụ: Áo thun trắng size XL).
-* **Đặc tính Kỹ thuật:** Core SKU Entity. Chịu tải tham chiếu khóa ngoại từ toàn bộ các phân hệ Kho (E11), Đơn hàng (E41), Mua hàng (E24, E26), Khuyến mãi (E51).
+* **Ý nghĩa:** Là thực thể giao dịch trung tâm (Core SKU Entity) biểu diễn một phiên bản cụ thể có thể bán, áp giá và lưu trữ trong kho (ví dụ: Áo thun trắng size XL).
+* **Đặc tính:** Core SKU Entity. Chịu tải tham chiếu khóa ngoại từ toàn bộ các phân hệ Kho (E11), Đơn hàng (E41), Mua hàng (E24, E26), Khuyến mãi (E51).
 * **Khóa chính:** `VariantID BIGINT IDENTITY(1,1)` (Surrogate Key Clustered).
 
-#### Định nghĩa Cột (Column Definitions):
+#### Column Definitions:
 | Tên Cột (Column Name) | Kiểu Dữ liệu SQL Server | Nullable | Giá trị Mặc định | Ý nghĩa & Mô tả Nghiệp vụ |
 | :--- | :--- | :---: | :--- | :--- |
 | `VariantID` | `BIGINT IDENTITY(1,1)` | **NO** | Auto increment | Khóa chính surrogate mở rộng cho giao dịch khối lượng lớn |
@@ -153,7 +144,7 @@ Phân hệ **Product Catalog** là hạt nhân quản lý toàn bộ danh mục 
 | `CreatedAt` | `DATETIMEOFFSET(7)` | **NO** | `SYSDATETIMEOFFSET()` | Thời điểm tạo biến thể |
 | `UpdatedAt` | `DATETIMEOFFSET(7)` | **NO** | `SYSDATETIMEOFFSET()` | Thời điểm cập nhật giá hoặc trạng thái |
 
-#### Danh mục Ràng buộc Kỹ thuật (Named Constraints):
+#### Constraints:
 * `PK_ProductVariant`: `PRIMARY KEY CLUSTERED (VariantID)`
 * `UQ_ProductVariant_SKU`: `UNIQUE NONCLUSTERED (SKU)`
 * `FK_ProductVariant_Product`: `FOREIGN KEY (ProductID) REFERENCES Product(ProductID) ON DELETE NO ACTION`
@@ -168,11 +159,11 @@ Phân hệ **Product Catalog** là hạt nhân quản lý toàn bộ danh mục 
 ---
 
 ### 3.5. Bảng `Attribute` (E05 - Từ điển Thuộc tính Toàn cục)
-* **Ý nghĩa Nghiệp vụ:** Từ điển định nghĩa các loại thuộc tính dùng chung toàn sàn (Size, Color, Material, Dung lượng RAM).
-* **Đặc tính Kỹ thuật:** Strong Entity (Catalog Master).
+* **Ý nghĩa:** Từ điển định nghĩa các loại thuộc tính dùng chung toàn sàn (Size, Color, Material, Dung lượng RAM).
+* **Đặc tính:** Strong Entity (Catalog Master).
 * **Khóa chính:** `AttributeID INT IDENTITY(1,1)` (Surrogate Key Clustered).
 
-#### Định nghĩa Cột (Column Definitions):
+#### Column Definitions:
 | Tên Cột (Column Name) | Kiểu Dữ liệu SQL Server | Nullable | Giá trị Mặc định | Ý nghĩa & Mô tả Nghiệp vụ |
 | :--- | :--- | :---: | :--- | :--- |
 | `AttributeID` | `INT IDENTITY(1,1)` | **NO** | Auto increment | Khóa chính surrogate định danh thuộc tính |
@@ -183,7 +174,7 @@ Phân hệ **Product Catalog** là hạt nhân quản lý toàn bộ danh mục 
 | `IsActive` | `BIT` | **NO** | `1` | Cờ trạng thái: 1 (Đang sử dụng), 0 (Khóa không cho gán mới) |
 | `CreatedAt` | `DATETIMEOFFSET(7)` | **NO** | `SYSDATETIMEOFFSET()` | Thời điểm tạo thuộc tính |
 
-#### Danh mục Ràng buộc Kỹ thuật (Named Constraints):
+#### Constraints:
 * `PK_Attribute`: `PRIMARY KEY CLUSTERED (AttributeID)`
 * `UQ_Attribute_AttributeCode`: `UNIQUE NONCLUSTERED (AttributeCode)`
 * `CK_Attribute_DataType`: `CHECK (DataType IN ('STRING', 'NUMBER', 'BOOLEAN', 'COLOR_CODE'))`
@@ -194,11 +185,11 @@ Phân hệ **Product Catalog** là hạt nhân quản lý toàn bộ danh mục 
 ---
 
 ### 3.6. Bảng `AttributeValue` (E06 - Từ điển Giá trị Thuộc tính)
-* **Ý nghĩa Nghiệp vụ:** Danh mục các giá trị chuẩn hóa thuộc về một `Attribute` (ví dụ: Color có Đỏ, Xanh, Vàng; Size có S, M, L, XL).
-* **Đặc tính Kỹ thuật:** Weak Entity phụ thuộc toàn phần vào `Attribute`.
+* **Ý nghĩa:** Danh mục các giá trị chuẩn hóa thuộc về một `Attribute` (ví dụ: Color có Đỏ, Xanh, Vàng; Size có S, M, L, XL).
+* **Đặc tính:** Weak Entity phụ thuộc toàn phần vào `Attribute`.
 * **Khóa chính:** `AttributeValueID INT IDENTITY(1,1)` (Surrogate Key Clustered).
 
-#### Định nghĩa Cột (Column Definitions):
+#### Column Definitions:
 | Tên Cột (Column Name) | Kiểu Dữ liệu SQL Server | Nullable | Giá trị Mặc định | Ý nghĩa & Mô tả Nghiệp vụ |
 | :--- | :--- | :---: | :--- | :--- |
 | `AttributeValueID` | `INT IDENTITY(1,1)` | **NO** | Auto increment | Khóa chính surrogate định danh giá trị thuộc tính |
@@ -209,7 +200,7 @@ Phân hệ **Product Catalog** là hạt nhân quản lý toàn bộ danh mục 
 | `IsActive` | `BIT` | **NO** | `1` | Trạng thái kích hoạt: 1 (Kích hoạt), 0 (Khóa) |
 | `CreatedAt` | `DATETIMEOFFSET(7)` | **NO** | `SYSDATETIMEOFFSET()` | Thời điểm tạo giá trị |
 
-#### Danh mục Ràng buộc Kỹ thuật (Named Constraints):
+#### Constraints:
 * `PK_AttributeValue`: `PRIMARY KEY CLUSTERED (AttributeValueID)`
 * `UQ_AttributeValue_Attribute_Value`: `UNIQUE NONCLUSTERED (AttributeID, Value)`
 * `FK_AttributeValue_Attribute`: `FOREIGN KEY (AttributeID) REFERENCES Attribute(AttributeID) ON DELETE NO ACTION`
@@ -220,11 +211,11 @@ Phân hệ **Product Catalog** là hạt nhân quản lý toàn bộ danh mục 
 ---
 
 ### 3.7. Bảng `ProductAttribute` (E07 - Khai báo Thuộc tính Áp dụng cho Sản phẩm)
-* **Ý nghĩa Nghiệp vụ:** Cấu hình thuộc tính nào được phép áp dụng cho sản phẩm và phân định rõ vai trò cấu thành SKU hay mô tả chung theo **BD-06**.
-* **Đặc tính Kỹ thuật:** Associative Entity ($N:N$ giữa `Product` và `Attribute`).
+* **Ý nghĩa:** Cấu hình thuộc tính nào được phép áp dụng cho sản phẩm và phân định rõ vai trò cấu thành SKU hay mô tả chung theo **BD-06**.
+* **Đặc tính:** Associative Entity ($N:N$ giữa `Product` và `Attribute`).
 * **Khóa chính:** `(ProductID, AttributeID)` (Composite Clustered Primary Key).
 
-#### Định nghĩa Cột (Column Definitions):
+#### Column Definitions:
 | Tên Cột (Column Name) | Kiểu Dữ liệu SQL Server | Nullable | Giá trị Mặc định | Ý nghĩa & Mô tả Nghiệp vụ |
 | :--- | :--- | :---: | :--- | :--- |
 | `ProductID` | `INT` | **NO** | — | Khóa ngoại trỏ về `Product.ProductID` |
@@ -234,7 +225,7 @@ Phân hệ **Product Catalog** là hạt nhân quản lý toàn bộ danh mục 
 | `DisplayOrder` | `INT` | **NO** | `0` | Thứ tự hiển thị thuộc tính trên trang chi tiết sản phẩm |
 | `CreatedAt` | `DATETIMEOFFSET(7)` | **NO** | `SYSDATETIMEOFFSET()` | Thời điểm cấu hình thuộc tính cho sản phẩm |
 
-#### Danh mục Ràng buộc Kỹ thuật (Named Constraints):
+#### Constraints:
 * `PK_ProductAttribute`: `PRIMARY KEY CLUSTERED (ProductID, AttributeID)`
 * `FK_ProductAttribute_Product`: `FOREIGN KEY (ProductID) REFERENCES Product(ProductID) ON DELETE NO ACTION`
 * `FK_ProductAttribute_Attribute`: `FOREIGN KEY (AttributeID) REFERENCES Attribute(AttributeID) ON DELETE NO ACTION`
@@ -246,11 +237,11 @@ Phân hệ **Product Catalog** là hạt nhân quản lý toàn bộ danh mục 
 ---
 
 ### 3.8. Bảng `ProductAttributeValue` (E08 - Whitelist Giá trị Thuộc tính Cho phép)
-* **Ý nghĩa Nghiệp vụ:** Tập hợp giá trị cụ thể được phép chọn cho sản phẩm (Whitelist). Ngăn chặn việc nhân viên chọn bừa các giá trị không có thật của sản phẩm đó.
-* **Đặc tính Kỹ thuật:** Associative Entity ($N:N$ lọc giá trị).
+* **Ý nghĩa:** Tập hợp giá trị cụ thể được phép chọn cho sản phẩm (Whitelist). Ngăn chặn việc nhân viên chọn bừa các giá trị không có thật của sản phẩm đó.
+* **Đặc tính:** Associative Entity ($N:N$ lọc giá trị).
 * **Khóa chính:** `(ProductID, AttributeID, AttributeValueID)` (Composite Clustered Primary Key).
 
-#### Định nghĩa Cột (Column Definitions):
+#### Column Definitions:
 | Tên Cột (Column Name) | Kiểu Dữ liệu SQL Server | Nullable | Giá trị Mặc định | Ý nghĩa & Mô tả Nghiệp vụ |
 | :--- | :--- | :---: | :--- | :--- |
 | `ProductID` | `INT` | **NO** | — | Khóa ngoại kết hợp trỏ `ProductAttribute` |
@@ -258,7 +249,7 @@ Phân hệ **Product Catalog** là hạt nhân quản lý toàn bộ danh mục 
 | `AttributeValueID` | `INT` | **NO** | — | Khóa ngoại trỏ về `AttributeValue.AttributeValueID` |
 | `AssignedAt` | `DATETIMEOFFSET(7)` | **NO** | `SYSDATETIMEOFFSET()` | Thời điểm đưa giá trị vào whitelist của sản phẩm |
 
-#### Danh mục Ràng buộc Kỹ thuật (Named Constraints):
+#### Constraints:
 * `PK_ProductAttributeValue`: `PRIMARY KEY CLUSTERED (ProductID, AttributeID, AttributeValueID)`
 * `FK_ProductAttributeValue_ProductAttribute`: `FOREIGN KEY (ProductID, AttributeID) REFERENCES ProductAttribute(ProductID, AttributeID) ON DELETE NO ACTION`
 * `FK_ProductAttributeValue_AttributeValue`: `FOREIGN KEY (AttributeValueID) REFERENCES AttributeValue(AttributeValueID) ON DELETE NO ACTION`
@@ -267,11 +258,11 @@ Phân hệ **Product Catalog** là hạt nhân quản lý toàn bộ danh mục 
 ---
 
 ### 3.9. Bảng `VariantAttributeValue` (E09 - Giá trị Thuộc tính Cấu thành SKU)
-* **Ý nghĩa Nghiệp vụ:** Xác định chính xác tổ hợp giá trị tạo nên một biến thể SKU cụ thể (ví dụ: SKU `AT-TR-XL` có `AttributeID = COLOR` mang giá trị `Trắng` và `AttributeID = SIZE` mang giá trị `XL`).
-* **Đặc tính Kỹ thuật:** Associative Entity (SKU Specification).
+* **Ý nghĩa:** Xác định chính xác tổ hợp giá trị tạo nên một biến thể SKU cụ thể (ví dụ: SKU `AT-TR-XL` có `AttributeID = COLOR` mang giá trị `Trắng` và `AttributeID = SIZE` mang giá trị `XL`).
+* **Đặc tính:** Associative Entity (SKU Specification).
 * **Khóa chính:** `(VariantID, AttributeID)` (Composite Clustered Primary Key).
 
-#### Định nghĩa Cột (Column Definitions):
+#### Column Definitions:
 | Tên Cột (Column Name) | Kiểu Dữ liệu SQL Server | Nullable | Giá trị Mặc định | Ý nghĩa & Mô tả Nghiệp vụ |
 | :--- | :--- | :---: | :--- | :--- |
 | `VariantID` | `BIGINT` | **NO** | — | Khóa ngoại trỏ về biến thể `ProductVariant.VariantID` |
@@ -279,7 +270,7 @@ Phân hệ **Product Catalog** là hạt nhân quản lý toàn bộ danh mục 
 | `AttributeValueID` | `INT` | **NO** | — | Khóa ngoại trỏ về giá trị được chọn `AttributeValue.AttributeValueID` |
 | `CreatedAt` | `DATETIMEOFFSET(7)` | **NO** | `SYSDATETIMEOFFSET()` | Thời điểm cấu thành biến thể |
 
-#### Danh mục Ràng buộc Kỹ thuật (Named Constraints):
+#### Constraints:
 * `PK_VariantAttributeValue`: `PRIMARY KEY CLUSTERED (VariantID, AttributeID)`
 * `FK_VariantAttributeValue_ProductVariant`: `FOREIGN KEY (VariantID) REFERENCES ProductVariant(VariantID) ON DELETE NO ACTION`
 * `FK_VariantAttributeValue_AttributeValue`: `FOREIGN KEY (AttributeValueID) REFERENCES AttributeValue(AttributeValueID) ON DELETE NO ACTION`
@@ -312,7 +303,7 @@ Phân hệ `Product Catalog` giữ vai trò cung cấp dữ liệu Master Data v
 
 ---
 
-## 5. DỰ PHÓNG DUNG LƯỢNG LƯU TRỮ (CAPACITY SIZING PREVIEW - SA01)
+## 5. CAPACITY SIZING PREVIEW - SA01
 
 Dựa trên chỉ tiêu thiết kế hệ thống cho doanh nghiệp bán lẻ đa kênh:
 * Số lượng Sản phẩm (`Product`): **50.000 sản phẩm**
@@ -322,7 +313,7 @@ Dựa trên chỉ tiêu thiết kế hệ thống cho doanh nghiệp bán lẻ �
 * Whitelist (`ProductAttributeValue`): Trung bình 6 giá trị/sản phẩm $\implies$ **300.000 dòng**
 * Đặc tả SKU (`VariantAttributeValue`): Trung bình 2 thuộc tính định nghĩa/SKU $\implies$ **400.000 dòng**
 
-### Bảng Tính toán Kích thước Dòng và Dung lượng Dữ liệu:
+### Tính toán kích thước dòng và dung lượng dữ liệu:
 | Tên Bảng | Ước tính Kích thước Dòng (Row Size) | Số lượng Dòng Dự phóng (Row Count) | Dung lượng Dữ liệu (Data Space) | Dung lượng Chỉ mục (Index Space) | Tổng Dung lượng Dự kiến (Total Size) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | `Category` | ~450 bytes | 500 | ~0.25 MB | ~0.15 MB | **~0.4 MB** |
@@ -341,7 +332,7 @@ Dựa trên chỉ tiêu thiết kế hệ thống cho doanh nghiệp bán lẻ �
 
 ---
 
-## 6. MA TRẬN KIỂM CHỨNG TOÀN VẸN NGHIỆP VỤ (VALIDATION CHECKLIST)
+## 6. VALIDATION CHECKLIST
 
 | Mã Quy tắc / Quyết định | Nội dung Quy tắc | Cách thức Triển khai trong Schema Logic | Trạng thái Nghiệm thu |
 | :---: | :--- | :--- | :---: |
