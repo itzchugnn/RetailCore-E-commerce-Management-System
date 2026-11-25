@@ -1,5 +1,8 @@
 # PHẦN IV & V: THIẾT KẾ CƠ SỞ DỮ LIỆU QUAN NIỆM VÀ LOGIC
 
+> [!WARNING]
+> **TÀI LIỆU KHỞI THỦY LỊCH SỬ (HISTORICAL SEED v0.1 — SUPERSEDED):** Mô hình 28 thực thể / 42 bảng tên số nhiều trong bản nháp này **đã được thay thế hoàn toàn** bởi chuẩn **79 Thực thể danh từ số ít (`E01`–`E79`)** tại [01-Entity-Catalog.md](../Milestones/M2-Conceptual-Design/01-Entity-Catalog.md), `docs/erd/mermaid/*.md` và `docs/Milestones/M3-Logical-Design/`. Tuyệt đối không sử dụng tên bảng số nhiều hoặc lược đồ cũ trong văn bản này.
+
 ---
 
 ## PHẦN IV. THIẾT KẾ CƠ SỞ DỮ LIỆU QUAN NIỆM (CONCEPTUAL DESIGN)

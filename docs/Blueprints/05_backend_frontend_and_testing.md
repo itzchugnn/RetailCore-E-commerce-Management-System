@@ -1,5 +1,8 @@
 # PHẦN VII, VIII & IX: THIẾT KẾ BACKEND, FRONTEND VÀ CHIẾN LƯỢC KIỂM THỬ
 
+> [!WARNING]
+> **TÀI LIỆU KHỞI THỦY LỊCH SỬ (HISTORICAL SEED v0.1 — SUPERSEDED):** Bản phác thảo này **đã được chuẩn hóa và thay thế** bởi [GEMINI.md](../../GEMINI.md) và bộ quy chuẩn kỹ thuật chuyên sâu trong `.agents/skills/` (`retailcore-backend-architecture`, `retailcore-frontend-standards`, `retailcore-concurrency-testing`, `retailcore-devops-deployment`).
+
 ---
 
 ## PHẦN VII. THIẾT KẾ BACKEND (DELIVERABLE 04 – REST API)

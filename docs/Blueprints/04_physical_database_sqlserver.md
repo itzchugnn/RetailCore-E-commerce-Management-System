@@ -1,4 +1,7 @@
 # PHẦN VI. THIẾT KẾ CƠ SỞ DỮ LIỆU VẬT LÝ – SQL SERVER
+
+> [!WARNING]
+> **TÀI LIỆU KHỞI THỦY LỊCH SỬ (HISTORICAL SEED v0.1 — SUPERSEDED):** Các quy ước kiểu dữ liệu sơ bộ trong bản nháp này (như dùng `DECIMAL(19,4)` cho mọi tiền tệ, `TINYINT` cho trạng thái, `DATETIME2(0)`) **đã được thay thế hoàn toàn** bởi [GEMINI.md](../../GEMINI.md) (`DECIMAL(19,0)` cho tiền giao dịch VNĐ, `VARCHAR(30)` cho State Machine, `DATETIMEOFFSET(7)`). Tuyệt đối tuân theo `GEMINI.md` và `M3`/`M4`.
 **Deliverable 03 – SQL Server Database**
 
 Đây là phần trọng tâm nhất của dự án (chiếm tổng cộng $60\%$ trọng số đánh giá gồm Thiết kế CSDL và Hiệu năng SQL Server).

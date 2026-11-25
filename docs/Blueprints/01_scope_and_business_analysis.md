@@ -1,5 +1,8 @@
 # PHẦN I & II: XÁC ĐỊNH PHẠM VI HỆ THỐNG VÀ PHÂN TÍCH NGHIỆP VỤ
 
+> [!WARNING]
+> **TÀI LIỆU KHỞI THỦY LỊCH SỬ (HISTORICAL SEED v0.1 — SUPERSEDED):** Văn bản này là bản phác thảo ý tưởng ban đầu trước Milestone 1. Nhiều chi tiết trong đây (như thời điểm trừ tồn kho khi giao hàng, hoàn tiền gắn với nhập kho) **đã được thay thế hoàn toàn** bởi bộ quy chuẩn tối cao [GEMINI.md](../../GEMINI.md) và hồ sơ chính thức tại `docs/Milestones/M1-Business-Analysis/` cùng `docs/Milestones/M2-Conceptual-Design/` (79 Thực thể `E01`–`E79`). Tuyệt đối không dùng file này làm căn cứ viết mã hay DDL.
+
 ---
 
 ## PHẦN I. XÁC ĐỊNH PHẠM VI HỆ THỐNG

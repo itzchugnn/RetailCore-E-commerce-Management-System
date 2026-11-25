@@ -1,5 +1,8 @@
 # PHẦN III. BỘ QUY TẮC NGHIỆP VỤ (BUSINESS RULES – VERSION 1.0)
 
+> [!WARNING]
+> **TÀI LIỆU KHỞI THỦY LỊCH SỬ (HISTORICAL SEED v0.1 — SUPERSEDED):** Bộ 30 quy tắc sơ bộ này **đã được thay thế hoàn toàn** bởi [GEMINI.md](../../GEMINI.md), [06-Business-Rules.md](../Milestones/M1-Business-Analysis/06-Business-Rules.md) (200 quy tắc chuẩn hóa) và [08-Architectural-Correction-Log.md](../Milestones/M2-Conceptual-Design/08-Architectural-Correction-Log.md) (`CORR-01` đến `CORR-10`). Tuyệt đối không dùng file này làm căn cứ thiết kế CSDL.
+
 Bộ quy tắc nghiệp vụ dưới đây đóng vai trò là căn cứ pháp lý nội bộ của hệ thống để kiểm tra tính đúng đắn của sơ đồ ERD, lược đồ quan hệ (Relational Schema), các ràng buộc toàn vẹn (Constraints) trong SQL Server cũng như logic xử lý ở tầng Application.
 
 ---
