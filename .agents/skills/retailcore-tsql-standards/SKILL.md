@@ -7,7 +7,7 @@ description: >-
 
 # RetailCore SQL Server 2022+ T-SQL Enterprise Standards Skill
 
-Bộ quy chuẩn lập trình CSDL T-SQL dành cho **Microsoft SQL Server Enterprise Edition** trong hệ thống **RetailCore**.
+Bộ quy chuẩn lập trình CSDL T-SQL dành cho **Microsoft SQL Server 2022+** trong hệ thống **RetailCore**.
 
 ---
 
@@ -15,122 +15,133 @@ Bộ quy chuẩn lập trình CSDL T-SQL dành cho **Microsoft SQL Server Enterp
 
 | Mục đích dữ liệu | Kiểu dữ liệu chuẩn | Ràng buộc & Ghi chú |
 | :--- | :--- | :--- |
-| **Tiền tệ giao dịch VNĐ** | `DECIMAL(19,0)` | Tiền VNĐ thanh toán thực tế là số nguyên đồng, không lưu số lẻ xu. |
-| **Đơn giá, Tỷ lệ %, Giá vốn WAC** | `DECIMAL(19,4)` | Giữ 4 chữ số thập phân để triệt tiêu sai số làm tròn khi nhân/chia. |
-| **Kiểu cấm sử dụng** | **TUYỆT ĐỐI CẤM** | Cấm `MONEY`, `SMALLMONEY` (lỗi làm tròn 4 chữ số ngầm định), cấm `FLOAT`, `REAL` (sai số dấu phẩy động). |
-| **Khóa chính giao dịch lớn** | `BIGINT IDENTITY(1,1)` | Bảng giao dịch: `SalesOrder`, `OrderLine`, `InventoryTransactionLine`, `PaymentTransaction`, `AuditLog`. |
-| **Khóa chính danh mục master** | `INT IDENTITY(1,1)` | Bảng danh mục vừa và nhỏ: `Category`, `Brand`, `Warehouse`, `Carrier`, `Role`. |
-| **Chuỗi Unicode tiếng Việt** | `NVARCHAR(len)` | Tên sản phẩm `NVARCHAR(200)`, Họ tên `NVARCHAR(100)`, Địa chỉ `NVARCHAR(255)`. |
+| **Tiền tệ giao dịch VNĐ** | `DECIMAL(19,0)` | Tiền VNĐ thanh toán/tổng tiền là số nguyên đồng, không lưu số lẻ xu. |
+| **Đơn giá, Tỷ lệ %, Giá vốn WAC** | `DECIMAL(19,4)` | Giữ 4 chữ số thập phân cho WAC và tỷ lệ chiết khấu; với giá bán lẻ B2C `SellingPrice` thêm `CHECK (SellingPrice = FLOOR(SellingPrice))`. |
+| **Tỷ lệ thuế GTGT (VAT)** | `DECIMAL(5,2)` | Giá trị chuẩn theo quy định thuế Việt Nam: `0.00`, `5.00`, `8.00`, `10.00`. |
+| **Kiểu cấm sử dụng** | **TUYỆT ĐỐI CẤM** | Cấm `MONEY`, `SMALLMONEY` (lỗi làm tròn 4 chữ số trung gian), cấm `FLOAT`, `REAL` (sai số dấu phẩy động). |
+| **Khóa chính giao dịch / SKU / Account** | `BIGINT IDENTITY(1,1)` | `ProductVariant`, `Account`, `SalesOrder`, `OrderLine`, `InventoryTransactionLine`, `PaymentTransaction`, `AuditLog`. |
+| **Khóa chính danh mục master** | `INT IDENTITY(1,1)` | `Category`, `Brand`, `Attribute`, `AttributeValue`, `Warehouse`, `Supplier`, `Carrier`, `Role`, `Permission`, `PaymentMethod`. |
+| **Chuỗi Unicode tiếng Việt** | `NVARCHAR(len)` | Tên sản phẩm `NVARCHAR(255)`, Họ tên `NVARCHAR(100)`, Địa chỉ `NVARCHAR(255)`. |
 | **Chuỗi mã định danh ASCII** | `VARCHAR(len)` | `SKU VARCHAR(50)`, `OrderNumber VARCHAR(30)`, `VoucherCode VARCHAR(30)`. |
-| **Thời gian hệ thống** | `DATETIME2(0)` hoặc `DATETIMEOFFSET(7)` | `DATETIME2(0)` cho mốc giây thông thường; `DATETIMEOFFSET(7)` cho các giao dịch đa múi giờ. |
-| **Cờ logic (Boolean)** | `BIT NOT NULL` | Kèm `DEFAULT 0` hoặc `DEFAULT 1`. |
-| **Dữ liệu bán cấu trúc** | `NVARCHAR(MAX)` | Phải có Check Constraint `ISJSON(...) = 1`. |
+| **Thời gian hệ thống** | `DATETIMEOFFSET(7)` | Chuẩn ISO 8601 có múi giờ (`+07:00`), mặc định `SYSDATETIMEOFFSET()`. |
+| **Cờ logic (Boolean)** | `BIT NOT NULL` | Kèm `DEFAULT (0)` hoặc `DEFAULT (1)`. |
+| **Dữ liệu bán cấu trúc (JSON)** | `NVARCHAR(MAX)` | Bắt buộc kèm Check Constraint `ISJSON(...) = 1`. |
 
 ---
 
-## 2. QUY ƯỚC ĐẶT TÊN NAMED CONSTRAINTS (NAMING CONVENTIONS)
+## 2. QUY ƯỚC ĐẶT TÊN NAMED CONSTRAINTS & INDEXES
 
-Tất cả ràng buộc CSDL bắt buộc phải được đặt tên rõ ràng (Named Constraints), tuyệt đối không để SQL Server tự sinh tên ngẫu nhiên:
+Tất cả ràng buộc và chỉ mục CSDL bắt buộc đặt tên rõ ràng, tuyệt đối không để SQL Server tự sinh tên ngẫu nhiên:
 
 * **Primary Key:** `PK_<TableName>`
   ```sql
   CONSTRAINT PK_SalesOrder PRIMARY KEY CLUSTERED (OrderID)
   ```
-* **Foreign Key:** `FK_<ChildTable>_<ParentTable>[_<Purpose>]`
+* **Foreign Key:** `FK_<ChildTable>_<ParentTable>[_<Purpose>]` (mặc định `ON DELETE NO ACTION` + kèm Nonclustered Index hỗ trợ chiều truy vấn ngược)
   ```sql
-  CONSTRAINT FK_OrderLine_SalesOrder FOREIGN KEY (OrderID) 
+  CONSTRAINT FK_OrderLine_SalesOrder FOREIGN KEY (OrderID)
       REFERENCES dbo.SalesOrder(OrderID) ON DELETE NO ACTION
   ```
-  *(Lưu ý: Mọi FK trên bảng giao dịch bắt buộc khai báo `ON DELETE NO ACTION` để ngăn Cascade Delete làm mất dữ liệu lịch sử).*
-* **Unique Constraint / Index:** `UQ_<TableName>_<Columns>` hoặc `UX_<TableName>_<Columns>`
+* **Unique Constraint / Filtered Index:** `UQ_<TableName>_<Columns>` hoặc `UX_<TableName>_<Purpose>`
   ```sql
-  CONSTRAINT UQ_ProductVariant_SKU UNIQUE (SKU)
+  CONSTRAINT UQ_ProductVariant_SKU UNIQUE NONCLUSTERED (SKU)
   ```
+* **Nonclustered Search Index:** `IX_<TableName>_<Columns>`
 * **Check Constraint:** `CK_<TableName>_<RuleDescription>`
-  ```sql
-  CONSTRAINT CK_InventoryBalance_OnHand_Positive CHECK (OnHandQty >= 0)
-  ```
 * **Default Constraint:** `DF_<TableName>_<ColumnName>`
-  ```sql
-  CONSTRAINT DF_SalesOrder_CreatedAt DEFAULT SYSDATETIME()
-  ```
 
 ---
 
-## 3. CHỈ MỤC CHUYÊN SÂU (ADVANCED INDEXING PATTERNS)
+## 3. FILTERED UNIQUE INDEXES BẮT BUỘC
 
-### 3.1. Filtered Unique Indexes (Cưỡng chế nghiệp vụ trên tập con dữ liệu)
 * **Giỏ hàng Active duy nhất cho mỗi khách:**
   ```sql
-  CREATE UNIQUE INDEX UX_ShoppingCart_Customer_Active 
-  ON dbo.ShoppingCart(CustomerID) 
+  CREATE UNIQUE NONCLUSTERED INDEX UX_ShoppingCart_Customer_Active
+  ON dbo.ShoppingCart(CustomerID)
   WHERE CartStatus = 'ACTIVE';
   ```
-* **Chỉ đúng 1 danh mục chính cho sản phẩm khi Published:**
+* **Tối đa 1 danh mục chính cho mỗi sản phẩm:**
   ```sql
-  CREATE UNIQUE INDEX UX_ProductCategory_Primary 
-  ON dbo.ProductCategory(ProductID) 
+  CREATE UNIQUE NONCLUSTERED INDEX UX_ProductCategory_Primary
+  ON dbo.ProductCategory(ProductID)
   WHERE IsPrimary = 1;
   ```
-* **Chỉ 1 dòng giữ hàng ACTIVE cho mỗi dòng phân bổ kho:**
+* **Tối đa 1 dòng giữ hàng ACTIVE cho mỗi dòng phân bổ kho:**
   ```sql
-  CREATE UNIQUE INDEX UX_StockReservationLine_ActiveAlloc 
-  ON dbo.StockReservationLine(OrderWarehouseAllocationID) 
+  CREATE UNIQUE NONCLUSTERED INDEX UX_StockReservationLine_ActiveAlloc
+  ON dbo.StockReservationLine(AllocationID)
   WHERE ReservationLineStatus = 'ACTIVE';
+  ```
+* **Tối đa 1 phiên bản hiện hành cho mỗi lô giám định hàng trả:**
+  ```sql
+  CREATE UNIQUE NONCLUSTERED INDEX UX_ReturnLineAssessment_Current
+  ON dbo.ReturnLineAssessment(ReturnReceiptLineID, AssessmentGroupNo)
+  WHERE IsCurrent = 1;
+  ```
+* **Chuyển đổi giỏ hàng sang đơn hàng (cho phép Direct-Buy `CartID IS NULL`):**
+  ```sql
+  CREATE UNIQUE NONCLUSTERED INDEX UX_SalesOrder_Cart
+  ON dbo.SalesOrder(CartID)
+  WHERE CartID IS NOT NULL;
   ```
 * **Địa chỉ mặc định duy nhất cho mỗi khách:**
   ```sql
-  CREATE UNIQUE INDEX UX_CustomerAddress_Default 
-  ON dbo.CustomerAddress(CustomerID) 
+  CREATE UNIQUE NONCLUSTERED INDEX UX_CustomerAddress_Default
+  ON dbo.CustomerAddress(CustomerID)
   WHERE IsDefault = 1;
   ```
 * **Chống Webhook Replay từ cổng thanh toán:**
   ```sql
-  CREATE UNIQUE INDEX UX_PaymentWebhookLog_ProviderEvent 
-  ON dbo.PaymentWebhookLog(PaymentMethodID, ProviderEventID, Environment) 
+  CREATE UNIQUE NONCLUSTERED INDEX UX_PaymentWebhookLog_ProviderEvent
+  ON dbo.PaymentWebhookLog(PaymentMethodID, ProviderEventID, Environment)
   WHERE ProviderEventID IS NOT NULL;
   ```
 
 ---
 
-## 4. KHUÔN MẪU STORED PROCEDURE GIAO DỊCH NGUYÊN TỬ (TRANSACTION TEMPLATE)
+## 4. KHUÔN MẪU STORED PROCEDURE GIAO DỊCH AN TOÀN (SAVEPOINT-AWARE TEMPLATE)
 
-Mọi Stored Procedure thực thi nghiệp vụ đa bảng trong RetailCore bắt buộc tuân thủ khuôn mẫu:
+Mọi Boundary Stored Procedure thực thi nghiệp vụ đa bảng bắt buộc hỗ trợ cả gọi độc lập lẫn gọi lồng nhau qua `@@TRANCOUNT` + `SAVE TRANSACTION`:
 
 ```sql
 CREATE OR ALTER PROCEDURE dbo.usp_ExampleTransaction
     @Param1 BIGINT,
     @Param2 INT,
-    @CurrentUserID BIGINT,
-    @ReturnCode INT OUTPUT,
-    @ReturnMessage NVARCHAR(500) OUTPUT
+    @CurrentAccountID BIGINT
 AS
 BEGIN
     SET NOCOUNT ON;
-    SET XACT_ABORT ON; -- Bắt buộc: Tự động Rollback toàn bộ khi gặp run-time error
+    SET XACT_ABORT ON;
+
+    DECLARE @TranCounter INT = @@TRANCOUNT;
+    DECLARE @SavePointName SYSNAME = N'SP_' + CAST(@@PROCID AS NVARCHAR(20));
 
     BEGIN TRY
-        BEGIN TRANSACTION;
+        IF @TranCounter = 0
+            BEGIN TRANSACTION;
+        ELSE
+            SAVE TRANSACTION @SavePointName;
 
-        -- 1. Sắp xếp tài nguyên khóa để chống Deadlock (Lock Ordering)
-        -- Ví dụ khi khóa hàng loạt SKU: ORDER BY VariantID ASC, WarehouseID ASC
+        -- 1. Khóa tài nguyên theo thứ tự cố định chống Deadlock (Lock Ordering)
+        -- Ví dụ: ORDER BY VariantID ASC, WarehouseID ASC với gợi ý WITH (UPDLOCK, HOLDLOCK)
 
-        -- 2. Thao tác nghiệp vụ
-        -- INSERT / UPDATE ...
+        -- 2. Thực thi thao tác nghiệp vụ & kiểm tra bất biến
 
-        COMMIT TRANSACTION;
-        SET @ReturnCode = 0;
-        SET @ReturnMessage = N'Thao tác thành công.';
+        IF @TranCounter = 0
+            COMMIT TRANSACTION;
     END TRY
     BEGIN CATCH
-        IF @@TRANCOUNT > 0
+        IF XACT_STATE() = -1 AND @TranCounter = 0
             ROLLBACK TRANSACTION;
+        ELSE IF XACT_STATE() = 1
+        BEGIN
+            IF @TranCounter = 0
+                ROLLBACK TRANSACTION;
+            ELSE
+                ROLLBACK TRANSACTION @SavePointName;
+        END;
 
-        SET @ReturnCode = ERROR_NUMBER();
-        SET @ReturnMessage = ERROR_MESSAGE();
-
-        -- Ghi log lỗi vào bảng chuyên dụng nếu cần
-        THROW;
+        THROW; -- Ném mã lỗi chuẩn (50001+) để tầng Backend @RestControllerAdvice ánh xạ HTTP Status
     END CATCH
 END;
 GO
@@ -138,11 +149,10 @@ GO
 
 ---
 
-## 5. DANH MỤC 5 STORED PROCEDURES CỐT LÕI CỦA M3.04
+## 5. DANH MỤC 5 BOUNDARY STORED PROCEDURES CỐT LÕI CỦA M3.04
 
-1. `usp_CreateSalesOrderWithAddress`: Tạo nguyên tử `SalesOrder`, snapshot địa chỉ `OrderAddress` và hồ sơ nghĩa vụ `Payment` trong cùng 1 boundary transaction.
-2. `usp_AllocateAndReserveStock`: Phân bổ đa kho theo thứ tự sắp xếp và tạo `StockReservationLine`, cập nhật `ReservedQty` nguyên tử.
-3. `usp_PostInventoryTransaction`: Ghi sổ cái bất biến `InventoryTransaction` / `InventoryTransactionLine` và cập nhật các delta trên `InventoryBalance`.
-4. `usp_ReceivePaymentWebhook`: Lưu vết bảng đệm `PaymentWebhookLog`, kiểm tra chữ ký và idempotency trước khi xử lý chuyển trạng thái `Payment`.
-5. `usp_AssessReturnReceiptLine`: Phiên bản hóa biên bản giám định KCS `ReturnLineAssessment` (E72), cập nhật `IsCurrent` và kích hoạt hồ sơ `Refund`.
-
+1. `usp_Checkout_CreateOrder`: Thực thi nguyên tử All-or-Nothing toàn bộ quy trình kiểm tra `IdempotencyRecord` (E74), tạo `SalesOrder` (E40), snapshot `OrderAddress` (E42), tính giá/thuế/LRM trên `OrderLine` (E41), phân bổ đa kho `OrderWarehouseAllocation` (E12), khóa giữ tồn kho `StockReservationLine` (E14) và khởi tạo `Payment` (E56).
+2. `usp_Identity_RegisterAccount`: Tạo nguyên tử `Account` (E29) và hồ sơ con `Customer` (E30) hoặc `Employee` (E31) bảo đảm Disjoint XOR & Total Participation (`CORR-04`).
+3. `usp_PostInventoryTransaction`: Ghi sổ cái bất biến `InventoryTransaction` (E15) / `InventoryTransactionLine` (E16), cập nhật 4 delta trên `InventoryBalance` (E11) và tính lại giá vốn bình quân WAC (`CORR-08`).
+4. `usp_ReceivePaymentWebhook`: Lưu bền vững `PaymentWebhookLog` (E71), xác thực chữ ký và xử lý idempotent chuyển trạng thái `PaymentTransaction` (E57) / `Payment` (E56).
+5. `usp_AssessReturnReceiptLine`: Phiên bản hóa biên bản giám định KCS `ReturnLineAssessment` (E72), tính tiền hoàn lũy tiến $\Delta F = F(a+b) - F(a)$ với `UPDLOCK` trên `OrderLine` (`CORR-03`) và sinh yêu cầu `Refund` (E58).

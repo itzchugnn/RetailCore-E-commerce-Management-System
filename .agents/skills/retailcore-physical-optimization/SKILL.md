@@ -2,98 +2,76 @@
 name: retailcore-physical-optimization
 description: >-
   Use when designing physical database storage, table partitioning, advanced indexing, filegroups, and performance tuning for SQL Server 2022 in RetailCore (Milestone 4).
-  Guides capacity sizing, clustered columnstore indexes, filtered indexes, execution plan optimization, and HA/DR strategy.
+  Guides capacity sizing, partition-aligned indexing, filtered indexes, execution plan optimization, and HA/DR strategy.
 ---
 
-# RetailCore Physical Database Design & Optimization Skill
+# RetailCore Physical Database Design & SQL Server 2022 Optimization Skill
 
-Bộ quy chuẩn hướng dẫn thiết kế CSDL mức Vật lý, phân vùng bảng, tối ưu chỉ mục và kiến trúc lưu trữ cho **Microsoft SQL Server 2022+ Enterprise Edition** trong hệ thống **RetailCore** (Milestone 4).
-
----
-
-## 1. DỰ PHÓNG DUNG LƯỢNG & SIZING (CAPACITY PLANNING)
-
-Hệ thống được thiết kế đáp ứng tải dự phóng 3 năm:
-* **Tải giao dịch:** 1.000.000 đơn hàng/năm, 10.000.000 biến động kho/năm, 50.000.000 dòng audit log/năm.
-* **Nguyên tắc tính kích thước trang (8KB Data Page):**
-  * Dung lượng hữu dụng mỗi trang: $8.060\text{ bytes}$ (sau khi trừ page header 96 bytes và row offset).
-  * Kích thước dòng trung bình $\text{RowSize}$ bao gồm: fixed data, null bitmap, variable-length column offset array.
-  * Số dòng trên một trang: $\text{RowsPerPage} = \lfloor 8.060 / (\text{RowSize} + 2) \rfloor$.
-  * Dung lượng bảng: $\text{DataPages} = \lceil \text{TotalRows} / \text{RowsPerPage} \rceil \times 8\text{ KB}$.
-  * Dự phòng chỉ mục B-Tree (Index Space): Ước tính bằng $25\% - 35\%$ dung lượng Data Space.
+Bộ quy chuẩn thiết kế vật lý, quy hoạch lưu trữ, phân vùng bảng hợp chuẩn Engine và tối ưu hiệu năng cho **Microsoft SQL Server 2022+** trong hệ thống **RetailCore** (Milestone 4).
 
 ---
 
-## 2. CHIẾN LƯỢC PHÂN VÙNG BẢNG (TABLE PARTITIONING SCHEME)
+## 1. QUY TRÌNH DỰ PHÓNG DUNG LƯỢNG BẮT BUỘC (8KB PAGE CAPACITY SIZING)
 
-Phân vùng ngang theo thời gian (Horizontal Range Partitioning) bắt buộc áp dụng cho 3 bảng có tốc độ tăng trưởng lớn nhất:
-1. `SalesOrder` & `OrderLine` (phân vùng theo `OrderDate` theo quý/năm).
-2. `InventoryTransactionLine` (phân vùng theo `CreatedAt` theo tháng/quý).
-3. `AuditLog` (phân vùng theo `ActionAt` theo năm).
-
-### Mẫu Partition Function & Scheme:
-```sql
--- 1. Partition Function theo Quý
-CREATE PARTITION FUNCTION pf_SalesOrder_Quarterly (DATETIMEOFFSET(7))
-AS RANGE RIGHT FOR VALUES 
-(
-    '2026-01-01T00:00:00+07:00',
-    '2026-04-01T00:00:00+07:00',
-    '2026-07-01T00:00:00+07:00',
-    '2026-10-01T00:00:00+07:00',
-    '2027-01-01T00:00:00+07:00'
-);
-
--- 2. Partition Scheme ánh xạ vào Filegroups
-CREATE PARTITION SCHEME ps_SalesOrder_Quarterly
-AS PARTITION pf_SalesOrder_Quarterly
-TO (FG_ARCHIVE, FG_2026_Q1, FG_2026_Q2, FG_2026_Q3, FG_2026_Q4, FG_2027_Q1);
-```
-
-* **Cơ chế Partition Switching (Archive):** Khi kết thúc chu kỳ lưu trữ hoạt động (12–24 tháng), dữ liệu phân vùng cũ được chuyển tức thì sang bảng đệm lưu trữ lạnh (`ALTER TABLE ... SWITCH PARTITION ... TO ArchiveTable`) mà không gây khóa bảng hay ảnh hưởng đến giao dịch hiện hành.
+Tuyệt đối không nhân thô `RowSize * RowCount / 10^6`. Phải tính toán theo cấu trúc trang dữ liệu **8KB Data Page** (`8,060 bytes` khả dụng) của SQL Server:
+1. $\text{AvgRowSize} = \text{FixedBytes} + \text{NullBitmap} \left(2 + \lfloor (\text{Cols}+7)/8 \rfloor\right) + \text{VarOverhead} \left(2 + 2 \times \text{VarCols}\right) + \text{AvgVarDataBytes} + 4\text{B Header}$.
+2. $\text{RowsPerPage} = \lfloor 8060 / (\text{AvgRowSize} + 2\text{B SlotArray}) \rfloor$ (có tính hệ số `FILLFACTOR`).
+3. $\text{DataPages} = \lceil \text{TotalRows} / \text{RowsPerPage} \rceil \implies \text{DataSpace (MiB)} = (\text{DataPages} \times 8) / 1024$.
+4. $\text{IndexSpace (MiB)}$: Tính riêng cho từng Nonclustered Index dựa trên độ rộng khóa Index + Clustered Key Locator + `INCLUDE` columns.
 
 ---
 
-## 3. CHIẾN LƯỢC THIẾT KẾ CHỈ MỤC CHUYÊN SÂU (INDEXING STRATEGY)
+## 2. CHIẾN LƯỢC PHÂN VÙNG BẢNG HỢP CHUẨN SQL SERVER (PARTITION-ALIGNED LAW)
 
-1. **Clustered Index:**
-   * Luôn gắn với Surrogate Key `BIGINT IDENTITY` đơn điệu tăng dần để chống tràn trang (Page Split) và giảm độ phân mảnh phân tán (Index Fragmentation).
-2. **Covering Nonclustered Indexes (`INCLUDE`):**
-   * Các truy vấn tra cứu đơn hàng và sản phẩm tần suất cao phải được bao phủ đầy đủ các cột trong `SELECT` để triệt tiêu hoàn toàn chi phí `Key Lookup`.
-   ```sql
-   CREATE NONCLUSTERED INDEX IX_Order_Customer_Status
-   ON dbo.SalesOrder (CustomerID, OrderStatus)
-   INCLUDE (OrderNumber, TotalAmount, OrderDate, DeliveredAt);
-   ```
-3. **Filtered Nonclustered Indexes:**
-   * Áp dụng triệt để cho các trạng thái hoạt động chiếm tỷ lệ nhỏ trong CSDL để giảm kích thước B-Tree tới $90\%$:
-     * Đơn hàng đang xử lý: `WHERE OrderStatus IN ('CONFIRMED', 'PROCESSING')`.
-     * Dòng giữ hàng hiệu lực: `WHERE ReservationLineStatus = 'ACTIVE'`.
-     * Sự kiện Webhook chưa đối soát: `WHERE ProcessingStatus = 'RECEIVED'`.
-4. **Clustered Columnstore Indexes:**
-   * Bắt buộc sử dụng cho các bảng phân tích báo cáo và snapshot chốt số liệu: `DailySalesSummary`, `InventoryDailySnapshot`, `ReportSnapshot`.
-   * Tỷ lệ nén dữ liệu từ 5x–10x, tăng tốc độ truy vấn tổng hợp `SUM`, `AVG`, `COUNT` lên gấp 10–50 lần so với B-Tree truyền thống.
+> [!IMPORTANT]
+> **Luật Bắt Buộc của SQL Server (Chống lỗi Msg 1908, Msg 7733, Msg 4947):**
+> 1. Mọi `PRIMARY KEY` và `UNIQUE` index trên bảng phân vùng **bắt buộc phải chứa cột phân vùng (Partition Key)** trong tập cột khóa.
+> 2. Lệnh `ALTER TABLE ... SWITCH PARTITION` chỉ hợp lệ khi 100% Index của bảng đều là **Partition-Aligned** (nằm trên cùng Partition Scheme, không đặt sang `FG_INDEX` tĩnh) và **không có khóa ngoại (FK) đang bật từ bảng con trỏ vào**.
+
+Do đó, ở quy mô mục tiêu `1.000.000 đơn/năm` và `10.000.000 dòng sổ cái kho/năm`, RetailCore phân loại chiến lược lưu trữ thực tiễn như sau:
+
+1. **Nhóm Bảng Sổ cái & Nhật ký Khổng lồ (`InventoryTransactionLine` E16, `AuditLog` E65, `PaymentWebhookLog` E71) — ÁP DỤNG RANGE PARTITIONING:**
+   * Không có bảng con khác trỏ FK vào dòng chi tiết log $\implies$ Hỗ trợ `SWITCH PARTITION` sang bảng lưu trữ lạnh (`Archive`) tức thì!
+   * Đưa cột thời gian vào Composite Clustered PK để đạt 100% Partition-Aligned:
+     * `PK_InventoryTransactionLine PRIMARY KEY CLUSTERED (TransactionLineID, CreatedAt)` trên `ps_Ledger_Quarterly(CreatedAt)` (bổ sung cột `CreatedAt` đồng bộ với Header).
+     * `PK_AuditLog PRIMARY KEY CLUSTERED (AuditLogID, ActionAt)` trên `ps_Audit_Yearly(ActionAt)`.
+     * `PK_PaymentWebhookLog PRIMARY KEY CLUSTERED (WebhookLogID, ReceivedAt)` trên `ps_Webhook_Quarterly(ReceivedAt)`.
+2. **Nhóm Bảng Giao dịch Có Nhiều Bảng Con Tham Chiếu (`SalesOrder` E40, `OrderLine` E41):**
+   * Giữ trên Filegroup tốc độ cao `FG_OLTP_HOT` với `PK_SalesOrder CLUSTERED (OrderID)` đơn cột (`BIGINT IDENTITY`), bảo toàn `UQ_SalesOrder_OrderNumber(OrderNumber)` toàn cục và giữ nguyên toàn bộ Foreign Keys từ `OrderLine`, `OrderAddress`, `Payment`, `Shipment`, `ReturnRequest` mà không làm phình kích thước FK liên bảng (~3 triệu dòng/3 năm chỉ chiếm ~1.2 GB trên B-Tree).
+
+---
+
+## 3. CHIẾN LƯỢC CHỈ MỤC CHUYÊN SÂU & CHỐNG KHÓA (CONCURRENCY & INDEXING)
+
+1. **Read Committed Snapshot Isolation (RCSI):**
+   * Bắt buộc bật `ALTER DATABASE RetailCoreDB SET READ_COMMITTED_SNAPSHOT ON;` để các truy vấn đọc (`SELECT`) sử dụng Row Versioning trong `tempdb`, không bị chặn bởi khóa ghi giao dịch đặt hàng.
+   * Với thao tác giữ tồn kho/duyệt hoàn tiền nhạy cảm, sử dụng khóa tường minh `WITH (UPDLOCK, ROWLOCK, HOLDLOCK)` theo đúng thứ tự `ORDER BY VariantID ASC, WarehouseID ASC`.
+2. **Covering & Filtered Nonclustered Indexes:**
+   * Bao phủ các truy vấn đọc tần suất cao bằng `INCLUDE (...)` để triệt tiêu `Key Lookup`.
+   * Dùng Filtered Index cho tập trạng thái hoạt động nhỏ (`WHERE OrderStatus IN ('PENDING_PAYMENT', 'CONFIRMED', 'PROCESSING')`, `WHERE ReservationLineStatus = 'ACTIVE'`, `WHERE ProcessingStatus = 'RECEIVED'`).
+3. **Nonclustered Columnstore / Indexed Views cho Báo cáo (`SA11`):**
+   * Trên các bảng giao dịch lớn khi cần phân tích BI thời gian thực, sử dụng **Nonclustered Columnstore Index (NCCI)** có lọc hoặc lưu trữ kết quả chốt kỳ cố định qua `ReportSnapshot` (E69) (không khai báo Clustered Columnstore Index lên các bảng metadata ít dòng dưới ngưỡng nén 1.048.576 dòng/rowgroup).
 
 ---
 
 ## 4. QUY HOẠCH FILEGROUPS VẬT LÝ (STORAGE ARCHITECTURE)
 
-Tách biệt các luồng I/O trên đĩa cứng vật lý:
-* `PRIMARY`: Chỉ lưu system metadata, catalog tables nhỏ.
-* `FG_DATA_HOT`: Ổ cứng NVMe SSD tốc độ cao nhất, lưu trữ các phân vùng dữ liệu đang phát sinh giao dịch thường xuyên (dữ liệu trong năm hiện tại).
-* `FG_DATA_COLD`: Ổ cứng SSD tiêu chuẩn, lưu trữ các phân vùng lịch sử cũ.
-* `FG_INDEX`: Tách riêng chỉ mục Nonclustered để tránh nghẽn I/O giữa đọc chỉ mục và ghi dữ liệu.
-* `LDF (Transaction Log)`: Bắt buộc đặt trên phân vùng đĩa vật lý riêng biệt với cấu hình ghi tuần tự tốc độ cao.
+* `PRIMARY`: Chỉ lưu system catalog metadata.
+* `FG_MASTER`: Các bảng danh mục đọc nhiều (`SA01`, `Warehouse`, `Carrier`, `Role`).
+* `FG_OLTP_HOT`: NVMe SSD tốc độ cao cho các bảng giao dịch đang hoạt động (`SalesOrder`, `OrderLine`, `InventoryBalance`, `Payment`).
+* `FG_INDEX`: Dành cho Nonclustered Indexes của các **bảng không phân vùng** (`FG_MASTER`, `FG_OLTP_HOT`); riêng các bảng phân vùng phải đặt NCI ngay trên Partition Scheme tương ứng để giữ tính Aligned.
+* `FG_LEDGER_Q*` / `FG_ARCHIVE`: Các filegroup theo kỳ của Partition Scheme cho sổ cái kho và nhật ký kiểm toán.
+* `LDF (Transaction Log)`: Đặt trên ổ đĩa ghi tuần tự độc lập.
 
 ---
 
 ## 5. CHIẾN LƯỢC SẴN SÀNG CAO & SAO LƯU PHỤC HỒI (HA/DR)
 
-* **SLA Mục tiêu:** RPO < 5 phút (mất mát dữ liệu tối đa), RTO < 30 phút (thời gian phục hồi hệ thống).
-* **High Availability:** Triển khai SQL Server Always On Availability Groups (1 Primary Read-Write Replica, 1 Synchronous Secondary Read-Only Replica phục vụ báo cáo và kiểm toán).
-* **Backup Schedule:**
-  * Full Backup: Định kỳ hàng tuần vào Chủ nhật lúc 01:00 AM.
-  * Differential Backup: Định kỳ hàng ngày lúc 01:00 AM.
-  * Transaction Log Backup: Mỗi 10 phút/lần xuyên suốt 24/7.
-  * Point-in-Time Recovery: Diễn tập kịch bản phục hồi dữ liệu về thời điểm chính xác trước sự cố.
-
+* **SLA Mục tiêu:** **RPO < 5 phút**, **RTO < 30 phút**.
+* **Phân tầng Môi trường:**
+  * *Dev / CI / Demo (Docker):* Sử dụng `SQL Server 2022 Developer Edition` (đầy đủ 100% tính năng Partitioning, Columnstore, RCSI hợp lệ bản quyền phát triển).
+  * *Production Enterprise Target:* Triển khai cụm `SQL Server Enterprise Always On Availability Groups` (1 Primary Read-Write, 1 Synchronous Secondary Read-Only gánh tải báo cáo `SA11`).
+* **Lịch Sao lưu Nhất quán với RPO < 5 phút:**
+  * Full Backup: Chủ nhật hàng tuần lúc 01:00 AM.
+  * Differential Backup: Hàng ngày lúc 01:00 AM.
+  * **Transaction Log Backup: Định kỳ mỗi 3–5 phút/lần xuyên suốt 24/7** (bảo đảm RPO thực tế luôn $< 5$ phút ngay cả khi phục hồi từ bản sao lưu).
