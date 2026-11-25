@@ -44,7 +44,7 @@ com.retailcore
    * `spring.datasource.username = retailcore_app`: Tài khoản runtime bị `REVOKE INSERT, UPDATE, DELETE` trên `SalesOrder`, `OrderAddress`, `Payment`, `Account`, `Customer`, `Employee` và cấm `UPDATE, DELETE` trên `AuditLog`, chỉ có quyền `EXECUTE` trên các Boundary Stored Procedures. **Tuyệt đối không kết nối ứng dụng bằng `sa`.**
 2. **Spring Data JPA / Hibernate (An toàn trước Dirty Checking):**
    * Dùng cho CRUD các bảng danh mục không khóa quyền DML và truy vấn đọc (Read Models).
-   * **Quy tắc sống còn:** Mọi class `@Entity` ánh xạ tới bảng đã bị thu hồi DML (`SalesOrder`, `Payment`, `Account`, `Customer`, `Employee`, `AuditLog`) **bắt buộc phải gắn `@org.hibernate.annotations.Immutable`** và dùng Read-Only Repository (không kế thừa `save`/`delete`), đồng thời gắn `@Transactional(readOnly = true)` cho các hàm đọc để ngăn Hibernate tự động flush lệnh `UPDATE` gây lỗi `SQL Error 229`.
+   * **Quy tắc sống còn:** Mọi class `@Entity` ánh xạ tới bảng đã bị thu hồi DML (`SalesOrder`, `OrderAddress`, `Payment`, `Account`, `Customer`, `Employee`, `AuditLog`) **bắt buộc phải gắn `@org.hibernate.annotations.Immutable`** và dùng Read-Only Repository (không kế thừa `save`/`delete`), đồng thời gắn `@Transactional(readOnly = true)` cho các hàm đọc để ngăn Hibernate tự động flush lệnh `UPDATE` gây lỗi `SQL Error 229`.
    * Thiết lập `spring.jpa.open-in-view=false`; sử dụng DTO Projections / `@EntityGraph` chống lỗi N+1.
    * Không trộn thao tác ghi `EntityManager` và lời gọi `JdbcClient` lên cùng thực thể (như `ShoppingCart`) trong một phiên nếu chưa `entityManager.clear()`.
 3. **Spring `JdbcClient` / Boundary Stored Procedures:**
@@ -66,7 +66,7 @@ com.retailcore
 
 ## 4. NGUYÊN TẮC BẢO MẬT, IDEMPOTENCY & TIỀN TỆ
 
-1. **Zero-Trust Pricing, Tax & Shipping:** Backend/SP tự truy xuất `SellingPrice`, `VatRate`, khuyến mãi và tính phí vận chuyển từ `WeightGrams` / kích thước `ProductVariant`.
+1. **Zero-Trust Pricing, Tax & Shipping:** Backend/SP tự truy xuất `SellingPrice` (giá bán lẻ B2C đã bao gồm VAT), `VatRate` (bóc tách `TaxAmount` nội bộ), khuyến mãi 3 tầng (`PRODUCT`, `ORDER`, `SHIPPING` Freeship) và tính phí vận chuyển từ `WeightGrams` / kích thước `ProductVariant`.
 2. **Connection Pool Safety:** Tuyệt đối không mở `@Transactional` giữ DB Connection/Lock khi đang gọi HTTP sang cổng thanh toán hoặc hãng vận chuyển.
 3. **Atomic Idempotency Lock (`IdempotencyRecord` E74):**
    * Với `POST /api/orders` và `POST /api/payments`, thực hiện `INSERT` nguyên tử bản ghi `IN_PROGRESS` vào `IdempotencyRecord(AccountID, OperationType, IdempotencyKey, RequestHash)` trước:

@@ -6,6 +6,7 @@ erDiagram
     CUSTOMER ||--o{ CUSTOMER_ADDRESS : "has_addresses (1..1 : 0..N)"
 
     ACCOUNT ||--o{ ACCOUNT_ROLE : "assigned (1..1 : 0..N)"
+    ACCOUNT |o--o{ ACCOUNT_ROLE : "assigned_by (0..1 : 0..N)"
     ROLE ||--o{ ACCOUNT_ROLE : "grants (1..1 : 0..N)"
 
     ROLE ||--o{ ROLE_PERMISSION : "contains (1..1 : 0..N)"
@@ -24,8 +25,7 @@ erDiagram
         datetimeoffset LastLoginAt
     }
     CUSTOMER {
-        bigint AccountID PK
-        bigint CustomerID UK
+        bigint AccountID PK,FK
         nvarchar FullName
         date DateOfBirth
         varchar Gender
@@ -33,34 +33,33 @@ erDiagram
         datetimeoffset CreatedAt
     }
     EMPLOYEE {
-        bigint AccountID PK
-        bigint EmployeeID UK
+        bigint AccountID PK,FK
         varchar EmployeeCode UK
         nvarchar FullName
-        varchar Department
+        nvarchar Department
         varchar EmployeeStatus
         datetimeoffset CreatedAt
     }
     ROLE {
-        bigint RoleID PK
+        int RoleID PK
         varchar RoleName UK
         nvarchar RoleDescription
     }
     PERMISSION {
-        bigint PermissionID PK
+        int PermissionID PK
         varchar PermissionCode UK
         nvarchar PermissionName
         nvarchar Description
     }
     ACCOUNT_ROLE {
-        bigint AccountID PK
-        bigint RoleID PK
+        bigint AccountID PK,FK
+        int RoleID PK,FK
         datetimeoffset AssignedAt
-        bigint AssignedBy
+        bigint AssignedBy FK
     }
     ROLE_PERMISSION {
-        bigint RoleID PK
-        bigint PermissionID PK
+        int RoleID PK,FK
+        int PermissionID PK,FK
     }
     CUSTOMER_ADDRESS {
         bigint AddressID PK
@@ -80,6 +79,7 @@ erDiagram
         bigint AccountID FK
         varchar VerificationType
         varchar VerificationTarget
+        varchar TokenHash
         varchar VerificationStatus
         datetimeoffset CreatedAt
         datetimeoffset ExpiresAt

@@ -1,109 +1,106 @@
-# 09. DATA REQUIREMENTS – ĐẶC TẢ YÊU CẦU DỮ LIỆU (PHIÊN BẢN v1.1)
+# 09. DATA REQUIREMENTS – ĐẶC TẢ YÊU CẦU DỮ LIỆU (PHIÊN BẢN v2.0 – SSOT)
 
-* **Milestone:** M1 – Business Analysis (Deliverable đầu vào quan trọng cho M2)
-* **Phiên bản tài liệu:** 1.1 – Approved Business Decisions (BD-01 đến BD-07)
-* **Database target:** Microsoft SQL Server
-
-Nếu `Functional Requirements` mô tả hệ thống cần làm gì, thì `Data Requirements` mô tả hệ thống phải lưu giữ những thông tin gì, cần bảo toàn lịch sử nào và cần ràng buộc dữ liệu ra sao. Đây là cơ sở trực tiếp để xây dựng ERD/EER ở M2 và Relational Schema ở M3.
+* **Milestone:** M1 – Business Analysis (Đầu vào chuẩn hóa cho 79 Thực thể M2)
+* **Phiên bản tài liệu:** 2.0 – Full DR-01..DR-30 Restoration & CORR Sync
+* **Database target:** Microsoft SQL Server 2022+
 
 ---
 
-## 9.1. Data Subject Areas (Các miền chủ đề dữ liệu)
+## 9.1. Mười một Miền Chủ đề Dữ liệu Chuẩn hóa (11 Subject Areas)
 
-| ID | Nhóm dữ liệu | Nội dung cần quản lý |
+| Mã Miền | Tên Miền Dữ liệu (Subject Area) | Nội dung Dữ liệu Cốt lõi Quản lý |
 | :--- | :--- | :--- |
-| **DA-01** | Identity | Tài khoản, vai trò, quyền |
-| **DA-02** | Product | Sản phẩm, SKU, thuộc tính, hình ảnh |
-| **DA-03** | Warehouse | Kho hàng, vị trí kho |
-| **DA-04** | Inventory | Tồn kho, hàng giữ, biến động tồn |
-| **DA-05** | Procurement | Nhà cung cấp, đơn mua, phiếu nhập |
-| **DA-06** | Customer | Hồ sơ và địa chỉ khách hàng |
-| **DA-07** | Shopping | Giỏ hàng, chi tiết giỏ |
-| **DA-08** | Sales | Đơn hàng, chi tiết đơn, lịch sử trạng thái |
-| **DA-09** | Promotion | Chương trình giảm giá, voucher |
-| **DA-10** | Payment | Giao dịch thanh toán, hoàn tiền |
-| **DA-11** | Shipping | Vận đơn, lịch sử vận chuyển |
-| **DA-12** | Return | Yêu cầu đổi trả, chi tiết hàng hoàn |
-| **DA-13** | Audit | Nhật ký hoạt động |
-| **DA-14** | Reporting | Dữ liệu phục vụ thống kê |
+| **SA01** | Product Catalog | Thương hiệu (`Brand`), cây danh mục (`Category`), sản phẩm (`Product`), SKU (`ProductVariant`), thuộc tính động (`Attribute`..`VariantAttributeValue`). |
+| **SA02** | Warehouse & Inventory | Kho hàng, số dư tồn kho 3 phẩm chất & WAC, phân bổ kho, giữ hàng có hạn, sổ cái biến động, kiểm kê, chuyển kho. |
+| **SA03** | Procurement | Nhà cung cấp, danh mục cung ứng, đơn mua PO, phiếu nhập kho QC, phiếu xuất trả NCC. |
+| **SA04** | Customer & Identity | Tài khoản xác thực TPT (`Account`, `Customer`, `Employee`), RBAC (`Role`, `Permission`), sổ địa chỉ, lịch sử OTP. |
+| **SA05** | Shopping | Giỏ hàng trực tuyến tập trung và chi tiết dòng giỏ hàng. |
+| **SA06** | Sales & Order Management | Hợp đồng đơn hàng, dòng đơn hàng (kèm LRM, thuế GTGT & JSON snapshot), địa chỉ nhận snapshot, lịch sử trạng thái đơn. |
+| **SA07** | Fulfillment & Shipping | Hãng vận chuyển, vận đơn kiện hàng, chi tiết đóng gói, lịch sử lần giao, biên bản hoàn kho giao thất bại (`DeliveryReturnReceipt`). |
+| **SA08** | Promotion & Voucher | Chương trình khuyến mãi phân tầng, điều kiện, SKU áp dụng, mã voucher, khách VIP mục tiêu, sổ cái sử dụng. |
+| **SA09** | Payment & Settlement | Phương thức TT, hồ sơ nghĩa vụ TT, giao dịch cổng, hoàn tiền, Webhook log, Idempotency record, đối soát COD 3 lớp. |
+| **SA10** | Return & Exchange | Yêu cầu đổi trả RMA, phân bổ kiện trả (`ReturnShipmentAllocation`), phiếu nhận hàng hoàn, giám định KCS (`ReturnLineAssessment`), lịch sử RMA. |
+| **SA11** | Audit & Reporting | Nhật ký an ninh bất biến (`AuditLog`, `AuditLogDetail`), định nghĩa báo cáo, lịch sử chạy, snapshot chốt kỳ, phân quyền báo cáo. |
 
 ---
 
-## 9.2. Yêu cầu Quản lý Dữ liệu Chi tiết theo Nghiệp vụ (Data Requirements)
+## 9.2. Danh mục 30 Yêu cầu Quản lý Dữ liệu Chi tiết (`DR-01` đến `DR-30`)
 
-### 9.2.1. Product & Category
+### 9.2.1. Identity, Customer & Shopping (`DR-01`, `DR-07` – `DR-10`)
 | ID | Data Requirement | Dữ liệu cần quản lý |
 | :--- | :--- | :--- |
-| **DR-11** | Product–Category Assignment | Sản phẩm, danh mục được gán và cờ `IsPrimary`. |
-| **DR-12** | Product Attribute Definition | Các thuộc tính được định nghĩa cho từng sản phẩm và vai trò của nó (`AttributeRole`: `DESCRIPTIVE` hoặc `VARIANT_DEFINING`). |
-| **DR-13** | Attribute Value | Các giá trị hợp lệ của từng thuộc tính, ví dụ: Size = M, Color = Black, Material = Denim. |
-| **DR-14** | Variant Attribute Combination | Tổ hợp giá trị thuộc tính xác định từng SKU duy nhất trong sản phẩm. |
-| **DR-25** | Stock Count & Variance | Phiếu kiểm kê, chi tiết kiểm đếm từng SKU (`SystemQty`, `CountedQty`, `VarianceQty`) và trạng thái phê duyệt. |
-| **DR-26** | Inventory Transaction Ledger | Chứng từ và dòng biến động tồn kho chi tiết gồm `OnHandDelta` và `ReservedDelta` để đối soát số dư. |
+| **DR-01** | Account & TPT Profile | Định danh đăng nhập (`Email`/`Phone`), `PasswordHash`, `AccountType` (`CUSTOMER` XOR `EMPLOYEE`) và hồ sơ nghiệp vụ tương ứng (`CORR-04`). |
+| **DR-07** | Dynamic RBAC Matrix | Danh mục `Role`, `Permission` và bảng gán quyền đa chiều `AccountRole`, `RolePermission`. |
+| **DR-08** | Account Verification Log | Lịch sử yêu cầu xác thực OTP/Email kèm mã băm, trạng thái và thời điểm hết hạn `ExpiresAt`. |
+| **DR-09** | Customer Address Book | Sổ địa chỉ nhận hàng cá nhân của khách kèm cờ địa chỉ mặc định duy nhất `IsDefault`. |
+| **DR-10** | Persistent Shopping Cart | Giỏ hàng tập trung (`ACTIVE` / `CONVERTED` / `ABANDONED`) và các dòng `CartItem` theo SKU. |
 
-### 9.2.2. Order & Warehouse Fulfillment
+### 9.2.2. Product Catalog (`DR-02` – `DR-06`, `DR-11` – `DR-14`)
 | ID | Data Requirement | Dữ liệu cần quản lý |
 | :--- | :--- | :--- |
-| **DR-15** | Order Warehouse Allocation | Dòng đơn hàng, kho được phân bổ, SKU và số lượng được phân bổ từ kho đó. |
-| **DR-16** | Stock Reservation | SKU, kho, số lượng giữ, thời điểm tạo, thời điểm hết hạn (`ExpiresAt`) và trạng thái reservation. |
-| **DR-17** | Shipment | Đơn hàng, kho xuất, đơn vị vận chuyển, trạng thái và thông tin giao hàng. |
-| **DR-18** | Shipment Line | Dòng đơn hàng, SKU, số lượng thực tế xuất và số lượng thuộc từng lần giao. |
-| **DR-19** | Inventory Movement | Loại biến động (`SHIPMENT_OUT`, `DELIVERY_RETURN_IN`, v.v.), số lượng, kho, SKU, thời điểm, chứng từ nguồn và người thực hiện. |
-| **DR-20** | Delivery Return Receipt | Lần giao thất bại, hàng thực tế quay về, số lượng nhận lại, kho tiếp nhận và thời điểm xác nhận. |
+| **DR-02** | Primary Category & Hierarchy | Cây danh mục đa cấp (`ParentCategoryID`, `Slug`) và quy tắc đúng 1 danh mục chính (`IsPrimary = 1`) khi sản phẩm `PUBLISHED` (`BD-01`). |
+| **DR-03** | Brand Master Dictionary | Danh mục thương hiệu độc lập (`BrandCode`, `BrandName`, `Slug`, `CountryOfOrigin`) phục vụ chuẩn hóa dữ liệu và Faceted Filter. |
+| **DR-04** | Commercial Product & VAT | Thông tin sản phẩm thương mại (`ProductCode`, `ProductName`, `BrandID`, `VatRate` GTGT, `ProductStatus`). |
+| **DR-05** | Core SKU & Pricing | Biến thể bán hàng (`SKU` duy nhất, `SellingPrice` nguyên đồng VNĐ, `CompareAtPrice`, `VariantStatus`). |
+| **DR-06** | SKU Logistics Dimensions | Khối lượng (`WeightGrams`) và kích thước vật lý (`LengthCm`, `WidthCm`, `HeightCm`) của từng SKU phục vụ tính cước vận chuyển. |
+| **DR-11** | Product–Category Assignment | Bảng liên kết $N:N$ giữa sản phẩm và danh mục kèm cờ `IsPrimary` và thời điểm gán. |
+| **DR-12** | Product Attribute Role | Khai báo thuộc tính áp dụng cho sản phẩm kèm vai trò loại trừ `'VARIANT_DEFINING'` hoặc `'DESCRIPTIVE'` (`BD-06`). |
+| **DR-13** | Global Attribute Dictionary | Từ điển `Attribute` (`AttributeCode`) và `AttributeValue` (`ValueCode`, `Value`, `DisplayValue`) dùng chung toàn hệ thống. |
+| **DR-14** | Whitelist & SKU Composition | Tập giá trị `ProductAttributeValue` (Whitelist biến thể / Giá trị mô tả sản phẩm) và tổ hợp cấu thành SKU `VariantAttributeValue`. |
 
-### 9.2.3. Promotion & Voucher
+### 9.2.3. Warehouse, Inventory & Procurement (`DR-15` – `DR-20`, `DR-25` – `DR-27`)
 | ID | Data Requirement | Dữ liệu cần quản lý |
 | :--- | :--- | :--- |
-| **DR-21** | Applied Order Promotions | Các chương trình khuyến mãi thực tế được áp dụng trên đơn hàng. |
-| **DR-22** | Promotion Application Scope | Phạm vi áp dụng: dòng sản phẩm (Product/Item) hoặc toàn đơn hàng (Order Voucher). |
-| **DR-23** | Promotion Calculation Snapshot | Giá trị trước giảm, giá trị giảm, giá trị sau giảm và thứ tự áp dụng. |
-| **DR-24** | Promotion Stacking Rules | Quy tắc cộng dồn (`IsStackable`), tầng khuyến mãi, độ ưu tiên và giới hạn số chương trình được kết hợp. |
+| **DR-15** | Order Warehouse Allocation | Kế hoạch phân bổ số lượng của từng `OrderLine` về các kho vật lý xuất hàng (`BD-03`). |
+| **DR-16** | Timed Stock Reservation | Phiếu và dòng giữ hàng tạm thời gắn với `AllocationID` ($1:0..N$), thời hạn `ExpiresAt` và trạng thái `ACTIVE` duy nhất (`BD-04`, `CORR-10`). |
+| **DR-17** | Shipment Header | Vận đơn kiện hàng xuất từ đúng 1 kho, đối tác vận chuyển `Carrier`, mã `TrackingNumber`, cước phí thực tế của hãng. |
+| **DR-18** | Shipment Line & Outbound Cost | Chi tiết SKU đóng gói theo `AllocationID`, số lượng xuất và snapshot giá vốn `OutboundUnitCost` (`CORR-08`). |
+| **DR-19** | Dual-Delta Inventory Ledger | Chứng từ `InventoryTransaction` và dòng chi tiết 4 delta (`OnHandDelta`, `ReservedDelta`, `QuarantinedDelta`, `DamagedDelta`), `FromStockStatus \to ToStockStatus` và `UnitCost` (`CORR-02`). |
+| **DR-20** | Delivery Return Receipt | Biên bản thủ kho xác nhận thực nhận kiện hàng giao thất bại quay về kho (`DeliveryReturnReceipt` E75) trước khi cộng lại tồn (`BD-07`). |
+| **DR-25** | Stock Count & Two-Step Transfer | Phiếu kiểm kê kho (`SystemQty`, `CountedQty`, `VarianceQty`, phê duyệt độc lập) và phiếu điều chuyển kho 2 bước (`WarehouseTransfer` kèm `UnitCost`). |
+| **DR-26** | Multi-Quality Inventory Balance | Số dư tức thời theo kho & SKU tách 3 phẩm chất (`SELLABLE`, `QUARANTINED`, `DAMAGED`), `ReservedQty` và giá vốn bình quân `CurrentAverageCost` (`CORR-02`, `CORR-08`). |
+| **DR-27** | Procurement & WAC Variance | Hồ sơ `Supplier`, `PurchaseOrder`, kiểm nhận `GoodsReceiptLine` (`AcceptedQty`/`RejectedQty`) và xuất trả `SupplierReturn` kèm tài khoản chênh lệch giá vốn `CostVarianceAccountCode`. |
+
+### 9.2.4. Sales, Promotion, Payment, Return & Audit (`DR-21` – `DR-24`, `DR-28` – `DR-30`)
+| ID | Data Requirement | Dữ liệu cần quản lý |
+| :--- | :--- | :--- |
+| **DR-21** | Promotion & Voucher Catalog | Chương trình ưu đãi phiên bản hóa (`Promotion`), điều kiện (`PromotionCondition`), danh sách SKU (`PromotionProduct`), mã `Voucher` và khách VIP mục tiêu. |
+| **DR-22** | Promotion Scope & Stacking | Phạm vi 3 tầng độc lập (`PRODUCT`, `ORDER`, `SHIPPING`), cờ kết hợp `IsStackable` và độ ưu tiên `Priority` (`BD-05`). |
+| **DR-23** | LRM Discount & Order Snapshot | Giá đã gồm GTGT, giảm giá dòng, giảm giá voucher LRM (`AllocatedOrderDiscount`), giảm phí vận chuyển (`ShippingDiscountAmount`), hủy thiếu hàng (`CancelledQty`), địa chỉ & thông tin hóa đơn B2B `OrderAddress` và JSON `VariantAttributesSnapshot` (`CORR-03`, `CORR-09`). |
+| **DR-24** | Promotion Usage Ledger | Nhật ký tiêu thụ/hoàn trả lượt ưu đãi `PromotionUsage` (`PENDING`, `CONSUMED`, `REVERSED`). |
+| **DR-28** | Payment, Webhook, Idempotency & 3-Layer COD | Hồ sơ `Payment` ($1:1$), `PaymentTransaction`, `Refund`, `RefundTransaction` (`OriginalPaymentTransactionID`), `PaymentWebhookLog` (E71), `IdempotencyRecord` (E74) và đối soát COD 3 lớp `CODCollection` (E77) $\to$ `CODRemittance` (E78) $\to$ `CODReconciliation` (E79) (`CORR-05`, `CORR-07`, `CORR-08`). |
+| **DR-29** | RMA, Parcel Trace & Versioned KCS Assessment | Hồ sơ `ReturnRequest`, cầu nối kiện giao `ReturnShipmentAllocation` (E76), phiếu nhận cách ly `ReturnReceipt`, biên bản giám định phiên bản hóa `ReturnLineAssessment` (E72) và đơn đổi bù `EXCHANGE_REPLACEMENT` (`CORR-01`, `CORR-10`). |
+| **DR-30** | WORM Audit Trail & Financial Period Snapshots | Nhật ký an ninh chỉ ghi `AuditLog`/`AuditLogDetail`, danh mục `ReportDefinition`, lịch sử chạy `ReportExecution`, bản chụp chốt kỳ `ReportSnapshot` và ma trận phân quyền `ReportPermission` (`SA11`). |
 
 ---
 
-## 9.3. Historical Data Requirements (Yêu cầu bảo toàn dữ liệu lịch sử)
+## 9.3. Yêu cầu Bảo toàn Dữ liệu Lịch sử (`HDR-01` – `HDR-12`)
 
-> **Nguyên tắc thiết kế:** Dữ liệu lịch sử phải có khả năng truy vết độc lập theo thời gian. Không phải cứ thêm một cột `UpdatedAt` ghi đè trên bảng chính là giải quyết được bài toán lịch sử.
-
-| ID | Dữ liệu lịch sử | Yêu cầu bảo toàn |
+| ID | Dữ liệu lịch sử | Cơ chế bảo toàn bắt buộc |
 | :--- | :--- | :--- |
-| **HDR-01** | Giá sản phẩm | Lưu lịch sử thay đổi giá khi cần truy vấn giá theo thời điểm |
-| **HDR-02** | Giá bán trong đơn | Không thay đổi khi giá sản phẩm hiện tại thay đổi |
-| **HDR-03** | Thông tin sản phẩm trong đơn | Bảo toàn snapshot tại thời điểm giao dịch |
-| **HDR-04** | Địa chỉ giao hàng | Bảo toàn thông tin tại thời điểm đặt hàng |
-| **HDR-05** | Tồn kho | Lưu lịch sử nhập, xuất và điều chỉnh |
-| **HDR-06** | Trạng thái đơn hàng | Lưu lịch sử chuyển trạng thái |
-| **HDR-07** | Thanh toán | Lưu từng lần thử và kết quả giao dịch |
-| **HDR-08** | Hoàn tiền | Lưu từng lần hoàn tiền và số tiền |
-| **HDR-09** | Khuyến mãi | Lưu thông tin chương trình được áp dụng và mức giảm |
-| **HDR-10** | Vận chuyển | Lưu lịch sử hành trình và trạng thái |
-| **HDR-11** | Đổi trả | Lưu lịch sử xử lý yêu cầu |
-| **HDR-12** | Audit | Lưu các thao tác quản trị quan trọng |
-| **HDR-13** | Phân mục sản phẩm | Lịch sử gán sản phẩm vào danh mục, bao gồm danh mục chính và thời gian hiệu lực |
-| **HDR-14** | Định nghĩa thuộc tính | Lịch sử thay đổi định nghĩa thuộc tính và giá trị thuộc tính của sản phẩm |
-| **HDR-15** | Giữ hàng (Reservation) | Lịch sử giữ hàng, gia hạn, giải phóng và tiêu thụ reservation |
-| **HDR-16** | Phân bổ kho cho đơn | Lịch sử phân bổ dòng đơn hàng cho các kho |
-| **HDR-17** | Vận chuyển & Trả hàng | Lịch sử xuất kho, bàn giao vận chuyển, giao thất bại và nhập lại kho |
-| **HDR-18** | Tính toán khuyến mãi | Lịch sử áp dụng khuyến mãi, bao gồm thứ tự áp dụng và kết quả tính giảm giá |
+| **HDR-01** | Giá bán & Thuế trong đơn | Snapshot bất biến `UnitPrice`, `VatRate`, `TaxAmount` trên `OrderLine`. |
+| **HDR-02** | Định danh biến thể trong đơn | Snapshot `SKU`, `ProductName`, `VariantName` và JSON Array `VariantAttributesSnapshot` (`CORR-09`). |
+| **HDR-03** | Địa chỉ nhận hàng | Snapshot độc lập sang bảng `OrderAddress` ($1:1$ với `SalesOrder`). |
+| **HDR-04** | Giá vốn hàng mua & xuất kho | Snapshot `GoodsReceiptLine.UnitCost`, `ShipmentLine.OutboundUnitCost`, `WarehouseTransferLine.UnitCost`. |
+| **HDR-05** | Sổ cái biến động tồn kho | Ghi sổ Append-Only trên `InventoryTransaction` và `InventoryTransactionLine`. |
+| **HDR-06** | Lịch sử giữ hàng theo phân bổ | Lưu lịch sử $1:0..N$ trên `StockReservationLine` (`ACTIVE`, `RELEASED`, `EXPIRED`, `CONSUMED`). |
+| **HDR-07** | Lịch sử trạng thái chứng từ | Bảng lịch sử chuyên biệt: `OrderStatusHistory`, `ShipmentStatusHistory`, `ReturnStatusHistory`. |
+| **HDR-08** | Lịch sử thanh toán & Webhook | Nhật ký bất biến `PaymentTransaction`, `RefundTransaction`, `PaymentWebhookLog`, `IdempotencyRecord`. |
+| **HDR-09** | Đối soát công nợ thu hộ COD | Lưu vết đầy đủ 3 bước `CODCollection` $\to$ `CODRemittance` $\to$ `CODReconciliation`. |
+| **HDR-10** | Phiên bản khuyến mãi & sử dụng | Phiên bản hóa `Promotion.VersionNumber` và sổ cái `PromotionUsage`. |
+| **HDR-11** | Phiên bản giám định KCS hàng trả | Phiên bản hóa `ReturnLineAssessment` (`AssessmentVersion`, `IsCurrent`) cấm ghi đè kết luận cũ. |
+| **HDR-12** | Kiểm toán an ninh & Báo cáo kỳ | Nhật ký WORM `AuditLog`/`AuditLogDetail` và bản chụp chốt kỳ `ReportSnapshot`. |
 
 ---
 
-## 9.4. Các ràng buộc dữ liệu cần lưu ý khi thiết kế (Constraints Baseline cho M2–M4)
+## 9.4. Baseline Ràng buộc Kỹ thuật Chuyển giao M2–M4
 
-Đây là các ràng buộc cần được chuyển hóa thành khóa, ràng buộc duy nhất, CHECK, chỉ mục lọc hoặc logic giao dịch ở giai đoạn M3–M4.
-
-| Đối tượng | Ràng buộc dự kiến | Tầng thực thi khuyến nghị |
+| Đối tượng | Ràng buộc Cốt lõi | Cơ chế Cưỡng chế trên SQL Server |
 | :--- | :--- | :--- |
-| **ProductCategory** | Mỗi cặp ProductID–CategoryID chỉ xuất hiện một lần. | Database: `PRIMARY KEY (ProductID, CategoryID)` |
-| **ProductCategory** | Tối đa một dòng `IsPrimary = 1` cho mỗi ProductID. | Database: `UNIQUE FILTERED INDEX` (WHERE IsPrimary = 1) |
-| **ProductVariant** | SKU phải duy nhất toàn hệ thống. | Database: `UNIQUE CONSTRAINT (SKU)` |
-| **VariantAttributeValue** | Không trùng một AttributeID trong cùng một SKU. | Database: `UNIQUE (VariantID, AttributeID)` |
-| **ProductVariant** | Không có hai SKU trong cùng sản phẩm mang tổ hợp thuộc tính giống nhau. | Database Trigger / Stored Procedure validation |
-| **StockReservation** | Số lượng reservation phải dương; không được giữ vượt quá lượng khả dụng. | Database `CHECK (ReservedQty > 0)` & Stored Procedure |
-| **InventoryBalance** | `OnHandQty >= 0`, `ReservedQty >= 0`, `ReservedQty <= OnHandQty`. | Database: `CHECK CONSTRAINT` |
-| **Shipment** | Một đơn hàng có thể có nhiều Shipment; mỗi Shipment thuộc một kho xuất cụ thể. | Database: `FOREIGN KEY (OrderID), FOREIGN KEY (WarehouseID)` |
-| **ShipmentLine** | Số lượng xuất không được vượt quá số lượng còn được phân bổ cho dòng đơn hàng. | Stored Procedure / Application Transaction |
-| **OrderPromotion** | Giới hạn số chương trình được áp dụng theo từng tầng (tối đa 1 Product Promo, 1 Order Voucher). | Database: Unique Filtered Index / Transaction validation |
-| **StockMovement** | Mỗi biến động phải có loại giao dịch, chứng từ nguồn và thông tin truy vết bất biến. | Database: `CHECK (MovementType IN (...))` & No UPDATE/DELETE |
-
-> **Lưu ý nguyên tắc thiết kế:** Không phải mọi ràng buộc đều nên triển khai bằng một `CHECK CONSTRAINT`. Những quy tắc cần kiểm tra nhiều dòng hoặc nhiều bảng, chẳng hạn tổng số lượng đã phân bổ, điều kiện cộng dồn khuyến mãi và kiểm soát tồn kho đồng thời, cần được thiết kế bằng transaction, stored procedure hoặc logic ứng dụng có kiểm soát.
+| **ProductCategory** | Tối đa 1 dòng `IsPrimary = 1` mỗi `ProductID`; bắt buộc đúng 1 khi `PUBLISHED`. | `UX_ProductCategory_Primary` + Boundary SP/Trigger (`BD-01`). |
+| **AttributeValue & E08/E09** | Cấm gán chéo giá trị khác loại thuộc tính. | `UQ (AttributeID, AttributeValueID)` + Composite FK `(AttributeID, AttributeValueID)`. |
+| **InventoryBalance** | Tồn kho 3 phẩm chất không âm và tổng không vượt `OnHandQty`. | 5 Declarative `CHECK` Constraints (`CORR-02`). |
+| **StockReservationLine** | Tối đa 1 dòng giữ hàng `ACTIVE` trên mỗi `AllocationID`. | `UX_StockReservationLine_ActiveAlloc` (`CORR-10`). |
+| **SalesOrder / Account** | Quan hệ Mandatory $1:1$ và TPT Disjoint XOR. | Boundary Stored Procedures + `REVOKE DML` trực tiếp (`CORR-04`). |
+| **PaymentWebhookLog / E74** | Chống xử lý trùng lặp callback và request đặt đơn/thanh toán. | `UX_PaymentWebhookLog_ProviderEvent` & `UQ_IdempotencyRecord_ScopeKey` (`CORR-05`). |
+| **ReturnLineAssessment** | Bảo toàn tách lô $1:N$ và phiên bản hiện hành duy nhất mỗi lô. | `UX_ReturnLineAssessment_Current ON (ReturnReceiptLineID, AssessmentGroupNo) WHERE IsCurrent = 1`. |

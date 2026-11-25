@@ -1,10 +1,10 @@
 # M2.04 - MASTER CONCEPTUAL ERD DIAGRAM (SƠ ĐỒ QUAN HỆ KHÁI NIỆM TỔNG THỂ)
 
 * **Milestone:** M2 – Conceptual Database Design
-* **Phiên bản:** 1.0 – Official Release (Master Integration)
-* **Hệ quản trị CSDL mục tiêu:** Microsoft SQL Server Enterprise Edition
+* **Phiên bản:** 2.0 – Canonical SSOT Release (Master Integration)
+* **Hệ quản trị CSDL mục tiêu:** Microsoft SQL Server 2022+ (Developer / Enterprise Edition)
 * **Kế thừa trực tiếp:**
-  * [01-Entity-Catalog.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/01-Entity-Catalog.md) (72 Thực thể E01 – E72)
+  * [01-Entity-Catalog.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/01-Entity-Catalog.md) (**79 Thực thể `E01` – `E79`**)
   * [02-Relationship-Analysis.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/02-Relationship-Analysis.md) (Phân tích bản số Crow's Foot 11 Phân hệ)
   * [05-Design-Decisions.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/05-Design-Decisions.md) (3 Nguyên tắc bất biến & Quyết định thiết kế)
   * Quyết định kiến trúc [11-Business-Decisions.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M1-Business-Analysis/11-Business-Decisions.md) (BD-01 đến BD-07)
@@ -13,20 +13,20 @@
 
 ## 1. TỔNG QUAN KIẾN TRÚC MÔ HÌNH DỮ LIỆU KHÁI NIỆM (M2 ARCHITECTURE)
 
-Hệ thống **RetailCore – E-commerce Management System** được mô hình hóa ở tầng Quan niệm (Conceptual Design) bao gồm **72 Thực thể chuẩn hóa (E01 đến E72)** phân bổ trên **11 Phân hệ nghiệp vụ (Subject Areas)**. 
+Hệ thống **RetailCore – E-commerce Management System** được mô hình hóa ở tầng Quan niệm (Conceptual Design) bao gồm **79 Thực thể chuẩn hóa (`E01` đến `E79`)** phân bổ trên **11 Phân hệ nghiệp vụ (Subject Areas)**, ánh xạ `1:1` sang 79 Bảng Quan hệ ở Milestone 3. 
 
 Mô hình tuân thủ triệt để phương pháp luận Crow's Foot Notation, xác định rõ bản số ($1:1$, $1:N$, $N:N$), tính tham gia bắt buộc/tùy chọn (Total/Partial Participation), bảo đảm tính toàn vẹn tham chiếu khái niệm và chuẩn bị nền tảng hoàn hảo cho bước chuyển đổi sang Mô hình Luận lý (Logical Schema) chuẩn 3NF/BCNF trên Microsoft SQL Server.
 
-### Bản đồ 11 Phân hệ Nghiệp vụ và 72 Thực thể:
+### Bản đồ 11 Phân hệ Nghiệp vụ và 79 Thực thể:
 ```
-+----------------------------------------------------------------------------------------------------+
-|                                 RETAILCORE CONCEPTUAL DOMAINS                                      |
-+----------------------------------------------------------------------------------------------------+
-|  01. Product Catalog (E01..E09)     | 05. Shopping (E38..E39)       | 09. Payment (E55..E59, E71)      |
-|  02. Warehouse & Inv. (E10..E20)   | 06. Sales (E40..E43)          | 10. Return (E60..E64, E72)       |
-|  03. Procurement (E21..E28)         | 07. Fulfillment (E44..E48)    | 11. Audit & Reporting (E65..E70) |
-|  04. Customer & Identity (E29..E37) | 08. Promotion (E49..E54)      |                                  |
-+----------------------------------------------------------------------------------------------------+
++----------------------------------------------------------------------------------------------------------+
+|                                    RETAILCORE CONCEPTUAL DOMAINS (79)                                    |
++----------------------------------------------------------------------------------------------------------+
+|  01. Product Catalog (E01..09, E73)  | 05. Shopping (E38..E39)          | 09. Payment (E55..59,71,74,77..79)|
+|  02. Warehouse & Inv. (E10..E20)     | 06. Sales (E40..E43)             | 10. Return (E60..64, E72, E76) |
+|  03. Procurement (E21..E28)          | 07. Fulfillment (E44..48, E75)   | 11. Audit & BI (E65..E70)      |
+|  04. Customer & Identity (E29..E37)  | 08. Promotion (E49..E54)         |                                |
++----------------------------------------------------------------------------------------------------------+
 ```
 
 ---
@@ -38,17 +38,17 @@ Mọi mối quan hệ trong sơ đồ ERD tổng thể phải thỏa mãn tuyệ
    * `OrderWarehouseAllocation` (E12 - Kế hoạch phân bổ kho).
    * `StockReservation` & `StockReservationLine` (E13, E14 - Khóa giữ logic có thời hạn).
    * `ShipmentLine` (E46 - Đóng gói thực tế xuất bãi).
-   * `InventoryTransaction` & `InventoryTransactionLine` (E15, E16 - Sổ cái ghi sổ hai chiều Dual-Delta `OnHandDelta`/`ReservedDelta`).
-2. **Độc lập 3 Máy trạng thái Giao dịch (SALES-Q02, PAY-Q08, SHIP-Q06):**
-   * `SalesOrder.OrderStatus` $\ne$ `Payment.PaymentStatus` $\ne$ `Shipment.ShipmentStatus`.
+   * `InventoryTransaction` & `InventoryTransactionLine` (E15, E16 - Sổ cái ghi sổ 4-Delta `OnHandDelta`, `ReservedDelta`, `QuarantinedDelta`, `DamagedDelta`).
+2. **Độc lập 4 Máy trạng thái Giao dịch (CORR-06, SALES-Q02, PAY-Q08, SHIP-Q06):**
+   * `SalesOrder.OrderStatus` $\ne$ `Payment.PaymentStatus` $\ne$ `Shipment.ShipmentStatus` $\ne$ `ReturnRequest.ReturnStatus` (đồng thời tách trạng thái từng lần thử `PaymentTransaction.TransactionStatus`).
 3. **Nguyên tử hóa Tạo đơn & Giữ hàng (All-or-Nothing, SALES-Q01, BD-04):**
-   * `ShoppingCart` chỉ chuyển `CONVERTED` thành `SalesOrder` khi `StockReservation` khóa thành công 100% tồn kho trên tất cả các kho được phân bổ.
+   * `ShoppingCart` chỉ chuyển `CONVERTED` thành `SalesOrder` khi `StockReservation` khóa thành công 100% tồn kho trên tất cả các kho được phân bổ (TTL chuẩn 15 phút; 5 phút cho đơn Flash Sale).
 4. **Bất biến Dữ liệu Lịch sử & Cấm Xóa cứng (Append-Only / No Hard Delete):**
-   * `OrderLine` (E41) snapshot nguyên trạng SKU, tên, đơn giá và `VariantAttributesSnapshot` JSON.
-   * `OrderAddress` (E42) snapshot độc lập với sổ địa chỉ `CustomerAddress` (E36).
-   * Chứng từ giao dịch (`SalesOrder`, `Payment`, `Shipment`, `ReturnRequest`, `AuditLog`) tuyệt đối không xóa vật lý.
-5. **Cấu trúc Khuyến mãi Hai tầng (BD-05, PROMO-Q01..08):**
-   * Tối đa 1 khuyến mãi cấp sản phẩm liên kết với `OrderLine` và tối đa 1 voucher cấp đơn liên kết với `SalesOrder`. Ghi nhận lịch sử chiết khấu snapshot vào `PromotionUsage` (E53).
+   * `OrderLine` (E41) snapshot nguyên trạng SKU, tên, đơn giá bán lẻ đã gồm VAT (`UnitPrice`), thuế suất/tiền thuế bóc tách nội bộ (`VatRate`, `TaxAmount`) và `VariantAttributesSnapshot` JSON Array.
+   * `OrderAddress` (E42) snapshot địa chỉ nhận hàng và thông tin hóa đơn GTGT B2B tùy chọn, độc lập với sổ địa chỉ `CustomerAddress` (E36); `ShipmentLine.OutboundUnitCost` & `WarehouseTransferLine.UnitCost` bảo toàn giá vốn WAC.
+   * Chứng từ giao dịch (`SalesOrder`, `Payment`, `Shipment`, `ReturnRequest`, `InventoryTransaction`, `AuditLog`) tuyệt đối không xóa vật lý.
+5. **Cấu trúc Khuyến mãi Ba tầng (BD-05, PROMO-Q01..08):**
+   * Tối đa 1 khuyến mãi cấp sản phẩm (`'PRODUCT'` trên `OrderLine`), tối đa 1 voucher cấp đơn (`'ORDER'` trên `SalesOrder` phân bổ theo LRM) và tối đa 1 ưu đãi vận chuyển (`'SHIPPING'` Freeship vào `ShippingDiscountAmount`). Ghi nhận lịch sử chiết khấu snapshot vào `PromotionUsage` (E53).
 
 ---
 
@@ -58,18 +58,18 @@ Sơ đồ biểu diễn **Trục xương sống liên kết liên miền (Cross-
 
 > [!NOTE]
 > **Tham chiếu Sơ đồ & Mã nguồn:**  
-> * **Mã nguồn Mermaid:** [Cross-Domain-Backbone.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Cross-Domain-Backbone.md)  
-> * **Sơ đồ ảnh Render:** [Cross-Domain-Backbone.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Cross-Domain-Backbone.png)
+> * **Mã nguồn Mermaid:** [Cross-Domain-Backbone.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/erd/mermaid/Cross-Domain-Backbone.md)  
+> * **Sơ đồ ảnh Render:** [Cross-Domain-Backbone.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/erd/images/Cross-Domain-Backbone.png)
 
-![Cross-Domain Backbone](ERD/images/Cross-Domain-Backbone.png)
+![Cross-Domain Backbone](../../erd/images/Cross-Domain-Backbone.png)
 
 ### 3.1. Khái niệm & Triết lý Thiết kế Trục Xương sống (Cross-Domain Backbone Philosophy)
 
-Trong hệ thống CSDL bán lẻ thương mại điện tử quy mô lớn như **RetailCore** với **11 Phân hệ (Subject Areas)** và **72 Thực thể**, nếu để tất cả các thực thể tự do kết nối chéo với nhau theo cấu trúc lưới toàn phần (Full Mesh), mô hình quan hệ sẽ rơi vào tình trạng "mớ bòng bong" (Spaghetti Architecture), phát sinh phụ thuộc vòng (Circular FK Dependencies) và gây bế tắc giao dịch (Deadlock) ở tầng CSDL quan hệ.
+Trong hệ thống CSDL bán lẻ thương mại điện tử quy mô lớn như **RetailCore** với **11 Phân hệ (Subject Areas)** và **79 Thực thể**, nếu để tất cả các thực thể tự do kết nối chéo với nhau theo cấu trúc lưới toàn phần (Full Mesh), mô hình quan hệ sẽ rơi vào tình trạng "mớ bòng bong" (Spaghetti Architecture), phát sinh phụ thuộc vòng (Circular FK Dependencies) và gây bế tắc giao dịch (Deadlock) ở tầng CSDL quan hệ.
 
 Trục xương sống liên miền (**Cross-Domain Backbone**) được thiết kế theo nguyên lý **Hub-and-Spoke kết hợp Clean Architecture**:
 1. **Cô lập Nội miền (Internal Encapsulation):** Mỗi phân hệ chỉ công khai một số ít các **Thực thể Hạt nhân (Hub Entities)** đóng vai trò giao diện tiếp giáp (Boundary Interfaces). Toàn bộ các thực thể chi tiết phụ trợ (như cấu hình thuộc tính, lịch sử trạng thái, chi tiết nhật ký kiểm toán) được giấu kín bên trong nội bộ phân hệ.
-2. **Quy hoạch Giao thông Liên miền (Standardized Cross-Domain Highway):** Mọi giao tiếp liên phân hệ bắt buộc phải đi qua trục Backbone này thông qua **40 liên kết liên miền chuẩn hóa (CR-01 đến CR-40)**.
+2. **Quy hoạch Giao thông Liên miền (Standardized Cross-Domain Highway):** Mọi giao tiếp nghiệp vụ liên phân hệ bắt buộc đi qua trục Backbone này thông qua **46 liên kết liên miền chuẩn hóa (CR-01 đến CR-46)** (cùng các khóa ngoại kiểm toán người thao tác/phê duyệt tham chiếu về `Account`).
 3. **Phân định Chủ quyền Tuyệt đối (Strict Data Ownership):** Mỗi thực thể thuộc quyền kiểm soát của duy nhất một phân hệ nghiệp vụ, triệt tiêu tranh chấp thẩm quyền và đảm bảo tính toàn vẹn tham chiếu.
 
 ---
@@ -78,16 +78,16 @@ Trục xương sống liên miền (**Cross-Domain Backbone**) được thiết 
 
 | Phân hệ (Subject Area) | Thực thể Hạt nhân (Hub Entities) | Vai trò trên Trục Xương sống (Backbone Role) | Các liên kết liên miền đại diện |
 | :--- | :--- | :--- | :--- |
-| **01. Product Catalog** | `ProductVariant` (E04) | **Hạt nhân Hàng hóa (Core SKU):** Định danh đơn vị sản phẩm thương mại cụ thể (Size, Màu). Là giao diện trung tâm kết nối kho, đơn hàng, nhà cung cấp và khuyến mãi. | CR-01 đến CR-13 |
-| **02. Warehouse & Inv.** | `Warehouse` (E10), `OrderWarehouseAllocation` (E12), `StockReservation` (E13), `InventoryTransaction` (E15) | **Hạt nhân Kho vận & Tồn kho:** Quản lý kho bãi vật lý, kế hoạch định tuyến đa kho (Split Shipment), khóa giữ tồn kho tạm thời và sổ cái biến động kho hai chiều. | CR-01..06, CR-14..21, CR-30 |
+| **01. Product Catalog** | `Brand` (E73), `ProductVariant` (E04) | **Hạt nhân Hàng hóa (Core SKU):** Định danh thương hiệu và đơn vị sản phẩm thương mại cụ thể (Size, Màu). Là giao diện trung tâm kết nối kho, đơn hàng, nhà cung cấp và khuyến mãi. | CR-01 đến CR-13 |
+| **02. Warehouse & Inv.** | `Warehouse` (E10), `OrderWarehouseAllocation` (E12), `StockReservation` (E13), `InventoryTransaction` (E15) | **Hạt nhân Kho vận & Tồn kho:** Quản lý kho bãi vật lý, kế hoạch định tuyến đa kho (Split Shipment), khóa giữ tồn kho tạm thời và sổ cái biến động kho 4-Delta. | CR-01..06, CR-14..21, CR-30, CR-45 |
 | **03. Procurement** | `Supplier` (E21), `PurchaseOrder` (E23), `GoodsReceipt` (E25) | **Hạt nhân Cung ứng:** Quản lý dòng hàng hóa nhập kho từ nhà cung cấp bên ngoài vào mạng lưới kho của doanh nghiệp. | CR-07..10, CR-14..16 |
-| **04. Customer & Identity** | `Account` (E29), `Customer` (E30), `Role` (E32) | **Hạt nhân Chủ thể & Định danh:** Quản lý tài khoản đăng nhập, hồ sơ khách hàng mua sắm và phân quyền nhân viên quản trị. | CR-22..26, CR-37..40 |
+| **04. Customer & Identity** | `Account` (E29), `Customer` (E30), `Role` (E32) | **Hạt nhân Chủ thể & Định danh:** Quản lý tài khoản đăng nhập TPT, hồ sơ khách hàng mua sắm và phân quyền nhân viên quản trị. | CR-22..26, CR-37..40, CR-44 |
 | **05. Shopping** | `ShoppingCart` (E38), `CartItem` (E39) | **Hạt nhân Tiền Giao dịch:** Quản lý giỏ hàng trực tuyến của khách trước khi chuyển đổi thành hợp đồng mua bán chính thức. | CR-11, CR-22, CR-27 |
-| **06. Sales** | `SalesOrder` (E40), `OrderLine` (E41), `OrderAddress` (E42) | **Trái tim Hợp đồng Bán hàng:** Thực thể trung tâm tối cao kết nối khách hàng, định tuyến kho xuất bãi, nghĩa vụ thanh toán và bưu kiện vận chuyển. | CR-12, CR-20, CR-21, CR-27..35 |
-| **07. Fulfillment & Ship.** | `Carrier` (E44), `Shipment` (E45), `ShipmentLine` (E46) | **Hạt nhân Giao vận Bưu kiện:** Hiện thực hóa việc đóng gói và chuyển phát hàng từ kho xuất đến tận tay khách hàng thông qua hãng vận chuyển. | CR-17, CR-28..30 |
-| **08. Promotion & Voucher** | `Promotion` (E49), `Voucher` (E52), `PromotionUsage` (E53) | **Hạt nhân Khuyến mãi & Chiết khấu:** Quản lý quota ưu đãi và lưu vết sổ cái phân bổ giảm giá cho từng đơn hàng và dòng sản phẩm. | CR-13, CR-24, CR-25, CR-31, CR-32 |
-| **09. Payment & Refund** | `Payment` (E56), `PaymentTransaction` (E57), `Refund` (E58), `RefundTransaction` (E59), `PaymentWebhookLog` (E71) | **Hạt nhân Huyết mạch Tài chính:** Quản lý nghĩa vụ thu tiền đơn hàng ($1:1$ với SalesOrder), lịch sử giao dịch cổng thanh toán, truy vết nguồn tiền hoàn trả và kiểm soát Webhook chống replay. | CR-33, CR-36 |
-| **10. Return & Exchange** | `ReturnRequest` (E60), `ReturnReceipt` (E62), `ReturnLineAssessment` (E72) | **Hạt nhân Logistics Ngược (RMA):** Tiếp nhận khiếu nại trả hàng, tiếp nhận bưu kiện tại bến nhập và thẩm định điều kiện hoàn tiền cho từng phần số lượng độc lập với tình trạng kho. | CR-18, CR-19, CR-26, CR-34..36 |
+| **06. Sales** | `SalesOrder` (E40), `OrderLine` (E41), `OrderAddress` (E42) | **Trái tim Hợp đồng Bán hàng:** Thực thể trung tâm tối cao kết nối khách hàng, đơn đổi trả liên kết (`ParentOrderID`), định tuyến kho xuất bãi, nghĩa vụ thanh toán và bưu kiện vận chuyển. | CR-12, CR-20, CR-21, CR-27..35 |
+| **07. Fulfillment & Ship.** | `Carrier` (E44), `Shipment` (E45), `ShipmentLine` (E46), `DeliveryReturnReceipt` (E75) | **Hạt nhân Giao vận Bưu kiện:** Hiện thực hóa việc đóng gói, xuất giao và thực nhận hoàn kho khi giao thất bại thông qua hãng vận chuyển. | CR-17, CR-28..30, CR-41..43, CR-45, CR-46 |
+| **08. Promotion & Voucher** | `Promotion` (E49), `Voucher` (E52), `PromotionUsage` (E53) | **Hạt nhân Khuyến mãi & Chiết khấu:** Quản lý quota ưu đãi 3 tầng (`PRODUCT`, `ORDER`, `SHIPPING`) và lưu vết sổ cái phân bổ giảm giá. | CR-13, CR-24, CR-25, CR-31, CR-32 |
+| **09. Payment & Refund** | `Payment` (E56), `PaymentTransaction` (E57), `Refund` (E58), `RefundTransaction` (E59), `PaymentWebhookLog` (E71), `IdempotencyRecord` (E74), `CODCollection`..`CODReconciliation` (E77–E79) | **Hạt nhân Huyết mạch Tài chính:** Quản lý nghĩa vụ thu tiền đơn hàng ($1:1$), chống gửi lặp `IdempotencyRecord`, kiểm soát Webhook chống replay, đối soát COD 3 lớp và truy vết hoàn tiền. | CR-33, CR-36, CR-41, CR-42, CR-44, CR-46 |
+| **10. Return & Exchange** | `ReturnRequest` (E60), `ReturnReceipt` (E62), `ReturnLineAssessment` (E72), `ReturnShipmentAllocation` (E76) | **Hạt nhân Logistics Ngược (RMA):** Tiếp nhận khiếu nại theo kiện giao (`E76`), nhập cách ly tại bến và thẩm định hoàn tiền/đổi hàng độc lập với tình trạng kho (`E72`). | CR-18, CR-19, CR-26, CR-34..36, CR-43 |
 | **11. Audit & Reporting** | `AuditLog` (E65), `ReportExecution` (E68) | **Hạt nhân Giám sát & Báo cáo:** Theo dõi vết thao tác nhạy cảm của người dùng và kết xuất báo cáo thống kê quản trị toàn hệ thống. | CR-37..40 |
 
 ---
@@ -103,11 +103,11 @@ Toàn bộ hoạt động vận hành của RetailCore lưu thông qua trục Ba
                                                                 |                      |
 [Luồng 3: Dòng Tiền Tệ]    Promotion / Voucher ---------> PromotionUsage               | (Xuất kho thực tế)
                                                                 |                      v
-                                                          Payment / Tx <--- InventoryTransaction (Dual-Delta)
+                                                          Payment / Tx <--- InventoryTransaction (4-Delta)
                                                                 |
-[Luồng 4: Dòng Trả Ngược]  Customer ---> ReturnRequest ---> ReturnReceipt (KCS) ---> Restock to Warehouse
+[Luồng 4: Dòng Trả Ngược]  Customer ---> ReturnRequest ---> ReturnReceipt (QUARANTINED) ---> E72 Disposition / Warehouse
                                                                 |
-                                                                +-------------> Refund / RefundTx
+                                                                +-------------> Refund / Exchange Replacement Order
 ```
 
 #### 1. Luồng 1: Dòng Hàng hóa Nhập kho & Tồn trữ (Goods Inward & Storage Flow)
@@ -115,7 +115,7 @@ Toàn bộ hoạt động vận hành của RetailCore lưu thông qua trục Ba
 * **Cơ chế vận hành:**
   * Doanh nghiệp phát hành đơn đặt mua hàng `PurchaseOrder` gửi tới `Supplier`, chỉ định rõ `WarehouseID` tiếp nhận và các SKU cụ thể (`PurchaseOrderLine` trỏ `ProductVariant`).
   * Khi nhà cung cấp giao hàng đến cửa kho, nhân viên kho lập biên bản `GoodsReceipt` và kiểm đếm thực tế từng dòng `GoodsReceiptLine`.
-  * Khi biên bản được duyệt (`PostedAt` NOT NULL), hệ thống tự động ghi sổ cái `InventoryTransaction` loại `PO_RECEIPT_IN` và tăng số dư tồn kho vật lý `InventoryBalance.OnHandQty` tại đúng kho đó.
+  * Khi biên bản được duyệt (`PostedAt` NOT NULL), hệ thống tự động ghi sổ cái `InventoryTransaction` loại `PURCHASE_RECEIPT` và tăng số dư tồn kho vật lý `InventoryBalance.OnHandQty` theo `AcceptedQty` tại đúng kho đó.
   * **Bảo toàn chi phí:** Đơn giá mua thực tế được snapshot cứng vào `GoodsReceiptLine.UnitCost` để phục vụ tính giá vốn bình quân gia quyền.
 
 #### 2. Luồng 2: Dòng Đơn hàng, Phân bổ & Giao vận (Sales Order, Allocation & Dispatch Flow)
@@ -138,15 +138,13 @@ Toàn bộ hoạt động vận hành của RetailCore lưu thông qua trục Ba
 #### 4. Luồng 4: Dòng Đổi trả, Thẩm định Lỗi & Hoàn tiền (Reverse Logistics, Assessment & Refund Flow)
 * **Các miền tham gia:** `Sales (06)` $\longrightarrow$ `Return & Exchange (10)` $\longrightarrow$ `Warehouse & Inventory (02)` $\longrightarrow$ `Payment & Refund (09)`.
 * **Cơ chế vận hành:**
-  * Khách hàng tạo yêu cầu khiếu nại trả hàng `ReturnRequest` gắn liền với `SalesOrder` gốc đã giao thành công (kiểm tra thời hạn đổi trả theo từng kiện hàng `Shipment.DeliveredAt`, CORR-10).
-  * Bưu kiện hàng trả được chuyển về kho chỉ định, lập biên bản tiếp nhận `ReturnReceipt` (E62) và dòng tiếp nhận `ReturnReceiptLine` (E63) tại bến nhập, ghi nhận số lượng thực nhận và tình trạng vỏ bọc.
-  * Nhân viên kho tiến hành phân loại xử lý vật lý (`Disposition`):
-    * `SELLABLE` (Hàng còn nguyên tem mác): Sinh `InventoryTransaction` loại `CUSTOMER_RETURN_IN`, cộng lại vào tồn kho bán `OnHandQty`.
-    * `QUARANTINE` (Chờ giám định): Chuyển vào kho cách ly, ghi nhận tăng `QuarantinedQty`.
-    * `DISPOSED` (Hỏng hóc, tiêu hủy): Xuất hủy khỏi kho (`SCRAP_OUT`), ghi nhận tổn thất, cấm đưa vào tồn bán.
-  * **Tách rời thẩm định lỗi và xét duyệt hoàn tiền (CORR-01):** Độc lập với xử lý kho, nhân viên thẩm định lập biên bản `ReturnLineAssessment` (E72) xác định bên chịu trách nhiệm `FaultParty` (`VENDOR`, `CARRIER`, `CUSTOMER`, `NO_FAULT`) và kết quả `RefundEligibilityStatus`.
-  * Khi dòng thẩm định được phê duyệt (`APPROVED`), hệ thống kích hoạt tạo chứng từ `Refund` bên Subject Area 09 mà không cần chờ hàng phải `SELLABLE` hay toàn bộ yêu cầu trả hàng hoàn tất (hỗ trợ hoàn tiền từng mốc theo số lượng thực nhận).
-  * Số tiền hoàn trả được tính toán chuẩn xác theo công thức hoàn tiền lũy tiến nguyên số $F(q)$ dựa trên giá trị thanh toán ròng `LineNetAmount` của `OrderLine` sau chiết khấu LRM.
+  * Khách hàng tạo yêu cầu khiếu nại trả hàng `ReturnRequest` gắn liền với `SalesOrder` gốc đã giao thành công (kiểm tra thời hạn đổi trả theo từng kiện hàng `Shipment.DeliveredAt` qua `ReturnShipmentAllocation` E76, CORR-10).
+  * Bưu kiện hàng trả được chuyển về kho chỉ định; thủ kho ký biên bản tiếp nhận `ReturnReceipt` (E62) và `ReturnReceiptLine` (E63), ghi ngay `InventoryTransaction` loại `RETURN_RECEIPT_IN` (`+OnHandQty`, `+QuarantinedQty`) đưa hàng vào bể cách ly `QUARANTINED` (chưa tăng tồn bán `SellableOnHandQty`).
+  * **Tách rời thẩm định lỗi và định đoạt vật lý (`ReturnLineAssessment` E72, CORR-01 & CORR-02):** Nhân viên KCS lập biên bản `ReturnLineAssessment` phiên bản hóa xác định bên chịu trách nhiệm `FaultParty` (`VENDOR_FAULT`, `CARRIER_FAULT`, `CUSTOMER_FAULT`, `NO_FAULT`), kết quả `RefundEligibilityStatus`, phương án `ResolutionType` (`REFUND`, `EXCHANGE`, `REPAIR`, `NO_ACTION`) và định đoạt kho `InventoryDisposition`:
+    * `SELLABLE` (Hàng còn nguyên tem mác): Sinh `InventoryTransaction` loại `CUSTOMER_RETURN_IN` giải phóng `-QuarantinedQty` sang `SellableOnHandQty` và cập nhật lại giá vốn WAC theo `ShipmentLine.OutboundUnitCost`.
+    * `QUARANTINED` (Chờ bảo hành/giám định sâu): Giữ nguyên trong `QuarantinedQty`.
+    * `DISPOSED` (Hỏng hóc, tiêu hủy): Sinh `SCRAP_OUT` giảm đồng thời `-OnHandQty` và `-QuarantinedQty`, ghi nhận tổn thất, cấm đưa vào tồn bán.
+  * Khi dòng thẩm định được phê duyệt (`APPROVED`): nếu `ResolutionType = 'REFUND'`, kích hoạt tạo chứng từ `Refund` bên Subject Area 09 (tính theo công thức $\Delta F(q)$ và áp dụng thu hồi voucher **Clawback** nếu `CUSTOMER_FAULT` làm rớt `MinOrderAmount`); nếu `ResolutionType = 'EXCHANGE'`, sinh đơn giao bù `SalesOrder` (`OrderType = 'EXCHANGE_REPLACEMENT'`, `ParentOrderID`).
 
 ---
 
@@ -176,7 +174,7 @@ Dưới đây là kịch bản phân tích chi tiết từng bước chuyển đ
    * **Thực thi cơ chế Snapshot 3 điểm:**
      * Tạo bản ghi `OrderAddress` độc lập, sao chép toàn bộ tên người nhận, số điện thoại, địa chỉ chi tiết từ `CustomerAddress`. Thực thể này hoàn toàn không có khóa ngoại trỏ về sổ địa chỉ người dùng, giúp đơn hàng miễn nhiễm với việc khách sửa sổ địa chỉ sau này.
      * Lưu cứng đơn giá niêm yết tại thời điểm mua vào `OrderLine.UnitPrice`.
-     * Lưu vết thuộc tính biến thể vào mảng JSON bất biến có định danh chuẩn hóa `OrderLine.VariantAttributesSnapshot` (ví dụ: `[{"attributeId": 1, "attributeCode": "SIZE", "valueId": 105, "valueCode": "L"}, {"attributeId": 2, "attributeCode": "COLOR", "valueId": 204, "valueCode": "NAVY"}]`, CORR-09).
+     * Lưu vết thuộc tính biến thể vào mảng JSON bất biến có định danh chuẩn hóa `OrderLine.VariantAttributesSnapshot` (ví dụ: `[{"attributeId": 1, "attributeCode": "SIZE", "attributeName": "Kích cỡ", "valueId": 105, "valueCode": "L", "displayValue": "Size L"}, {"attributeId": 2, "attributeCode": "COLOR", "attributeName": "Màu sắc", "valueId": 204, "valueCode": "NAVY", "displayValue": "Xanh Navy"}]`, CORR-09).
 
 #### Chặng 2: Định tuyến Đa kho & Khóa giữ Tồn kho (Multi-Warehouse Split Allocation & Reservation)
 Do mặt hàng áo sơ mi có sẵn tại **Kho Hà Nội** (`WarehouseID = 1`), nhưng quần âu chỉ còn tồn tại **Kho TP.HCM** (`WarehouseID = 2`):
@@ -187,15 +185,15 @@ Do mặt hàng áo sơ mi có sẵn tại **Kho Hà Nội** (`WarehouseID = 1`),
    * Hệ thống tạo một phiếu giữ hàng `StockReservation` (`ReservationStatus = 'ACTIVE'`, `ExpiresAt = NOW() + 15 phút`).
    * Tạo 2 dòng `StockReservationLine` liên kết trực tiếp với từng `AllocationID` và `WarehouseID`.
    * **Biến động số dư:** Tồn kho vật lý `OnHandQty` tại 2 kho **giữ nguyên không đổi**. Số lượng giữ `ReservedQty` tăng lên 1 tại mỗi kho:
-     $$\text{AvailableQty} = \text{OnHandQty} - \text{ReservedQty}$$
+     $$\text{AvailableQty} = (\text{OnHandQty} - \text{QuarantinedQty} - \text{DamagedQty}) - \text{ReservedQty}$$
    * Khách hàng khác trên sàn sẽ thấy số lượng khả dụng bị giảm đi, triệt tiêu nguy cơ bán vượt tồn (Overselling).
 
 #### Chặng 3: Hạch toán Khuyến mãi & Khởi tạo Nghĩa vụ Thanh toán (Promotion Stacking & Payment Inception)
-1. Đơn hàng áp dụng Voucher giảm 50.000đ cho đơn từ 500.000đ:
-   * Bản ghi `PromotionUsage` được tạo ra, ghi nhận mã voucher `VoucherID`, liên kết với `SalesOrder`, và phân bổ số tiền giảm 50.000đ theo tỷ trọng giá trị cho 2 dòng `OrderLine` (mỗi dòng chịu chiết khấu 25.000đ).
+1. Đơn hàng (gồm 1 Áo sơ mi `300.000đ` và 1 Quần âu `300.000đ` đã bao gồm VAT, tổng `600.000đ`) áp dụng Voucher giảm `50.000đ` cho đơn từ `250.000đ`:
+   * Bản ghi `PromotionUsage` được tạo ra, ghi nhận mã voucher `VoucherID`, liên kết với `SalesOrder`, và phân bổ số tiền giảm `50.000đ` theo thuật toán LRM cho 2 dòng `OrderLine` (mỗi dòng chịu chiết khấu `25.000đ`, `LineNetAmount = 275.000đ`).
 2. Tạo hồ sơ nghĩa vụ tài chính:
-   * Bản ghi `Payment` ($1:1$ với `SalesOrder`) được sinh ra với `AmountDue = OrderSubtotal - 50.000đ + ShippingFee`, trạng thái ban đầu `PaymentStatus = 'PENDING'`.
-   * Khách chọn thanh toán qua thẻ tín dụng/cổng trực tuyến: Hệ thống ghi nhận `PaymentTransaction` gửi sang cổng thanh toán. Khi nhận webhook thành công, `PaymentTransaction` cập nhật `SUCCESS`, đẩy `Payment.PaymentStatus = 'PAID'` và `SalesOrder.OrderStatus = 'CONFIRMED'`.
+   * Bản ghi `Payment` ($1:1$ với `SalesOrder`) được sinh ra với `AmountDue = OrderSubtotal - 50.000đ + ShippingFee - ShippingDiscountAmount`, trạng thái ban đầu `PaymentStatus = 'PENDING'`.
+   * Khách chọn thanh toán qua thẻ tín dụng/cổng trực tuyến: Hệ thống ghi nhận `PaymentTransaction` gửi sang cổng thanh toán. Khi nhận webhook hợp lệ qua `PaymentWebhookLog` (E71), `PaymentTransaction` cập nhật `'SUCCEEDED'`, đẩy `Payment.PaymentStatus = 'PAID'` và `SalesOrder.OrderStatus = 'CONFIRMED'`.
 
 #### Chặng 4: Đóng gói Bưu kiện & Trừ tồn Kho Vật lý (Fulfillment Dispatch & Ledger Settlement)
 Do hàng nằm ở 2 kho cách xa nhau, hệ thống tự động tách thành 2 kiện hàng giao vận (**Split Shipment**):
@@ -210,26 +208,24 @@ Do hàng nằm ở 2 kho cách xa nhau, hệ thống tự động tách thành 2
 
 #### Chặng 5: Giao nhận & Nghiệp vụ Đối soát Thu hộ Tiền mặt COD (Post-Delivery COD Settlement)
 Trong trường hợp khách hàng chọn phương thức thanh toán **COD (Trả tiền mặt khi nhận hàng)**:
-1. Khi xuất kho giao hàng: `OrderStatus = 'IN_TRANSIT'`, `ShipmentStatus = 'IN_TRANSIT'`, nhưng `PaymentStatus` vẫn là `'PENDING'`.
+1. Khi xuất kho giao hàng: `OrderStatus = 'SHIPPED'`, `ShipmentStatus = 'IN_TRANSIT'`, nhưng `PaymentStatus` vẫn là `'PENDING'` (CORR-06).
 2. Khi shipper giao thành công kiện hàng và nhận tiền mặt từ khách: `ShipmentStatus = 'DELIVERED'`, đơn hàng chuyển `OrderStatus = 'DELIVERED'`.
-3. **Độc lập máy trạng thái & Đối soát COD Hai chặng (CORR-06 & CORR-07):**
-   * **Chặng 1 (Nghĩa vụ khách hàng):** Ngay khi bưu tá giao hàng thành công và thu tiền mặt (`ShipmentStatus = 'DELIVERED'`), nghĩa vụ của người mua hoàn tất 100%. Hệ thống cập nhật ngay `Payment.PaymentStatus = 'PAID'` và `Payment.PaidAt = DeliveredAt`.
-   * **Chặng 2 (Công nợ thu hộ từ Carrier):** Tiền mặt nằm tại đơn vị vận chuyển là khoản phải thu của doanh nghiệp, được quản lý độc lập qua `Payment.CarrierSettlementStatus`: chuyển sang `'COLLECTED_BY_CARRIER'`.
-4. **Đối soát bưu tá:** Định kỳ khi hãng vận chuyển chuyển khoản tiền COD và gửi bảng kê đối soát:
-   * Hệ thống ghi nhận bản ghi `PaymentTransaction` loại `COD_SETTLEMENT` kèm mã bảng kê.
-   * `Payment.CarrierSettlementStatus` chính thức chuyển sang `'RECONCILED'`.
+3. **Độc lập 4 máy trạng thái & Đối soát COD Hai đầu / Ba lớp (CORR-06 & CORR-07):**
+   * **Đầu 1 (Nghĩa vụ khách hàng):** Khi bưu tá giao từng kiện và thu tiền mặt (`ShipmentStatus = 'DELIVERED'`), hệ thống ghi nhận `CODCollection` (E77), cập nhật `Payment.PaymentStatus` sang `'PARTIALLY_PAID'` (khi giao xong kiện 1) và `'PAID'` (khi đã giao đủ cả 2 kiện).
+   * **Đầu 2 (Công nợ thu hộ từ Carrier):** Tiền mặt nằm tại các hãng vận chuyển là khoản phải thu của doanh nghiệp, theo dõi qua `Payment.CarrierSettlementStatus = 'COLLECTED_BY_CARRIER'`.
+4. **Đối soát bưu tá theo kiện:** Định kỳ khi từng hãng vận chuyển chuyển khoản tiền COD và gửi bảng kê:
+   * Hệ thống ghi nhận `CODRemittance` (E78) và khớp từng kiện qua `CODReconciliation` (E79) cùng bút toán `PaymentTransaction` tương ứng.
+   * Khi toàn bộ các khoản thu hộ của đơn được đối soát khớp, `Payment.CarrierSettlementStatus` chính thức chuyển sang `'RECONCILED'`.
 
 #### Chặng 6: Xử lý Khiếu nại Đổi trả & Hoàn tiền Bảo toàn Tài chính (Reverse Logistics RMA & Pro-rated Refund)
 Sau 2 ngày sử dụng, khách hàng thấy áo sơ mi bị rộng và tạo yêu cầu trả lại chiếc áo:
-1. **Khởi tạo yêu cầu RMA (`ReturnRequest`):** Khách gửi yêu cầu trả 1 áo sơ mi (`ReturnRequestLine` trỏ `OrderLineID` tương ứng). CSKH duyệt `APPROVED` và chỉ định duy nhất một kho tiếp nhận là Kho Hà Nội (`WarehouseID = 1`).
-2. **Tiếp nhận tại bến nhập (`ReturnReceipt`):** Shipper mang kiện hàng trả về kho Hà Nội. Thủ kho lập `ReturnReceipt` xác nhận thực nhận 1 áo.
-3. **Kiểm định chất lượng tại kho (Inventory Disposition, CORR-01 & CORR-02):**
-   * Nhân viên KCS mở hàng kiểm tra: Tem mác nguyên vẹn, áo mới 100% $\to$ Đánh giá trạng thái `ReturnReceiptLine.Disposition = 'SELLABLE'`.
-   * Khi biên bản được chốt (`PostedAt` NOT NULL), hệ thống sinh `InventoryTransaction` loại `CUSTOMER_RETURN_IN`, cộng lại 1 chiếc vào `OnHandQty` của Kho Hà Nội để tái lưu thông. (Nếu hàng hỏng chuyển `DISPOSED`, xuất hủy qua `SCRAP_OUT`).
-4. **Thẩm định Nguyên nhân lỗi & Hoàn tiền Độc lập (ReturnLineAssessment E72 & LRM):**
-   * Độc lập với xử lý kho, nhân viên thẩm định lập `ReturnLineAssessment` (E72) ghi nhận `AssessedQty = 1`, `FaultParty = 'CUSTOMER'`, `RefundEligibilityStatus = 'APPROVED'`.
-   * **Thuật toán bảo toàn tài chính nguyên số:** Hệ thống truy vết `OrderLine` ở Chặng 3: Chiếc áo sơ mi có `LineGrossAmount = 300.000đ`, chiết khấu voucher phân bổ theo LRM `AllocatedOrderDiscount = 25.000đ`, giá trị thanh toán ròng `LineNetAmount = 275.000đ`.
-   * Áp dụng công thức hoàn tiền lũy tiến nguyên số $F(q) = B \cdot q + \min(q, R)$: Với $Q = 1 \implies B = 275.000, R = 0 \implies F(1) = 275.000đ$.
+1. **Khởi tạo yêu cầu RMA (`ReturnRequest`):** Khách gửi yêu cầu trả 1 áo sơ mi (`ReturnRequestLine` liên kết kiện giao qua `ReturnShipmentAllocation` E76). CSKH duyệt `APPROVED` và chỉ định duy nhất một kho tiếp nhận là Kho Hà Nội (`WarehouseID = 1`).
+2. **Tiếp nhận cách ly tại bến nhập (`ReturnReceipt`):** Shipper mang kiện hàng trả về kho Hà Nội. Thủ kho ký `ReturnReceipt` (E62), hệ thống ghi ngay `InventoryTransaction` loại `RETURN_RECEIPT_IN` (`+OnHandQty = +1`, `+QuarantinedQty = +1`) đưa chiếc áo vào bể cách ly.
+3. **Thẩm định KCS, Định đoạt kho & Hoàn tiền Độc lập (`ReturnLineAssessment` E72 & LRM, CORR-01..03):**
+   * Nhân viên thẩm định lập `ReturnLineAssessment` (E72) ghi nhận `AssessedQty = 1`, `InventoryDisposition = 'SELLABLE'`, `FaultParty = 'CUSTOMER_FAULT'`, `RefundEligibilityStatus = 'APPROVED'`, `ResolutionType = 'REFUND'`.
+   * Với kết luận `'SELLABLE'`, hệ thống sinh `InventoryTransaction` loại `CUSTOMER_RETURN_IN` giải phóng `-QuarantinedQty = -1` sang tồn bán `SellableOnHandQty` tại Kho Hà Nội và cập nhật WAC theo `OutboundUnitCost`. (Nếu hàng hỏng `'DISPOSED'`, xuất hủy `SCRAP_OUT` giảm đồng thời `OnHandQty` và `QuarantinedQty`).
+   * **Thuật toán bảo toàn tài chính nguyên số:** Hệ thống truy vết `OrderLine` ở Chặng 3: Chiếc áo sơ mi có `LineGrossAmount = 300.000đ`, chiết khấu voucher phân bổ theo LRM `AllocatedOrderDiscount = 25.000đ`, `LineNetAmount = 275.000đ`. Giá trị chiếc quần còn giữ lại là `300.000đ >= MinOrderAmount (250.000đ)` nên đơn hàng vẫn đủ điều kiện giữ voucher (không phát sinh Clawback).
+   * Áp dụng công thức hoàn tiền lũy tiến nguyên số $F(q) = B \cdot q + \min(q, R)$: Với $Q = 1 \implies B = 275.000, R = 0 \implies F(1) = 275.000\text{ đ}$.
    * Số tiền duyệt hoàn trả `Refund.RefundAmount` được chốt chính xác là **275.000đ**, bảo vệ doanh nghiệp khỏi thất thoát chiết khấu và chống lệch tiền lẻ:
      $$\text{RefundAmount} = \Delta F(1) = 275.000\text{ đ}$$
    * Giao dịch hoàn tiền `RefundTransaction` được kích hoạt liên kết `OriginalPaymentTransactionID` để chuyển trả tiền cho khách. Chu trình khép kín $100\%$.
@@ -241,9 +237,9 @@ Sau 2 ngày sử dụng, khách hàng thấy áo sơ mi bị rộng và tạo y�
 | Cơ chế Bảo toàn | Vấn đề Rủi ro nếu thiết kế lỏng lẻo | Giải pháp Kiến trúc trên Trục Xương sống của RetailCore |
 | :--- | :--- | :--- |
 | **1. Khử triệt để Vòng lặp Khóa ngoại (Zero Circular Dependency)** | Thiết kế quan hệ vòng quanh giữa Bán hàng $\to$ Phân bổ kho $\to$ Giữ hàng $\to$ Bán hàng làm SQL Server báo lỗi vòng lặp khóa ngoại hoặc gây Deadlock khi cập nhật đồng thời. | **Kiến trúc phân rã 2 cấp Header–Line song song:** `SalesOrder` quản lý chứng từ tổng, `OrderLine` quản lý dòng hàng. `OrderWarehouseAllocation` và `StockReservationLine` liên kết qua `AllocationID`. Mối quan hệ luôn đi theo luồng đơn hướng, không có bất kỳ chu trình khép kín nào. |
-| **2. Tách rời 3 Máy trạng thái Giao dịch (Decoupled State Machines)** | Gộp chung trạng thái đơn hàng, thanh toán và vận chuyển làm một khiến hệ thống không thể xử lý đơn COD, đơn giao nhiều lần (Split Shipment) hoặc giao thất bại. | **3 máy trạng thái vận hành độc lập:** $\text{OrderStatus} \ne \text{PaymentStatus} \ne \text{ShipmentStatus}$. Đơn hàng có thể giao thành công trong khi thanh toán COD đang chờ đối soát; một đơn hàng có thể có nhiều kiện hàng với các tiến độ giao nhận khác nhau. |
-| **3. Cơ chế Đóng băng Snapshot Lịch sử Đa tầng** | Khách sửa địa chỉ trong sổ địa chỉ cá nhân, hoặc Catalog tăng giá/đổi tên thuộc tính biến thể làm sai lệch dữ liệu kế toán và hóa đơn cũ. | **Snapshot 3 điểm trọng yếu:** `OrderAddress` là thực thể yếu snapshot độc lập không trỏ FK về `CustomerAddress`. `OrderLine` lưu cứng đơn giá bán và mảng JSON định danh `VariantAttributesSnapshot` (`[{"attributeId": 1, ...}]`, CORR-09). `GoodsReceiptLine` lưu cứng giá vốn `UnitCost`. |
-| **4. Nguyên tắc Ghi sổ Kép Hai chiều (Append-Only Dual-Delta Ledger)** | Sửa trực tiếp số dư tồn kho hoặc số tiền thanh toán làm mất vết kiểm toán tài chính, không thể giải trình kế toán khi phát sinh sai lệch. | **Nguyên tắc Sổ cái Bất biến:** Mọi biến động tồn kho đều thông qua `InventoryTransactionLine` (`OnHandDelta`, `ReservedDelta`, `QuarantinedDelta`, `DamagedDelta`). Mọi biến động tiền đều thông qua `PaymentTransaction` và `RefundTransaction`. Cấm tuyệt đối lệnh `UPDATE` hoặc `DELETE` trên sổ cái. |
+| **2. Tách rời 4 Máy trạng thái Giao dịch (Decoupled State Machines)** | Gộp chung trạng thái đơn hàng, thanh toán, vận chuyển và đổi trả khiến hệ thống không thể xử lý đơn COD, đơn giao nhiều lần (Split Shipment) hoặc trả hàng từng phần. | **4 máy trạng thái vận hành độc lập:** $\text{OrderStatus} \ne \text{PaymentStatus} \ne \text{ShipmentStatus} \ne \text{ReturnStatus}$ (cùng trạng thái từng lần thử `TransactionStatus`). Đơn hàng có thể giao từng phần, đối soát COD từng kiện hoặc thẩm định RMA độc lập. |
+| **3. Cơ chế Đóng băng Snapshot Lịch sử Đa tầng** | Khách sửa địa chỉ trong sổ địa chỉ cá nhân, hoặc Catalog tăng giá/đổi tên thuộc tính biến thể làm sai lệch dữ liệu kế toán và hóa đơn cũ. | **Snapshot toàn diện hợp đồng & giá vốn:** `OrderAddress` snapshot địa chỉ và thông tin hóa đơn GTGT B2B không trỏ FK về `CustomerAddress`. `OrderLine` lưu cứng giá đã gồm VAT, `VatRate`/`TaxAmount` và JSON Array `VariantAttributesSnapshot` (`CORR-09`). `GoodsReceiptLine.UnitCost`, `ShipmentLine.OutboundUnitCost` & `WarehouseTransferLine.UnitCost` bảo toàn giá vốn WAC (`CORR-08`). |
+| **4. Nguyên tắc Sổ cái Bất biến 4-Delta (Append-Only 4-Delta Ledger)** | Sửa trực tiếp số dư tồn kho hoặc số tiền thanh toán làm mất vết kiểm toán tài chính, không thể giải trình kế toán khi phát sinh sai lệch. | **Nguyên tắc Sổ cái Bất biến:** Mọi biến động tồn kho đều thông qua `InventoryTransactionLine` (`OnHandDelta`, `ReservedDelta`, `QuarantinedDelta`, `DamagedDelta`). Mọi biến động tiền đều thông qua `PaymentTransaction` và `RefundTransaction`. Cấm tuyệt đối lệnh `UPDATE` hoặc `DELETE` trên sổ cái. |
 
 ---
 
@@ -279,7 +275,7 @@ Bảng dưới đây chuẩn hóa toàn bộ các liên kết vượt biên gi�
 | **CR-24** | `Customer` (04) | `o| ─── }o` | `Voucher` (08) | $0..1:0..N$ | Nguồn: Partial<br>Đích: Partial | Voucher có thể cấp riêng cho khách hàng VIP (`AssignedCustomerID`) hoặc dùng chung toàn sàn (PROMO-Q03). |
 | **CR-25** | `Customer` (04) | `|| ─── }o` | `PromotionTargetCustomer` (08) | $1:0..N$ | Nguồn: Partial<br>Đích: **Total** | Khách hàng thuộc danh sách thụ hưởng chương trình ưu đãi đặc quyền (PROMO-Q03). |
 | **CR-26** | `Customer` (04) | `|| ─── }o` | `ReturnRequest` (10) | $1:0..N$ | Nguồn: Partial<br>Đích: **Total** | Khách hàng là chủ thể sở hữu và gửi yêu cầu đổi trả hàng (RET-Q01). |
-| **CR-27** | `ShoppingCart` (05) | `|| ─── o|` | `SalesOrder` (06) | $1:0..1$ | Nguồn: Partial<br>Đích: **Total** | Giỏ hàng chuyển đổi sang đơn hàng thành công thì đóng băng `CONVERTED` (SHOP-Q05, SALES-Q01). |
+| **CR-27** | `ShoppingCart` (05) | `o| ─── o|` | `SalesOrder` (06) | $0..1:0..1$ | Nguồn: Partial<br>Đích: Partial | Giỏ hàng chuyển đổi thành tối đa 1 đơn (`CONVERTED`); đơn mua ngay hoặc đơn đổi trả (`EXCHANGE_REPLACEMENT`) để `CartID IS NULL` (`UX_SalesOrder_Cart`, SHOP-Q06, SALES-Q01). |
 | **CR-28** | `SalesOrder` (06) | `|| ─── }o` | `Shipment` (07) | $1:0..N$ | Nguồn: Partial<br>Đích: **Total** | Đơn hàng có thể phân tách thành nhiều kiện hàng xuất giao từ các kho khác nhau (BD-03, SHIP-Q01). |
 | **CR-29** | `OrderLine` (06) | `|| ─── }o` | `ShipmentLine` (07) | $1:0..N$ | Nguồn: Partial<br>Đích: **Total** | Dòng đơn hàng được đóng gói trong các lô giao; tổng xuất không vượt đặt (SHIP-Q01). |
 | **CR-30** | `OrderWarehouseAllocation` (02) | `|| ─── }o` | `ShipmentLine` (07) | $1:0..N$ | Nguồn: Partial<br>Đích: **Total** | Dòng lô giao hàng hiện thực hóa kế hoạch phân bổ của kho xuất (SHIP-Q01, BR-FS07). |
@@ -288,26 +284,35 @@ Bảng dưới đây chuẩn hóa toàn bộ các liên kết vượt biên gi�
 | **CR-33** | `SalesOrder` (06) | `|| ─── ||` | `Payment` (09) | $1:1$ | Nguồn: **Total**<br>Đích: **Total** | Mỗi đơn hàng bắt buộc có đúng 1 hồ sơ nghĩa vụ thanh toán (`Payment.OrderID` UNIQUE, PAY-Q01). |
 | **CR-34** | `SalesOrder` (06) | `|| ─── }o` | `ReturnRequest` (10) | $1:0..N$ | Nguồn: Partial<br>Đích: **Total** | Đơn hàng đã giao thành công có thể phát sinh nhiều yêu cầu đổi trả từng phần (RET-Q01, RET-Q03). |
 | **CR-35** | `OrderLine` (06) | `|| ─── }o` | `ReturnRequestLine` (10) | $1:0..N$ | Nguồn: Partial<br>Đích: **Total** | Dòng sản phẩm trong đơn được yêu cầu trả lại; tổng trả không vượt số lượng đã mua (RET-Q03). |
-| **CR-36** | `ReturnRequest` (10) | `|| ─── }o` | `Refund` (09) | $1:0..N$ | Nguồn: Partial<br>Đích: **Total** | Yêu cầu đổi trả sau khi kho kiểm định đạt chuẩn sẽ tự động kích hoạt chứng từ hoàn tiền (RET-Q07). |
+| **CR-36** | `ReturnLineAssessment` (10) | `o| ─── o|` | `Refund` (09) | $0..1:0..1$ | Nguồn: Partial<br>Đích: Partial | Kết luận thẩm định KCS được duyệt (`APPROVED`) kích hoạt tạo `Refund` độc lập với định đoạt kho; hoàn tiền hủy đơn trả trước trước giao để `NULL` (CORR-01). |
 | **CR-37** | `Account` (04) | `o| ─── }o` | `AuditLog` (11) | $0..1:0..N$ | Nguồn: Partial<br>Đích: Partial | Tài khoản người dùng thực hiện thao tác nhạy cảm; sự kiện hệ thống tự động để NULL (AR-Q01). |
 | **CR-38** | `Account` (04) | `|| ─── }o` | `ReportExecution` (11) | $1:0..N$ | Nguồn: Partial<br>Đích: **Total** | Tài khoản nhân viên yêu cầu xuất báo cáo hoặc thực thi truy vấn phân tích (AR-Q06). |
 | **CR-39** | `Account` (04) | `o| ─── }o` | `ReportSnapshot` (11) | $0..1:0..N$ | Nguồn: Partial<br>Đích: Partial | Người dùng hoặc job hệ thống tạo bản chụp dữ liệu chốt kỳ báo cáo (AR-Q05). |
 | **CR-40** | `Role` (04) | `|| ─── }o` | `ReportPermission` (11) | $1:0..N$ | Nguồn: Partial<br>Đích: **Total** | Vai trò được phân quyền truy cập, xuất file hoặc chốt snapshot báo cáo quản trị (AR-Q07). |
+| **CR-41** | `Shipment` (07) | `|| ─── o|` | `CODCollection` (09) | $1:0..1$ | Nguồn: Partial<br>Đích: **Total** | Ghi nhận tiền mặt bưu tá thu hộ theo từng kiện hàng trong đơn COD đa kiện (CORR-07). |
+| **CR-42** | `Carrier` (07) | `|| ─── }o` | `CODRemittance` (09) | $1:0..N$ | Nguồn: Partial<br>Đích: **Total** | Hãng vận chuyển chuyển trả tiền thu hộ COD theo bảng kê định kỳ (CORR-07). |
+| **CR-43** | `ShipmentLine` (07) | `|| ─── }o` | `ReturnShipmentAllocation` (10) | $1:0..N$ | Nguồn: Partial<br>Đích: **Total** | Truy vết dòng RMA về đúng kiện giao để kiểm tra thời hạn đổi trả và giá vốn xuất kho (CORR-10). |
+| **CR-44** | `Account` (04) | `|| ─── }o` | `IdempotencyRecord` (09) | $1:0..N$ | Nguồn: Partial<br>Đích: **Total** | Khóa chống gửi lặp request đặt đơn và thanh toán theo tài khoản người dùng (CORR-05). |
+| **CR-45** | `Warehouse` (02) | `|| ─── }o` | `DeliveryReturnReceipt` (07) | $1:0..N$ | Nguồn: Partial<br>Đích: **Total** | Kho vật lý ký biên bản thực nhận kiện hàng giao thất bại quay về kho (BD-07). |
+| **CR-46** | `Carrier` (07) | `|| ─── }o` | `CODCollection` (09) | $1:0..N$ | Nguồn: Partial<br>Đích: **Total** | Đối chiếu trực tiếp các khoản tiền mặt thu hộ COD theo từng hãng vận chuyển trên từng kiện hàng (CORR-07). |
+
+> [!NOTE]
+> Ngoài 46 liên kết trục nghiệp vụ (`CR-01` – `CR-46`), các chứng từ vận hành ở các miền `SA02`, `SA03`, `SA06`, `SA07`, `SA08`, `SA09`, `SA10` còn có các khóa ngoại kiểm toán người tạo/người duyệt (`CreatedBy`, `ApprovedBy`, `ReceivedBy`, `ChangedBy`, `ReviewedBy`, `AssessedBy`, `ReconciledBy`) tham chiếu về `Account(AccountID)` (được vẽ đầy đủ trên từng sơ đồ Mermaid phân hệ chi tiết).
 
 ---
 
 ## 5. SƠ ĐỒ CHI TIẾT CÁC PHÂN HỆ VÀ ĐIỂM TIẾP GIÁP LIÊN MIỀN (DOMAIN BOUNDARIES)
 
-Toàn bộ mã nguồn Mermaid chi tiết và sơ đồ ảnh render chất lượng cao của 11 phân hệ đã được bóc tách và quản lý tập trung trong thư mục [ERD/](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/). Dưới đây là đặc tả ranh giới tiếp giáp liên miền (Boundary Interfaces) và liên kết tham chiếu trực tiếp:
+Toàn bộ mã nguồn Mermaid chi tiết và sơ đồ ảnh render chất lượng cao của 11 phân hệ đã được bóc tách và quản lý tập trung trong thư mục [ERD/](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/erd/). Dưới đây là đặc tả ranh giới tiếp giáp liên miền (Boundary Interfaces) và liên kết tham chiếu trực tiếp:
 
-### 5.1. Phân hệ 01: Product Catalog (E01 – E09)
+### 5.1. Phân hệ 01: Product Catalog (E01 – E09, E73)
 * **Giao diện liên miền:** 
   * `ProductVariant` (E04) là đầu mối kết nối đến: Inventory (02), Procurement (03), Shopping (05), Sales (06), Promotion (08).
 * **Tham chiếu sơ đồ:**
-  * **Mã nguồn Mermaid:** [Product-Catalog.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Product-Catalog.md)
-  * **Sơ đồ ảnh Render:** [Product-Catalog.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Product-Catalog.png)
+  * **Mã nguồn Mermaid:** [Product-Catalog.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/erd/mermaid/Product-Catalog.md)
+  * **Sơ đồ ảnh Render:** [Product-Catalog.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/erd/images/Product-Catalog.png)
 
-![Product Catalog](ERD/images/Product-Catalog.png)
+![Product Catalog](../../erd/images/Product-Catalog.png)
 
 ---
 
@@ -317,20 +322,20 @@ Toàn bộ mã nguồn Mermaid chi tiết và sơ đồ ảnh render chất lư�
   * `OrderWarehouseAllocation` (E12) nhận từ `OrderLine` (06) và cấp cho `ShipmentLine` (07).
   * `StockReservation` (E13) nhận từ `SalesOrder` (06).
 * **Tham chiếu sơ đồ:**
-  * **Mã nguồn Mermaid:** [Warehouse-Inventory.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Warehouse-Inventory.md)
-  * **Sơ đồ ảnh Render:** [Warehouse-Inventory.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Warehouse-Inventory.png)
+  * **Mã nguồn Mermaid:** [Warehouse-Inventory.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/erd/mermaid/Warehouse-Inventory.md)
+  * **Sơ đồ ảnh Render:** [Warehouse-Inventory.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/erd/images/Warehouse-Inventory.png)
 
-![Warehouse & Inventory](ERD/images/Warehouse-Inventory.png)
+![Warehouse & Inventory](../../erd/images/Warehouse-Inventory.png)
 
 ---
 
 ### 5.3. Phân hệ 03: Procurement (E21 – E28)
 * **Giao diện liên miền:** Nhận SKU từ Catalog (01) và chỉ định nhập/xuất kho tại Warehouse (02).
 * **Tham chiếu sơ đồ:**
-  * **Mã nguồn Mermaid:** [Procurement.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Procurement.md)
-  * **Sơ đồ ảnh Render:** [Procurement.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Procurement.png)
+  * **Mã nguồn Mermaid:** [Procurement.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/erd/mermaid/Procurement.md)
+  * **Sơ đồ ảnh Render:** [Procurement.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/erd/images/Procurement.png)
 
-![Procurement](ERD/images/Procurement.png)
+![Procurement](../../erd/images/Procurement.png)
 
 ---
 
@@ -339,20 +344,20 @@ Toàn bộ mã nguồn Mermaid chi tiết và sơ đồ ảnh render chất lư�
   * `Customer` (E30) liên kết với Shopping (05), Sales (06), Promotion (08), RMA (10).
   * `Account` (E29) và `Role` (E32) liên kết với Audit & Reporting (11).
 * **Tham chiếu sơ đồ:**
-  * **Mã nguồn Mermaid:** [Customer-Identity.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Customer-Identity.md)
-  * **Sơ đồ ảnh Render:** [Customer-Identity.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Customer-Identity.png)
+  * **Mã nguồn Mermaid:** [Customer-Identity.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/erd/mermaid/Customer-Identity.md)
+  * **Sơ đồ ảnh Render:** [Customer-Identity.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/erd/images/Customer-Identity.png)
 
-![Customer & Identity](ERD/images/Customer-Identity.png)
+![Customer & Identity](../../erd/images/Customer-Identity.png)
 
 ---
 
 ### 5.5. Phân hệ 05: Shopping (E38 – E39)
 * **Giao diện liên miền:** Nhận `CustomerID` từ (04), `VariantID` từ (01); Chuyển đổi thành `SalesOrder` (06).
 * **Tham chiếu sơ đồ:**
-  * **Mã nguồn Mermaid:** [Shopping.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Shopping.md)
-  * **Sơ đồ ảnh Render:** [Shopping.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Shopping.png)
+  * **Mã nguồn Mermaid:** [Shopping.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/erd/mermaid/Shopping.md)
+  * **Sơ đồ ảnh Render:** [Shopping.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/erd/images/Shopping.png)
 
-![Shopping](ERD/images/Shopping.png)
+![Shopping](../../erd/images/Shopping.png)
 
 ---
 
@@ -361,20 +366,20 @@ Toàn bộ mã nguồn Mermaid chi tiết và sơ đồ ảnh render chất lư�
   * Trung tâm điều phối toàn bộ chuỗi giá trị: Nhận `CartID` (05), `CustomerID` (04), `VariantID` (01).
   * Phát sinh phân bổ chia kho (02), giữ tồn kho (02), giao hàng (07), thanh toán (09), chiết khấu (08), khiếu nại RMA (10).
 * **Tham chiếu sơ đồ:**
-  * **Mã nguồn Mermaid:** [Sales.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Sales.md)
-  * **Sơ đồ ảnh Render:** [Sales.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Sales.png)
+  * **Mã nguồn Mermaid:** [Sales.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/erd/mermaid/Sales.md)
+  * **Sơ đồ ảnh Render:** [Sales.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/erd/images/Sales.png)
 
-![Sales](ERD/images/Sales.png)
+![Sales](../../erd/images/Sales.png)
 
 ---
 
-### 5.7. Phân hệ 07: Fulfillment & Shipping (E44 – E48)
+### 5.7. Phân hệ 07: Fulfillment & Shipping (E44 – E48, E75)
 * **Giao diện liên miền:** Nhận `OrderID` và `OrderLineID` từ (06), `WarehouseID` và `AllocationID` từ (02).
 * **Tham chiếu sơ đồ:**
-  * **Mã nguồn Mermaid:** [Fulfillment-Shipping.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Fulfillment-Shipping.md)
-  * **Sơ đồ ảnh Render:** [Fulfillment-Shipping.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Fulfillment-Shipping.png)
+  * **Mã nguồn Mermaid:** [Fulfillment-Shipping.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/erd/mermaid/Fulfillment-Shipping.md)
+  * **Sơ đồ ảnh Render:** [Fulfillment-Shipping.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/erd/images/Fulfillment-Shipping.png)
 
-![Fulfillment & Shipping](ERD/images/Fulfillment-Shipping.png)
+![Fulfillment & Shipping](../../erd/images/Fulfillment-Shipping.png)
 
 ---
 
@@ -384,35 +389,35 @@ Toàn bộ mã nguồn Mermaid chi tiết và sơ đồ ảnh render chất lư�
   * Tiêu thụ và snapshot giảm giá trên `SalesOrder` và `OrderLine` (06).
   * Chỉ định khách VIP từ Customer (04).
 * **Tham chiếu sơ đồ:**
-  * **Mã nguồn Mermaid:** [Promotion-Voucher.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Promotion-Voucher.md)
-  * **Sơ đồ ảnh Render:** [Promotion-Voucher.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Promotion-Voucher.png)
+  * **Mã nguồn Mermaid:** [Promotion-Voucher.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/erd/mermaid/Promotion-Voucher.md)
+  * **Sơ đồ ảnh Render:** [Promotion-Voucher.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/erd/images/Promotion-Voucher.png)
 
-![Promotion & Voucher](ERD/images/Promotion-Voucher.png)
+![Promotion & Voucher](../../erd/images/Promotion-Voucher.png)
 
 ---
 
-### 5.9. Phân hệ 09: Payment & Refund (E55 – E59)
+### 5.9. Phân hệ 09: Payment & Settlement (E55 – E59, E71, E74, E77 – E79)
 * **Giao diện liên miền:** 
-  * Liên kết $1:1$ với `SalesOrder` (06).
-  * Tiếp nhận yêu cầu kích hoạt hoàn tiền từ `ReturnRequest` (10).
+  * Liên kết $1:1$ với `SalesOrder` (06) và kiểm soát chống gửi lặp qua `IdempotencyRecord` (E74).
+  * Tiếp nhận yêu cầu kích hoạt hoàn tiền từ `ReturnLineAssessment` (E72) của (10) và đối soát COD 3 lớp theo `Shipment` / `Carrier` (07).
 * **Tham chiếu sơ đồ:**
-  * **Mã nguồn Mermaid:** [Payment-Refund.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Payment-Refund.md)
-  * **Sơ đồ ảnh Render:** [Payment-Refund.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Payment-Refund.png)
+  * **Mã nguồn Mermaid:** [Payment-Refund.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/erd/mermaid/Payment-Refund.md)
+  * **Sơ đồ ảnh Render:** [Payment-Refund.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/erd/images/Payment-Refund.png)
 
-![Payment & Refund](ERD/images/Payment-Refund.png)
+![Payment & Refund](../../erd/images/Payment-Refund.png)
 
 ---
 
-### 5.10. Phân hệ 10: Return & Exchange (E60 – E64)
+### 5.10. Phân hệ 10: Return & Exchange (E60 – E64, E72, E76)
 * **Giao diện liên miền:** 
-  * Tham chiếu đơn hàng gốc (`SalesOrder`, `OrderLine` từ 06).
+  * Tham chiếu đơn hàng gốc (`SalesOrder`, `OrderLine` từ 06) và kiện giao (`ShipmentLine` từ 07 qua `ReturnShipmentAllocation` E76).
   * Tiếp nhận tại kho hàng (`Warehouse` từ 02).
-  * Kích hoạt hoàn tiền sang `Refund` (09).
+  * Kích hoạt hoàn tiền từ `ReturnLineAssessment` (E72) sang `Refund` (09).
 * **Tham chiếu sơ đồ:**
-  * **Mã nguồn Mermaid:** [Return-Exchange.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Return-Exchange.md)
-  * **Sơ đồ ảnh Render:** [Return-Exchange.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Return-Exchange.png)
+  * **Mã nguồn Mermaid:** [Return-Exchange.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/erd/mermaid/Return-Exchange.md)
+  * **Sơ đồ ảnh Render:** [Return-Exchange.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/erd/images/Return-Exchange.png)
 
-![Return & Exchange](ERD/images/Return-Exchange.png)
+![Return & Exchange](../../erd/images/Return-Exchange.png)
 
 ---
 
@@ -422,16 +427,16 @@ Toàn bộ mã nguồn Mermaid chi tiết và sơ đồ ảnh render chất lư�
   * `ReportExecution` (E68) ghi nhận yêu cầu chạy báo cáo của `Account` (04).
   * `ReportPermission` (E70) phân quyền truy cập báo cáo theo `Role` (04).
 * **Tham chiếu sơ đồ:**
-  * **Mã nguồn Mermaid:** [Audit-Reporting.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/mermaid/Audit-Reporting.md)
-  * **Sơ đồ ảnh Render:** [Audit-Reporting.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/Milestones/M2-Conceptual-Design/ERD/images/Audit-Reporting.png)
+  * **Mã nguồn Mermaid:** [Audit-Reporting.md](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/erd/mermaid/Audit-Reporting.md)
+  * **Sơ đồ ảnh Render:** [Audit-Reporting.png](file:///c:/Users/ADMIN/OneDrive/Desktop/RetailCore%20%E2%80%93%20E-commerce%20Management%20System/docs/erd/images/Audit-Reporting.png)
 
-![Audit & Reporting](ERD/images/Audit-Reporting.png)
+![Audit & Reporting](../../erd/images/Audit-Reporting.png)
 
 ---
 
 ## 6. KIỂM TRA TÍNH TOÀN VẸN & KHÉP KÍN MÔ HÌNH (INTEGRITY CHECK)
 
-1. **Đầy đủ 100% 72 Thực thể:** Toàn bộ 72 thực thể (E01 đến E72) đều xuất hiện trong sơ đồ và có liên kết quan hệ xác thực, không có bất kỳ thực thể nào bị cô lập (No Orphan Entities).
+1. **Đầy đủ 100% 79 Thực thể (`E01` – `E79`):** Toàn bộ 79 thực thể đều xuất hiện trong sơ đồ và có liên kết quan hệ xác thực, không có bất kỳ thực thể nào bị cô lập (No Orphan Entities).
 2. **Khép kín ranh giới nghiệp vụ:**
    * Mọi quan hệ $N:N$ đều được giải quyết thông qua Thực thể Kết hợp (Associative Entity) mang đầy đủ thuộc tính trạng thái và thời gian.
    * Tất cả các chứng từ giao dịch (SalesOrder, Payment, Shipment, GoodsReceipt, ReturnRequest, InventoryTransaction) đều có thực thể chi tiết dòng (Line/Detail) và nhật ký trạng thái (History) tương ứng.

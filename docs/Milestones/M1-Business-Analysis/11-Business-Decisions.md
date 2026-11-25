@@ -1,9 +1,9 @@
 # M1.11 - Business Decisions Register (Chính thức hóa BD-01 đến BD-07)
 
 * **Milestone:** M1 – Business Analysis
-* **Phiên bản:** 1.1 – Approved Business Decisions
-* **Database Target:** Microsoft SQL Server
-* **Trạng thái:** Đã phê duyệt chính thức (Approved)
+* **Phiên bản:** 2.0 – Canonical SSOT Approved Business Decisions
+* **Database Target:** Microsoft SQL Server 2022+
+* **Trạng thái:** Đã phê duyệt chính thức (Approved & Reverse-Synced `CORR-01..10`)
 
 ---
 
@@ -12,40 +12,40 @@
 | ID | Quyết định | Kết luận chính thức | Tác động trực tiếp lên Mô hình CSDL (M2–M4) |
 | :---: | :--- | :--- | :--- |
 | **BD-01** | **Sản phẩm – Danh mục** | Một sản phẩm có thể thuộc nhiều danh mục ($N-N$). Có một danh mục chính. | Thực thể liên kết `ProductCategory(ProductID, CategoryID, IsPrimary)`. Hỗ trợ Breadcrumb và báo cáo doanh thu không trùng lặp. |
-| **BD-02** | **Guest Checkout** | Bắt buộc đăng nhập trước khi đặt hàng. Không hỗ trợ Guest Checkout. | `Orders.CustomerID` bắt buộc `NOT NULL`. Quản lý chuẩn `VoucherUsages`, chính sách đổi trả (7 ngày) và hồ sơ khách hàng. |
-| **BD-03** | **Split Shipment** | Một đơn hàng có thể được xử lý và giao từ nhiều kho. | Tách rời `Order` khỏi `WarehouseID`. `OrderLine` được chia thành các `OrderAllocation`, xuất kho qua nhiều `Shipment`. |
-| **BD-04** | **Reservation** | Giữ hàng ngay khi tạo đơn, có thời hạn `ExpiresAt` (15 phút). | Thực thể `StockReservation` (hoặc gắn với `OrderAllocation`) với thời hạn tạm giữ, ngăn chặn bán âm kho (Overselling) trong Flash Sale. |
-| **BD-05** | **Promotion Stacking** | Cho phép tối đa một khuyến mãi cấp sản phẩm và một voucher cấp đơn hàng, nếu quy tắc cho phép cộng dồn (`IsStackable = 1`). | Tách bạch 2 tầng khuyến mãi; cấm áp dụng 2 chương trình cùng tầng; lưu vết chi tiết tính toán trong `OrderPromotions`. |
-| **BD-06** | **Variant Attributes** | Sử dụng mô hình thuộc tính linh hoạt theo từng sản phẩm (Dynamic Attributes). | Bộ ba thực thể chuẩn hóa `Attribute`, `AttributeValue`, `ProductAttribute`, `VariantAttributeValue`. Không hardcode cột Size/Color. |
-| **BD-07** | **Inventory on Delivery & Failed Delivery** | Khi xuất kho, giảm đồng thời tồn vật lý (`OnHandQty`) và lượng giữ (`ReservedQty`). Hàng giao thất bại chỉ được nhập lại kho khi thực sự quay về. | Phân định rạch ròi 4 trạng thái tồn kho và tuân thủ vòng đời 5 bước: Tạo đơn $\rightarrow$ Xuất kho $\rightarrow$ Đang giao $\rightarrow$ Tiếp nhận hoàn kho $\rightarrow$ Giao lại/Hủy. |
+| **BD-02** | **Guest Checkout** | Bắt buộc đăng nhập trước khi đặt hàng. Không hỗ trợ Guest Checkout. | `SalesOrder.CustomerID` bắt buộc `NOT NULL` (tham chiếu `Customer.AccountID`). Quản lý chuẩn `PromotionUsage`, chính sách đổi trả và hồ sơ khách hàng. |
+| **BD-03** | **Split Shipment** | Một đơn hàng có thể được xử lý và giao từ nhiều kho. | Tách rời `SalesOrder` khỏi `WarehouseID`. `OrderLine` được chia thành các `OrderWarehouseAllocation` (E12), xuất kho qua nhiều `Shipment` (E45). |
+| **BD-04** | **Reservation** | Giữ hàng ngay khi tạo đơn, có thời hạn `ExpiresAt` (15 phút chuẩn; 5 phút cho đơn Flash Sale). | Thực thể `StockReservation` (E13) và `StockReservationLine` (E14) gắn với `AllocationID` ($1:0..N$), kết hợp hạn mức `PromotionProduct` (E51) chống bán âm kho. |
+| **BD-05** | **Promotion Stacking** | Phân tách 3 tầng ưu đãi độc lập (`PRODUCT`, `ORDER`, `SHIPPING`); cho phép kết hợp khác tầng khi `IsStackable = 1`. | Cấm áp dụng quá 1 chương trình trong cùng tầng; lưu vết tại `PromotionUsage` (E53), phân bổ LRM xuống `OrderLine` và lưu giảm ship tại `SalesOrder.ShippingDiscountAmount`. |
+| **BD-06** | **Variant Attributes** | Sử dụng mô hình thuộc tính linh hoạt theo từng sản phẩm (Dynamic Attributes). | Cụm 5 thực thể chuẩn hóa `Attribute`, `AttributeValue`, `ProductAttribute`, `ProductAttributeValue`, `VariantAttributeValue`. Không hardcode cột Size/Color. |
+| **BD-07** | **Inventory on Delivery & Failed Delivery** | Khi xuất kho, giảm đồng thời tồn vật lý (`OnHandQty`) và lượng giữ (`ReservedQty`). Hàng giao thất bại chỉ được nhập lại kho khi thực sự quay về. | Phân định 3 phẩm chất tồn kho vật lý (`SELLABLE`, `QUARANTINED`, `DAMAGED`) và ký biên bản `DeliveryReturnReceipt` (E75) khi thực nhận hoàn kho. |
 
 ---
 
 ## 2. Chi tiết 2 Quyết định Trọng tâm: BD-05 & BD-07
 
-### 2.1. BD-05: Chính sách Khuyến mãi Phân tầng & Điều kiện Cộng dồn (Promotion Stacking)
+### 2.1. BD-05: Chính sách Khuyến mãi Phân tầng 3 Lớp & Điều kiện Cộng dồn (Promotion Stacking)
 
-#### Hai tầng khuyến mãi độc lập:
-1. **Tầng 1 – Product Promotion (Khuyến mãi cấp sản phẩm / Dòng hàng):**
-   * Áp dụng trực tiếp trên từng dòng sản phẩm (`OrderLine`).
-   * Ví dụ: Flash Sale giảm 15% cho Áo thun Polo, Giảm 50.000đ cho Đèn bàn.
-   * **Giới hạn:** Tối đa **1 chương trình** giảm giá trực tiếp trên mỗi dòng sản phẩm.
-2. **Tầng 2 – Order Voucher (Voucher cấp đơn hàng):**
-   * Áp dụng trên toàn bộ giá trị đơn hàng sau khi đã trừ chiết khấu dòng sản phẩm.
-   * Ví dụ: Nhập mã `SUMMER2026` giảm 10% tối đa 100.000đ cho đơn từ 500.000đ.
-   * **Giới hạn:** Tối đa **1 voucher** cấp đơn hàng trên mỗi đơn.
+#### Ba tầng khuyến mãi độc lập (`Promotion.PromotionScope`):
+1. **Tầng 1 – Product Promotion (`'PRODUCT'` – Khuyến mãi cấp SKU / Dòng hàng):**
+   * Áp dụng trực tiếp trên từng dòng sản phẩm (`OrderLine`) thông qua danh sách `PromotionProduct` (`E51`, hỗ trợ giới hạn chiến dịch `FlashSaleStockLimit` và `MaxQtyPerCustomer`).
+   * **Giới hạn:** Tối đa **1 chương trình** giảm giá trực tiếp trên mỗi dòng `OrderLine`.
+2. **Tầng 2 – Order Voucher (`'ORDER'` – Voucher giảm giá tiền hàng cấp đơn):**
+   * Áp dụng trên tổng giá trị tiền hàng đủ điều kiện sau khi đã trừ chiết khấu Tầng 1 ($\sum \text{EligibleBase}$).
+   * **Giới hạn:** Tối đa **1 mã voucher** cấp `'ORDER'` trên mỗi `SalesOrder`.
+3. **Tầng 3 – Shipping Voucher (`'SHIPPING'` – Voucher Freeship miễn/giảm phí vận chuyển):**
+   * Áp dụng trực tiếp vào phí vận chuyển thu khách của đơn hàng (`SalesOrder.ShippingDiscountAmount <= SalesOrder.ShippingFee`), không làm méo giá trị hàng hóa hay thuế GTGT dòng hàng.
+   * **Giới hạn:** Tối đa **1 mã voucher** cấp `'SHIPPING'` trên mỗi `SalesOrder`.
 
 #### Quy tắc cộng dồn (Stacking Rules):
-* Hai tầng **chỉ được phép kết hợp** khi và chỉ khi:
-  1. Voucher cấp đơn hàng có cờ `IsStackable = 1` (hoặc thuộc tính `CanCombineWithProductDiscount = TRUE`).
-  2. Chương trình khuyến mãi cấp sản phẩm không có điều khoản cấm kết hợp mã giảm giá.
-* **Quy tắc chặn tuyệt đối:** Không được áp dụng nhiều chương trình cùng tầng vượt quá giới hạn (ví dụ: không được nhập 2 voucher đơn hàng, không được áp 2 chương trình flash sale trên 1 dòng sản phẩm), kể cả khi các chương trình riêng lẻ đều thỏa điều kiện áp dụng.
+* Các chương trình thuộc **khác tầng** chỉ được kết hợp đồng thời khi cờ `IsStackable = 1` cho phép.
+* **Quy tắc chặn tuyệt đối:** Tuyệt đối cấm áp dụng quá 1 chương trình trong cùng một tầng (không nhập 2 voucher tiền hàng, không nhập 2 mã Freeship, không áp 2 chương trình giảm giá SKU trên cùng 1 dòng đơn hàng).
 
-#### Lưu vết đối soát tài chính (`OrderPromotions` & `OrderLine`):
-* `OrderLine.UnitPrice`: Giá niêm yết snapshot tại thời điểm đặt.
-* `OrderLine.DiscountAmount`: Số tiền giảm trực tiếp từ Tầng 1 (Product Promotion).
-* `Order.VoucherDiscountAmount`: Số tiền giảm từ Tầng 2 (Order Voucher).
-* Bảng `OrderPromotions`: Lưu toàn bộ danh sách các chương trình đã áp dụng, mức giảm, thứ tự áp dụng (Thứ tự 1: Tính giảm dòng $\rightarrow$ Thứ tự 2: Tính giảm toàn đơn) và giá trị trước/sau giảm để phục vụ đối soát kế toán bất biến.
+#### Lưu vết đối soát tài chính chuẩn hóa (`PromotionUsage`, `OrderLine` & `SalesOrder`):
+* `OrderLine.UnitPrice`: Đơn giá bán lẻ niêm yết (đã gồm GTGT) snapshot tại thời điểm đặt.
+* `OrderLine.LineProductDiscount`: Số tiền giảm trực tiếp từ Tầng 1 (`'PRODUCT'`).
+* `SalesOrder.DiscountAmount` & `OrderLine.AllocatedOrderDiscount`: Tổng giảm giá hàng hóa và phần chiết khấu Tầng 2 (`'ORDER'`) phân bổ nguyên số VNĐ xuống từng dòng theo thuật toán **Largest Remainder Method (LRM)** (`CORR-03`).
+* `SalesOrder.ShippingDiscountAmount`: Số tiền miễn/giảm phí vận chuyển từ Tầng 3 (`'SHIPPING'`).
+* Thực thể sổ cái `PromotionUsage` (`E53`): Lưu toàn bộ danh sách chương trình/voucher đã áp dụng (`PromotionID`, `OrderID`, `OrderLineID`, `VoucherID`, `DiscountAmount`, `UsageStatus`) phục vụ đối soát kế toán bất biến.
 
 ---
 
@@ -60,21 +60,20 @@
 #### Vòng đời 5 bước của tồn kho:
 1. **Bước 1: Tạo đơn hàng thành công (Place Order / Hold)**
    * `OnHandQty` giữ nguyên; `ReservedQty` tăng theo số lượng đặt mua.
-   * Công thức tồn khả dụng: $\text{AvailableQty} = \text{OnHandQty} - \text{ReservedQty}$.
+   * Công thức tồn khả dụng (`CORR-02`): $\text{AvailableQty} = (\text{OnHandQty} - \text{QuarantinedQty} - \text{DamagedQty}) - \text{ReservedQty}$.
 2. **Bước 2: Kho đóng gói & Bàn giao vận chuyển (Shipment Handover – `SHIPMENT_OUT`)**
    * Hàng thực sự rời khỏi kho vật lý.
    * Giảm đồng thời cả `OnHandQty` và `ReservedQty` theo số lượng thực tế xuất.
-   * Ghi một bản ghi vào `StockMovement` loại `SHIPMENT_OUT`.
+   * Ghi một bản ghi vào `InventoryTransaction` / `InventoryTransactionLine` loại `SHIPMENT_OUT`.
 3. **Bước 3: Giao hàng thất bại (Delivery Failed)**
-   * Đơn vị vận chuyển báo giao thất bại (khách không nghe máy, sai địa chỉ).
-   * Hệ thống cập nhật trạng thái `Shipment` thành `DELIVERY_FAILED`.
+   * Đơn vị vận chuyển báo giao thất bại (khách không nghe máy, sai địa chỉ) qua `DeliveryAttempt` (tối đa 3 lần, sau đó chuyển `RETURNED_TO_SENDER`).
    * **Tuyệt đối chưa tăng tồn kho**, vì hàng vẫn đang nằm trên xe hoặc tại bưu cục của đơn vị vận chuyển.
 4. **Bước 4: Kho tiếp nhận hàng hoàn về (Delivery Return Receipt – `DELIVERY_RETURN_IN`)**
    * Hàng thực tế được xe chở quay trở lại kho xuất (hoặc kho chỉ định).
-   * Nhân viên kho kiểm tra tình trạng hàng hóa, ký biên bản `DeliveryReturnReceipt`.
-   * Hệ thống ghi `StockMovement` loại `DELIVERY_RETURN_IN` và tăng `OnHandQty` theo số lượng thực nhận lại.
+   * Nhân viên kho kiểm tra tình trạng hàng hóa, ký biên bản `DeliveryReturnReceipt` (E75).
+   * Hệ thống ghi `InventoryTransaction` loại `DELIVERY_RETURN_IN` và tăng `OnHandQty` theo số lượng thực nhận lại.
 5. **Bước 5: Giao lại hoặc Hủy đơn (Re-delivery or Order Cancellation)**
-   * *Nếu giao lại:* Hệ thống tiến hành phân bổ kho (`OrderAllocation`) và giữ hàng lại (`StockReservation`) theo quy tắc tồn kho hiện hành trước khi xuất kho lần 2.
+   * *Nếu giao lại:* Hệ thống tiến hành phân bổ kho (`OrderWarehouseAllocation`) và giữ hàng lại (`StockReservationLine`) theo quy tắc tồn kho hiện hành trước khi xuất kho lần 2.
    * *Nếu hủy đơn:* Kích hoạt quy trình hoàn tiền (`Refund`), giải phóng các nghĩa vụ liên quan và đóng đơn hàng.
 ---
 
@@ -137,7 +136,7 @@
 | **SHOP-Q01** | Số lượng giỏ hàng của một khách hàng? | **Một giỏ hàng ACTIVE, có thể có nhiều giỏ hàng lịch sử.** | Cài đặt `UNIQUE FILTERED INDEX (CustomerID) WHERE CartStatus = 'ACTIVE'`. Lưu vết lịch sử giỏ hàng chuyển đổi và bỏ rơi phục vụ Marketing. |
 | **SHOP-Q02** | Xử lý khi thêm cùng một SKU nhiều lần? | **Cộng dồn số lượng (`Quantity`) vào dòng `CartItem` hiện có.** | Ràng buộc duy nhất `UNIQUE (CartID, VariantID)`. Tránh phân mảnh dòng sản phẩm trong giỏ hàng. |
 | **SHOP-Q03** | Xử lý khi SKU hết hàng hoặc ngừng kinh doanh? | **Giữ `CartItem` và hiển thị cảnh báo; khóa nút Checkout.** | Khách hàng chủ động nắm được tình trạng sản phẩm; ngăn chặn tạo đơn hàng không thể đáp ứng giao vận. |
-| **SHOP-Q04** | Cơ chế lưu trữ và tính toán giá bán? | **Chỉ lấy giá hiện hành từ SKU; Snapshot giá khi tạo đơn hàng.** | Không lưu giá cố định trong `CartItem`. Giá bán chỉ được chốt bất biến tại `OrderLine.UnitPrice` khi tạo đơn hàng (`BR-CU06`, `BR-OR05`). |
+| **SHOP-Q04** | Cơ chế lưu trữ và tính toán giá bán? | **Chỉ lấy giá hiện hành từ SKU; Snapshot giá khi tạo đơn hàng.** | Không lưu giá cố định trong `CartItem`. Giá bán chỉ được chốt bất biến tại `OrderLine.UnitPrice` khi tạo đơn hàng (`BR-SH09`, `BR-SH10`, `BR-SA05`). |
 | **SHOP-Q05** | Đồng bộ giỏ hàng trên nhiều thiết bị? | **Đồng bộ tập trung trên Database Server theo `CustomerID`.** | Giỏ hàng lưu trữ bền vững trên CSDL, đồng bộ liền mạch giữa Web, Mobile App và Tablet khi khách hàng đăng nhập. |
 | **SHOP-Q06** | Trạng thái giỏ hàng sau khi chuyển đổi thành đơn hàng? | **Chuyển thành `CONVERTED`, đóng băng lịch sử và tạo giỏ mới khi mua tiếp.** | Khép kín vòng đời phễu chuyển đổi (Funnel Conversion Tracking), bảo toàn dữ liệu phục vụ đối soát và phân tích hành vi mua sắm. |
 
@@ -148,7 +147,7 @@
 | ID | Vấn đề thiết kế | Quyết định chốt chính thức | Tác động CSDL & Nghiệp vụ |
 | :---: | :--- | :--- | :--- |
 | **SALES-Q01** | Thời điểm tạo đơn hàng và giữ hàng tồn kho? | **Tạo đơn và giữ toàn bộ hàng nguyên tử (Atomic); thất bại thì không tạo đơn chính thức.** | Tuân thủ BD-04 và WI-Q02 (All-or-nothing). Ngăn chặn tình trạng tạo đơn thiếu hàng. Giỏ hàng giữ nguyên `ACTIVE` nếu giữ hàng thất bại. |
-| **SALES-Q02** | Vòng đời trạng thái đơn hàng (Order State Machine)? | **`PENDING_PAYMENT` $\to$ `CONFIRMED` $\to$ `PROCESSING` $\to$ `PARTIALLY_SHIPPED` $\to$ `SHIPPED` $\to$ `COMPLETED` (có `CANCELLED`).** | Trạng thái ban đầu là `PENDING_PAYMENT`. Chỉ chuyển sang `CONFIRMED` khi thanh toán thành công (hoặc COD hợp lệ). Kho chỉ đóng gói đơn `CONFIRMED`. |
+| **SALES-Q02** | Vòng đời trạng thái đơn hàng (Order State Machine)? | **`PENDING_PAYMENT` $\to$ `CONFIRMED` $\to$ `PROCESSING` $\to$ `PARTIALLY_SHIPPED` $\to$ `SHIPPED` $\to$ `PARTIALLY_DELIVERED` $\to$ `DELIVERED` (có `PARTIALLY_CANCELLED` / `CANCELLED`, đóng hồ sơ hành chính qua `ClosedAt`).** | Trạng thái ban đầu của đơn trả trước là `PENDING_PAYMENT`. Đơn COD hợp lệ chuyển `CONFIRMED` ngay khi đặt (`CORR-06`). Kho chỉ đóng gói đơn `CONFIRMED`. |
 | **SALES-Q03** | Chính sách hủy đơn hàng? | **Kết hợp: Khách tự hủy khi chưa đóng gói (`PENDING_PAYMENT`, `CONFIRMED`); sau đó cần nhân viên xử lý.** | Bảo vệ vận hành kho khỏi việc hủy đơn khi hàng đã đóng gói hoặc đã lên xe giao vận. Hủy đơn tự động kích hoạt nhả tồn kho giữ. |
 | **SALES-Q04** | Thay đổi dòng hàng sau khi xác nhận đơn? | **Tuyệt đối không cho phép sửa trực tiếp `OrderLine` sau khi đơn đã xác nhận.** | Tránh vỡ thuật toán phân bổ kho, vỡ logic voucher khuyến mãi và tính toán lại công nợ. Khách muốn đổi món buộc phải hủy đơn cũ và đặt lại. |
 | **SALES-Q05** | Mức độ snapshot thông tin sản phẩm trên `OrderLine`? | **Snapshot toàn bộ: SKU, tên sản phẩm, tên biến thể, đơn giá và `VariantAttributesSnapshot` (JSON).** | Bảo toàn 100% hợp đồng thương mại và hóa đơn theo luật thuế. Đơn hàng cũ hiển thị độc lập hoàn toàn với các biến động của Catalog sau này. |
@@ -164,7 +163,7 @@
 | **SHIP-Q01** | Số lượng kho xuất hàng cho một Shipment? | **Đúng một kho (`WarehouseID NOT NULL`).** | Tuân thủ BD-03 (Split Shipment theo kho). Mỗi kiện hàng vật lý có 1 mã vận đơn (`TrackingNumber`) xuất phát từ duy nhất 1 kho. Không gom hàng từ nhiều kho vào chung 1 Shipment. |
 | **SHIP-Q02** | Thời điểm tạo lô giao hàng (Shipment)? | **Sau khi đơn được xác nhận (`CONFIRMED`) và kho chuẩn bị xuất hàng (`PROCESSING`).** | Không tạo Shipment khi đơn đang `PENDING_PAYMENT` hoặc đã bị hủy. Chỉ tạo khi kho bắt đầu nhặt hàng (Picking) để in Pick-list và Pack-slip. |
 | **SHIP-Q03** | Cách chọn đơn vị vận chuyển (Carrier)? | **Hệ thống đề xuất dựa trên cấu hình, nhân viên/điều phối viên xác nhận.** | Tầng ứng dụng gợi ý Carrier tối ưu theo vùng miền, cước phí và SLA. CSDL lưu `Shipment.CarrierID` (FK), hỗ trợ linh hoạt cả tự động và điều chỉnh thủ công. |
-| **SHIP-Q04** | Xử lý khi giao hàng thất bại? | **Cho phép giao lại tối đa $N$ lần (chuẩn là 3 lần); vượt giới hạn thì chuyển hoàn (`RETURNING`).** | Chuẩn hóa theo ngành bưu chính viễn thông Việt Nam. Ghi nhận chi tiết từng lần thử vào `DeliveryAttempt`. Vượt quá hạn mức tự động kích hoạt luồng chuyển hoàn. |
+| **SHIP-Q04** | Xử lý khi giao hàng thất bại? | **Cho phép giao lại tối đa $N$ lần (chuẩn là 3 lần); vượt giới hạn thì chuyển hoàn (`RETURNED_TO_SENDER`).** | Chuẩn hóa theo ngành bưu chính viễn thông Việt Nam. Ghi nhận chi tiết từng lần thử vào `DeliveryAttempt`. Vượt quá hạn mức tự động kích hoạt luồng chuyển hoàn. |
 | **SHIP-Q05** | Lưu trữ bằng chứng giao hàng (Proof of Delivery)? | **Lưu người nhận, thời gian và ghi chú giao hàng; mở rộng ảnh/chữ ký sau.** | Mức khái niệm lưu `RecipientName`, `AttemptedAt`, `DeliveryNote` trong `DeliveryAttempt`. Mức Logical/Physical có thể mở rộng cột `ProofOfDeliveryURL` mà không vỡ schema. |
 | **SHIP-Q06** | Cơ chế cập nhật trạng thái vận chuyển? | **Hỗ trợ cả thủ công và tích hợp tự động qua API/Webhook đối tác.** | `ShipmentStatusHistory` ghi nhận cả sự kiện webhook tự động từ Carrier API (GHTK/GHN) và các thao tác cập nhật của điều phối viên (`ChangedBy` ghi rõ nguồn cập nhật). |
 | **SHIP-Q07** | Phí vận chuyển được quản lý như thế nào? | **`SalesOrder` lưu tổng phí tính cho khách; `Shipment` lưu phần phí phân bổ thực tế.** | Phân định ranh giới doanh thu vận chuyển (`SalesOrder.ShippingFee`) và chi phí logistics thực tế trả cho đối tác (`Shipment.ShippingFee`), phục vụ đối soát công nợ. |
@@ -199,6 +198,7 @@
 | **PAY-Q07** | Lưu trữ phản hồi từ cổng thanh toán? | **Lưu chi tiết mã phản hồi, mã tham chiếu và thông điệp cổng.** | Làm bằng chứng pháp lý đối soát cuối ngày và giải quyết khiếu nại/tra soát (Chargeback). CSDL lưu `GatewayTransactionID`, `GatewayResponseCode`. |
 | **PAY-Q08** | Điều kiện chuyển đơn sang `CONFIRMED`? | **Đơn online: khi thanh toán thành công; Đơn COD: khi duyệt hợp lệ.** | Đồng bộ triệt để với `SALES-Q02`. Đảm bảo kho chỉ xuất hàng khi tiền đã thu chắc chắn hoặc đơn COD tin cậy. Xác nhận đơn COD không đồng nghĩa với đã thu tiền. |
 | **PAY-Q09** | Ghi nhận phí dịch vụ của cổng thanh toán? | **Có, lưu trường `TransactionFee` trên `PaymentTransaction`.** | Hỗ trợ đối soát số tiền thực nhận (Net Settlement) và tính toán chính xác biên lợi nhuận ròng của đơn hàng. |
+| **PAY-Q10** | Đối soát công nợ thu hộ COD trên đơn đa kiện như thế nào? | **Tách nghĩa vụ khách hàng khỏi công nợ hãng vận chuyển qua mô hình COD 3 lớp (`CORR-07`).** | Bưu tá thu theo kiện ghi `CODCollection` (E77, cập nhật khách trả `PARTIALLY_PAID`/`PAID`), hãng chuyển trả bảng kê `CODRemittance` (E78) và kế toán khớp từng kiện qua `CODReconciliation` (E79). |
 
 ---
 
@@ -207,12 +207,12 @@
 | ID | Vấn đề thiết kế | Quyết định chốt chính thức | Tác động CSDL & Nghiệp vụ |
 | :---: | :--- | :--- | :--- |
 | **RET-Q01** | Đối tượng được phép tạo yêu cầu trả hàng? | **Khách hàng tự tạo hoặc Nhân viên (CSKH) tạo thay khách hàng.** | CSDL lưu `CustomerID` (chủ đơn) và `CreatedByAccountID` (tài khoản người tạo), hỗ trợ tiếp nhận RMA đa kênh từ tổng đài. |
-| **RET-Q02** | Thời hạn được phép gửi yêu cầu trả hàng? | **Cấu hình theo số ngày kể từ thời điểm giao hàng thành công (`DeliveredAt`).** | Ràng buộc ứng dụng: `DATEDIFF(day, SalesOrder.DeliveredAt, ReturnRequest.RequestedAt) <= PolicyDays`. Quá hạn hệ thống khóa tạo RMA. |
-| **RET-Q03** | Có cho phép trả một phần số lượng dòng hàng? | **Có, cho phép trả một phần và trả nhiều lần cho cùng dòng hàng.** | Ràng buộc bất biến: $\sum ApprovedQty \le OrderedQty - AlreadyReturnedQty$. Phục vụ trường hợp đơn mua nhiều cái nhưng chỉ trả một vài cái. |
-| **RET-Q04** | Quy trình phê duyệt yêu cầu trả hàng? | **Nhân viên CSKH/Kiểm duyệt phải phê duyệt trước khi khách gửi hàng.** | Ngăn chặn việc gửi trả hàng sai chính sách, lãng phí chi phí logistics ngược. Trạng thái bắt buộc: `REQUESTED` $\to$ `APPROVED`. |
-| **RET-Q05** | Phân loại hàng trả về sau kiểm định tại kho? | **Phân loại thành 3 hướng: `SELLABLE`, `QUARANTINE`, hoặc `DISPOSED`.** | Chỉ hàng `SELLABLE` mới ghi nhận `CUSTOMER_RETURN_IN` tăng tồn kho bán được. Hàng `QUARANTINE` và `DISPOSED` tuyệt đối không cộng vào tồn khả dụng. |
+| **RET-Q02** | Thời hạn được phép gửi yêu cầu trả hàng? | **Cấu hình theo số ngày kể từ thời điểm giao thành công của từng kiện hàng (`Shipment.DeliveredAt`).** | Truy vết kiện giao qua `ReturnShipmentAllocation` (E76): `RequestedAt <= Shipment.DeliveredAt + PolicyReturnDays` (`CORR-10`). Quá hạn hệ thống khóa tạo RMA cho kiện đó. |
+| **RET-Q03** | Có cho phép trả một phần số lượng dòng hàng? | **Có, cho phép trả một phần và trả nhiều lần cho cùng dòng hàng.** | Ràng buộc bất biến: $\sum ApprovedQty \le OrderedQty - CancelledQty - AlreadyReturnedQty$. Tính tiền hoàn nguyên số qua công thức hiệu lũy tiến $\Delta F = F(a+b) - F(a)$ kèm Clawback Voucher nếu lỗi khách (`CORR-03`). |
+| **RET-Q04** | Quy trình phê duyệt yêu cầu trả hàng? | **Nhân viên CSKH/Kiểm duyệt phải phê duyệt trước khi khách gửi hàng.** | Ngăn chặn việc gửi trả hàng sai chính sách, lãng phí chi phí logistics ngược. Trạng thái bắt buộc: `PENDING_APPROVAL` $\to$ `APPROVED`. |
+| **RET-Q05** | Định đoạt vật lý hàng trả về tại kho (`InventoryDisposition`)? | **Bến nhập đưa vào `QUARANTINED`; KCS định đoạt 3 hướng: `SELLABLE`, `QUARANTINED`, hoặc `DISPOSED`.** | Phiếu `ReturnReceipt` (E62) chốt `RETURN_RECEIPT_IN` (`+OnHandQty`, `+QuarantinedQty`); sau đó `ReturnLineAssessment` (E72) chuyển `SELLABLE` (`-QuarantinedQty`, tính WAC), giữ `QUARANTINED`, hoặc xuất hủy `SCRAP_OUT` (`-OnHandQty`, `-QuarantinedQty`) (`CORR-02`). |
 | **RET-Q06** | Số lượng kho tiếp nhận cho một yêu cầu? | **Mỗi yêu cầu RMA chỉ định ĐÚNG MỘT kho tiếp nhận (`WarehouseID NOT NULL`).** | Tránh chia tách phân tán hàng hoàn. Mọi phiếu `ReturnReceipt` của yêu cầu phải tiếp nhận tại đúng kho đã chỉ định. |
-| **RET-Q07** | Thời điểm tạo yêu cầu hoàn tiền (`Refund`)? | **Sau khi kho tiếp nhận và kiểm tra hàng, xác định số lượng đạt chuẩn.** | Chống gian lận hoàn tiền khống. Chỉ kích hoạt tạo `Refund` bên Subject Area 09 khi phiếu `ReturnReceipt` được chốt (`POSTED`) với `SELLABLE > 0`. |
+| **RET-Q07** | Thời điểm tạo yêu cầu hoàn tiền (`Refund`)? | **Tách rời hoàn toàn khỏi trạng thái nhập kho bán được; kích hoạt ngay khi biên bản thẩm định `ReturnLineAssessment` (E72) được duyệt `APPROVED` (`CORR-01`).** | Hàng bị tiêu hủy `DISPOSED` do lỗi nhà sản xuất (`VENDOR_FAULT`) hoặc vận chuyển (`CARRIER_FAULT`) vẫn được duyệt hoàn tiền 100%. Hỗ trợ hoàn tiền từng mốc theo số lượng thực nhận. |
 | **RET-Q08** | Lưu trữ lịch sử trạng thái yêu cầu trả hàng? | **Có, lưu vết toàn diện qua thực thể `ReturnStatusHistory`.** | Đảm bảo tính kiểm toán và đo lường SLA xử lý RMA: lưu `PreviousStatus`, `NewStatus`, `ChangedAt`, `ChangedByAccountID` và `ChangeReason`. |
 
 ---

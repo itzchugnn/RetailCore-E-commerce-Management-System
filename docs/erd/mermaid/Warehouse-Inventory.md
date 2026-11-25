@@ -18,16 +18,20 @@ erDiagram
     PRODUCT_VARIANT ||--o{ INVENTORY_TRANSACTION_LINE : "affects_sku (1..1 : 0..N)"
 
     WAREHOUSE ||--o{ STOCK_COUNT : "audited_in (1..1 : 0..N)"
+    ACCOUNT ||--o{ STOCK_COUNT : "created_by (1..1 : 0..N)"
+    ACCOUNT |o--o{ STOCK_COUNT : "approved_by (0..1 : 0..N)"
     STOCK_COUNT ||--|{ STOCK_COUNT_LINE : "counts (1..1 : 1..N)"
     PRODUCT_VARIANT ||--o{ STOCK_COUNT_LINE : "counted_item (1..1 : 0..N)"
 
     WAREHOUSE ||--o{ WAREHOUSE_TRANSFER : "dispatches_transfer (1..1 : 0..N)"
     WAREHOUSE ||--o{ WAREHOUSE_TRANSFER : "receives_transfer (1..1 : 0..N)"
+    ACCOUNT ||--o{ WAREHOUSE_TRANSFER : "created_by (1..1 : 0..N)"
+    ACCOUNT |o--o{ WAREHOUSE_TRANSFER : "approved_by (0..1 : 0..N)"
     WAREHOUSE_TRANSFER ||--|{ WAREHOUSE_TRANSFER_LINE : "transfers (1..1 : 1..N)"
     PRODUCT_VARIANT ||--o{ WAREHOUSE_TRANSFER_LINE : "transferred_item (1..1 : 0..N)"
 
     WAREHOUSE {
-        bigint WarehouseID PK
+        int WarehouseID PK
         varchar WarehouseCode UK
         nvarchar WarehouseName
         nvarchar Address
@@ -35,8 +39,8 @@ erDiagram
         datetimeoffset CreatedAt
     }
     INVENTORY_BALANCE {
-        bigint WarehouseID PK
-        bigint VariantID PK
+        int WarehouseID PK,FK
+        bigint VariantID PK,FK
         int OnHandQty
         int ReservedQty
         int QuarantinedQty
@@ -47,7 +51,7 @@ erDiagram
     ORDER_WAREHOUSE_ALLOCATION {
         bigint AllocationID PK
         bigint OrderLineID FK
-        bigint WarehouseID FK
+        int WarehouseID FK
         bigint VariantID FK
         int AllocatedQty
         varchar AllocationStatus
@@ -66,7 +70,7 @@ erDiagram
         bigint ReservationID FK
         bigint AllocationID FK
         bigint VariantID FK
-        bigint WarehouseID FK
+        int WarehouseID FK
         int ReservedQty
         varchar ReservationLineStatus
     }
@@ -81,9 +85,10 @@ erDiagram
     }
     INVENTORY_TRANSACTION_LINE {
         bigint TransactionLineID PK
+        datetimeoffset CreatedAt PK
         bigint TransactionID FK
         bigint VariantID FK
-        bigint WarehouseID FK
+        int WarehouseID FK
         int OnHandDelta
         int ReservedDelta
         int QuarantinedDelta
@@ -94,12 +99,13 @@ erDiagram
     }
     STOCK_COUNT {
         bigint StockCountID PK
-        bigint WarehouseID FK
+        int WarehouseID FK
         varchar CountStatus
         datetimeoffset StartedAt
         datetimeoffset CompletedAt
+        bigint CreatedBy FK
         datetimeoffset ApprovedAt
-        bigint ApprovedBy
+        bigint ApprovedBy FK
     }
     STOCK_COUNT_LINE {
         bigint StockCountLineID PK
@@ -112,12 +118,14 @@ erDiagram
     WAREHOUSE_TRANSFER {
         bigint TransferID PK
         varchar TransferNumber UK
-        bigint SourceWarehouseID FK
-        bigint DestinationWarehouseID FK
+        int SourceWarehouseID FK
+        int DestinationWarehouseID FK
         varchar TransferStatus
         datetimeoffset CreatedAt
         datetimeoffset DispatchedAt
         datetimeoffset ReceivedAt
+        bigint CreatedBy FK
+        bigint ApprovedBy FK
     }
     WAREHOUSE_TRANSFER_LINE {
         bigint TransferLineID PK
@@ -126,5 +134,6 @@ erDiagram
         int TransferQty
         int ReceivedQty
         int VarianceQty
+        decimal UnitCost
     }
 ```

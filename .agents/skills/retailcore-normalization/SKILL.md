@@ -13,11 +13,12 @@ Bộ quy chuẩn hướng dẫn thực hiện phân tích chuẩn hóa toán h�
 
 ## 1. NGUYÊN TẮC CỐT LÕI (CONTROLLED NORMALIZATION POLICY)
 
-Dự án RetailCore yêu cầu phân tích chuẩn hóa thực chất bằng lý thuyết cơ sở dữ liệu quan hệ, **tuyệt đối không tuyên bố cảm tính**:
-1. **100% bảng trong hệ thống phải đạt chuẩn Dạng chuẩn 3 (3NF).**
-2. **Đánh giá BCNF có kiểm soát (Controlled BCNF):** 
-   * Đối với các bảng chứa thuộc tính Snapshot lịch sử (`OrderLine.UnitPrice`, `OrderAddress`, `GoodsReceiptLine.UnitCost`), việc giữ nguyên cấu trúc 3NF mà không phân rã lên BCNF là để bảo toàn giá trị hợp đồng pháp lý và tối ưu hiệu năng OLTP.
-   * Khi giữ lại 3NF, bắt buộc phải có văn bản **Giải trình Kỹ thuật (Technical Trade-off)** chứng minh việc phân rã sẽ gây suy giảm hiệu năng JOIN hoặc vi phạm tính bảo toàn phụ thuộc hàm.
+Dự án RetailCore yêu cầu phân tích chuẩn hóa thực chất bằng lý thuyết cơ sở dữ liệu quan hệ trên toàn bộ **79 bảng quan hệ (`E01` – `E79`)**, **tuyệt đối không tuyên bố cảm tính**:
+1. **100% bảng trong hệ thống phải đạt chuẩn Dạng chuẩn 3 (3NF)** (ngoại trừ các thuộc tính dẫn xuất/khóa hình thoi có kiểm soát được liệt kê tường minh và bảo vệ nguyên tử dưới đây).
+2. **Đánh giá BCNF & Ba Nhóm Đánh đổi Kỹ thuật có Kiểm soát (Controlled Normalization Policy):**
+   * **Nhóm A – Bất biến Hợp đồng theo Thời gian (Temporal Snapshots):** Các thuộc tính snapshot lịch sử (`OrderLine.UnitPrice`, `VatRate`, `TaxAmount`, `OrderAddress`, `ShipmentLine.OutboundUnitCost`, `WarehouseTransferLine.UnitCost`) phụ thuộc hàm vào khóa của chứng từ tại thời điểm giao dịch chứ không phụ thuộc vào thực thể danh mục hiện hành, đạt chuẩn 3NF/BCNF theo ngữ nghĩa thời gian.
+   * **Nhóm B – Bảo toàn Phụ thuộc Hàm & Khóa Ngoại Hình Thoi (Dependency Preservation & Diamond-FK):** Bảng `VariantAttributeValue` giữ 3NF để bảo toàn cả hai phụ thuộc hàm `(VariantID, AttributeID) -> AttributeValueID` và `AttributeValueID -> AttributeID` mà không cần JOIN; bảng `ProductAttributeValue` giữ siêu khóa `(ProductID, AttributeID, AttributeValueID)` để khai báo trực tiếp hai khóa ngoại phức hợp hình thoi ngay tại tầng Declarative DDL (khóa ứng viên tối thiểu là `(ProductID, AttributeValueID)`).
+   * **Nhóm C – Thuộc tính Đệm & Đồng bộ Trạng thái có Kiểm soát (Controlled Cache Attributes):** Các cột `Category.CategoryLevel`, `ProductVariant.IsActive` (ràng buộc `CK_*_StatusActiveConsistency`), `OrderLine.CancelledQty`/`RefundedQty`/`AccumulatedRefundedAmount`, `Promotion.PendingCount`/`UsedCount`, `Voucher.PendingCount`/`UsedCount` và `PromotionProduct.FlashSaleSoldCount` bắt buộc có văn bản **Giải trình Kỹ thuật (Technical Trade-off)** tại `M3.02` kèm cơ chế cưỡng chế nguyên tử bằng `CHECK` Constraint / Boundary Stored Procedure tại `M3.04`.
 
 ---
 

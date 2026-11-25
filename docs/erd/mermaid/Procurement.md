@@ -5,23 +5,27 @@ erDiagram
 
     SUPPLIER ||--o{ PURCHASE_ORDER : "receives_order (1..1 : 0..N)"
     WAREHOUSE ||--o{ PURCHASE_ORDER : "destination_wh (1..1 : 0..N)"
+    ACCOUNT ||--o{ PURCHASE_ORDER : "created_by (1..1 : 0..N)"
+    ACCOUNT |o--o{ PURCHASE_ORDER : "approved_by (0..1 : 0..N)"
     PURCHASE_ORDER ||--|{ PURCHASE_ORDER_LINE : "contains (1..1 : 1..N)"
     PRODUCT_VARIANT ||--o{ PURCHASE_ORDER_LINE : "ordered_item (1..1 : 0..N)"
 
     PURCHASE_ORDER ||--o{ GOODS_RECEIPT : "fulfilled_by (1..1 : 0..N)"
     WAREHOUSE ||--o{ GOODS_RECEIPT : "received_at_wh (1..1 : 0..N)"
+    ACCOUNT ||--o{ GOODS_RECEIPT : "received_by (1..1 : 0..N)"
     GOODS_RECEIPT ||--|{ GOODS_RECEIPT_LINE : "details (1..1 : 1..N)"
     PURCHASE_ORDER_LINE ||--o{ GOODS_RECEIPT_LINE : "received_as (1..1 : 0..N)"
     PRODUCT_VARIANT ||--o{ GOODS_RECEIPT_LINE : "received_sku (1..1 : 0..N)"
 
     SUPPLIER ||--o{ SUPPLIER_RETURN : "returned_to (1..1 : 0..N)"
     WAREHOUSE ||--o{ SUPPLIER_RETURN : "dispatched_wh (1..1 : 0..N)"
+    ACCOUNT |o--o{ SUPPLIER_RETURN : "approved_by (0..1 : 0..N)"
     SUPPLIER_RETURN ||--|{ SUPPLIER_RETURN_LINE : "contains (1..1 : 1..N)"
     GOODS_RECEIPT_LINE ||--o{ SUPPLIER_RETURN_LINE : "returned_from_gr (1..1 : 0..N)"
     PRODUCT_VARIANT ||--o{ SUPPLIER_RETURN_LINE : "returned_item (1..1 : 0..N)"
 
     SUPPLIER {
-        bigint SupplierID PK
+        int SupplierID PK
         varchar SupplierCode UK
         nvarchar SupplierName
         varchar TaxCode
@@ -32,8 +36,8 @@ erDiagram
         datetimeoffset CreatedAt
     }
     SUPPLIER_PRODUCT {
-        bigint SupplierID PK
-        bigint VariantID PK
+        int SupplierID PK,FK
+        bigint VariantID PK,FK
         varchar SupplierSKU
         decimal PurchasePrice
         int LeadTimeDays
@@ -42,13 +46,13 @@ erDiagram
     PURCHASE_ORDER {
         bigint PurchaseOrderID PK
         varchar PONumber UK
-        bigint SupplierID FK
-        bigint DestinationWarehouseID FK
+        int SupplierID FK
+        int DestinationWarehouseID FK
         datetimeoffset OrderDate
         datetimeoffset ExpectedDeliveryDate
         varchar PurchaseOrderStatus
-        bigint CreatedBy
-        bigint ApprovedBy
+        bigint CreatedBy FK
+        bigint ApprovedBy FK
         datetimeoffset ApprovedAt
     }
     PURCHASE_ORDER_LINE {
@@ -63,16 +67,17 @@ erDiagram
         bigint GoodsReceiptID PK
         varchar ReceiptNumber UK
         bigint PurchaseOrderID FK
-        bigint WarehouseID FK
+        int WarehouseID FK
         datetimeoffset ReceivedAt
         varchar ReceiptStatus
-        bigint ReceivedBy
+        bigint ReceivedBy FK
         datetimeoffset PostedAt
     }
     GOODS_RECEIPT_LINE {
         bigint GoodsReceiptLineID PK
         bigint GoodsReceiptID FK
         bigint PurchaseOrderLineID FK
+        bigint VariantID FK
         int ReceivedQty
         int AcceptedQty
         int RejectedQty
@@ -82,19 +87,22 @@ erDiagram
     SUPPLIER_RETURN {
         bigint SupplierReturnID PK
         varchar ReturnNumber UK
-        bigint SupplierID FK
-        bigint WarehouseID FK
+        int SupplierID FK
+        int WarehouseID FK
+        varchar CostVarianceAccountCode
         varchar ReturnStatus
         datetimeoffset CreatedAt
         nvarchar Reason
-        bigint ApprovedBy
+        bigint ApprovedBy FK
         datetimeoffset ApprovedAt
     }
     SUPPLIER_RETURN_LINE {
         bigint SupplierReturnLineID PK
         bigint SupplierReturnID FK
         bigint GoodsReceiptLineID FK
+        bigint VariantID FK
         int ReturnQty
+        decimal UnitCost
         nvarchar ReturnReason
     }
 ```

@@ -17,7 +17,7 @@ Bộ quy chuẩn phát triển giao diện Web bằng **React, TypeScript, Tailw
 1. **Customer Storefront (`/*` — Cổng Khách hàng B2C):**
    * Trang chủ, Danh sách sản phẩm (Server-side Faceted Filter theo Danh mục `Category`, Thương hiệu `Brand`, Thuộc tính động `AttributeValue`).
    * Trang chi tiết sản phẩm: Hỗ trợ cả Sản phẩm có biến thể (`VARIANT_DEFINING` Selector theo Size/Màu) lẫn Sản phẩm đơn giản (1 SKU mặc định rỗng thuộc tính theo `PC-Q03`), hiển thị thông số mô tả (`DESCRIPTIVE`), giá bán nguyên đồng VNĐ và trạng thái kho.
-   * Giỏ hàng, Checkout đa bước (kèm đồng hồ đếm ngược 15 phút giữ hàng `ExpiresAt`), theo dõi đơn hàng đa kiện (Split Shipment Timeline) và yêu cầu đổi trả theo từng kiện giao.
+   * Giỏ hàng, Checkout đa bước (kèm đồng hồ đếm ngược giữ hàng `ExpiresAt`: 15 phút chuẩn / 5 phút cho đơn Flash Sale, tùy chọn nhập thông tin xuất hóa đơn GTGT B2B), theo dõi đơn hàng đa kiện (Split Shipment Timeline) và yêu cầu đổi trả theo từng kiện giao.
 2. **Admin Back-Office (`/admin/*` — Cổng Quản trị Vận hành):**
    * Quản lý danh mục `Brand`, `Category`, `Product`, `ProductVariant` và cấu hình thuộc tính động.
    * Quản lý kho, tra cứu số dư theo 3 phẩm chất (`SELLABLE`, `QUARANTINED`, `DAMAGED`) + giá vốn WAC.

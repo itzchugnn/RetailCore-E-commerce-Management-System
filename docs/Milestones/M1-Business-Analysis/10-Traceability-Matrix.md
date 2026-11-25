@@ -1,59 +1,57 @@
-# 10. TRACEABILITY MATRIX, EXIT CRITERIA & BUSINESS DECISION MAPPING
+# 10. TRACEABILITY MATRIX, EXIT CRITERIA & BUSINESS DECISION MAPPING (v2.0 – SSOT)
 
-* **Milestone:** M1 – Business Analysis
-* **Phiên bản tài liệu:** 1.1 – Approved Mapping
-* **Database Target:** Microsoft SQL Server
+* **Milestone:** M1 – Business Analysis (Đồng bộ 2 chiều với 79 Thực thể M2)
+* **Phiên bản tài liệu:** 2.0 – Canonical SSOT Mapping
+* **Database Target:** Microsoft SQL Server 2022+
 
 ---
 
-## 10.1. Full Requirements Traceability Matrix
+## 10.1. Ma trận Truy vết Yêu cầu Toàn diện (Full Requirements Traceability Matrix)
 
-Ma trận này kết nối xuyên suốt giữa **Miền nghiệp vụ**, **Use Cases**, **Business Rules (v1.1)**, **Functional Requirements**, **Data Requirements (v1.1)**, **Business Decisions (BD-01 đến BD-07)** và **Thực thể CSDL dự kiến ở M2**:
+Ma trận kết nối xuyên suốt 100% giữa **11 Miền nghiệp vụ**, **Use Cases**, **215 Business Rules (`M1.06`)**, **55 Functional Requirements (`M1.07`)**, **30 Data Requirements (`M1.09`)**, **Quyết định `BD-01..07` / `CORR-01..10`** và **79 Thực thể M2 (`E01` – `E79`)**:
 
-| Miền nghiệp vụ | Use Case liên quan | Business Rules (v1.1) | Functional Requirements | Data Requirements (v1.1) | Business Decisions | Thực thể CSDL dự kiến (M2) |
+| Miền nghiệp vụ | Use Cases | Business Rules (`M1.06`) | Functional Requirements (`M1.07`) | Data Requirements (`M1.09`) | Quyết định & Hiệu chỉnh | Thực thể Chuẩn M2 (`E01` – `E79`) |
 | :--- | :--- | :--- | :--- | :--- | :---: | :--- |
-| **Product Catalog** | UC Product Management, UC Browse Catalog | `BR-PR01` $\rightarrow$ `BR-PR12` | `FR-CAT-01` $\rightarrow$ `FR-CAT-05` | `DA-02`, `DR-11` $\rightarrow$ `DR-14`, `HDR-01`, `HDR-13`, `HDR-14` | **BD-01**, **BD-06** | `Product`, `Category`, `ProductCategory`, `ProductVariant`, `Attribute`, `AttributeValue`, `ProductAttribute`, `VariantAttributeValue` |
-| **Inventory & Warehouse** | UC-02, UC-03, UC-08 | `BR-IN01` $\rightarrow$ `BR-IN21` | `FR-INV-01` $\rightarrow$ `FR-INV-05` | `DA-03`, `DA-04`, `DR-15`, `DR-16`, `DR-19`, `HDR-05`, `HDR-15`, `HDR-17` | **BD-04**, **BD-07** | `Warehouse`, `InventoryBalance`, `StockReservation`, `StockMovement` |
-| **Customer & Cart** | UC Customer & Cart Management | `BR-CU01` $\rightarrow$ `BR-CU07` | `FR-AUTH-01` $\rightarrow$ `FR-AUTH-04`, `FR-ORD-01` | `DA-06`, `DA-07`, `HDR-04` | **BD-02** | `Customer`, `CustomerAddress`, `Cart`, `CartLine` |
-| **Sales & Order** | UC-01, UC-05 (Checkout & Order Lifecycle) | `BR-OR01` $\rightarrow$ `BR-OR12`, `BR-SA01` $\rightarrow$ `BR-SA18` | `FR-ORD-01` $\rightarrow$ `FR-ORD-06` | `DA-08`, `DR-15`, `HDR-02`, `HDR-03`, `HDR-06`, `HDR-16` | **BD-02**, **BD-03**, **BD-04**, `SALES-Q01` $\rightarrow$ `SALES-Q07` | `SalesOrder`, `OrderLine`, `OrderAddress`, `OrderStatusHistory`, `OrderAllocation` |
-| **Fulfillment & Shipping** | UC-05 (Shipping & Delivery Return) | `BR-FS01` $\rightarrow$ `BR-FS22`, `BR-IN17` $\rightarrow$ `BR-IN21` | `FR-SHP-01` $\rightarrow$ `FR-SHP-03` | `DA-11`, `DR-17`, `DR-18`, `DR-20`, `HDR-10`, `HDR-17` | **BD-03**, **BD-07**, `SHIP-Q01` $\rightarrow$ `SHIP-Q07` | `Carrier`, `Shipment`, `ShipmentLine`, `DeliveryAttempt`, `ShipmentStatusHistory` |
-| **Promotion & Voucher** | UC-06 (Apply Promotion & Voucher) | `BR-PRM01` $\rightarrow$ `BR-PRM24` | `FR-PRM-01` $\rightarrow$ `FR-PRM-02` | `DA-09`, `DR-21` $\rightarrow$ `DR-24`, `HDR-09`, `HDR-18` | **BD-05**, `PROMO-Q01` $\rightarrow$ `PROMO-Q08` | `Promotion`, `PromotionCondition`, `PromotionProduct`, `Voucher`, `PromotionUsage`, `PromotionTargetCustomer` |
-| **Payment & Refund** | UC-04 (Payment & Refund) | `BR-PY01` $\rightarrow$ `BR-PY22` | `FR-PAY-01` $\rightarrow$ `FR-PAY-05` | `DA-10`, `HDR-07`, `HDR-08` | `PAY-Q01` $\rightarrow$ `PAY-Q09` | `PaymentMethod`, `Payment`, `PaymentTransaction`, `Refund`, `RefundTransaction` |
-| **Procurement** | UC-02 (Goods Receipt) | `BR-PO01` $\rightarrow$ `BR-PO06` | `FR-INV-03` | `DA-05` | - | `Supplier`, `PurchaseOrder`, `PurchaseOrderLine`, `GoodsReceipt`, `GoodsReceiptLine` |
-| **Return & Refund** | UC-07 (Customer Return Request) | `BR-RT01` $\rightarrow$ `BR-RT23` | `FR-RET-01` $\rightarrow$ `FR-RET-04` | `DA-12`, `HDR-11` | `RET-Q01` $\rightarrow$ `RET-Q08` | `ReturnRequest`, `ReturnRequestLine`, `ReturnReceipt`, `ReturnReceiptLine`, `ReturnStatusHistory` |
-| **Identity & Access** | UC Auth & RBAC | `BR-ID01` $\rightarrow$ `BR-ID14` | `FR-AUTH-01` $\rightarrow$ `FR-AUTH-04` | `DA-01`, `DA-06`, `HDR-12` | **BD-02**, `CID-Q01` $\rightarrow$ `CID-Q06` | `Account`, `Customer`, `Employee`, `Role`, `Permission`, `AccountRole`, `RolePermission`, `CustomerAddress`, `AccountVerification` |
-| **Audit & Reporting** | UC Audit & Reporting | `BR-AR01` $\rightarrow$ `BR-AR20` | `FR-AUD-01`, `FR-REP-01` $\rightarrow$ `FR-REP-05` | `DA-13`, `DA-14`, `HDR-12` | `AR-Q01` $\rightarrow$ `AR-Q07` | `AuditLog`, `AuditLogDetail`, `ReportDefinition`, `ReportExecution`, `ReportSnapshot`, `ReportPermission` |
+| **SA01. Product Catalog** | UC Catalog & SKU Mgmt | `BR-PR01` $\to$ `BR-PR15` | `FR-CAT-01` $\to$ `FR-CAT-05` | `DR-02` $\to$ `DR-06`, `DR-11` $\to$ `DR-14`, `HDR-01`, `HDR-02` | `BD-01`, `BD-06`, `PC-Q01..06` | `Product` (E01), `Category` (E02), `ProductCategory` (E03), `ProductVariant` (E04), `Attribute` (E05), `AttributeValue` (E06), `ProductAttribute` (E07), `ProductAttributeValue` (E08), `VariantAttributeValue` (E09), `Brand` (E73) |
+| **SA02. Warehouse & Inventory** | UC-02, UC-03, UC-08 | `BR-IN01` $\to$ `BR-IN25` | `FR-INV-01` $\to$ `FR-INV-05` | `DR-15`, `DR-16`, `DR-19`, `DR-25`, `DR-26`, `HDR-05`, `HDR-06` | `BD-03`, `BD-04`, `BD-07`, `CORR-02`, `CORR-08`, `CORR-10` | `Warehouse` (E10), `InventoryBalance` (E11), `OrderWarehouseAllocation` (E12), `StockReservation` (E13), `StockReservationLine` (E14), `InventoryTransaction` (E15), `InventoryTransactionLine` (E16), `StockCount` (E17), `StockCountLine` (E18), `WarehouseTransfer` (E19), `WarehouseTransferLine` (E20) |
+| **SA03. Procurement** | UC-02 (PO & Goods Receipt) | `BR-PO01` $\to$ `BR-PO10` | `FR-PO-01` $\to$ `FR-PO-05` | `DR-27`, `HDR-04` | `PR-Q01..06`, `CORR-08` | `Supplier` (E21), `SupplierProduct` (E22), `PurchaseOrder` (E23), `PurchaseOrderLine` (E24), `GoodsReceipt` (E25), `GoodsReceiptLine` (E26), `SupplierReturn` (E27), `SupplierReturnLine` (E28) |
+| **SA04. Customer & Identity** | UC Auth, Profile & RBAC | `BR-ID01` $\to$ `BR-ID15` | `FR-AUTH-01` $\to$ `FR-AUTH-04` | `DR-01`, `DR-07` $\to$ `DR-09` | `BD-02`, `CORR-04`, `CID-Q01..06` | `Account` (E29), `Customer` (E30), `Employee` (E31), `Role` (E32), `Permission` (E33), `AccountRole` (E34), `RolePermission` (E35), `CustomerAddress` (E36), `AccountVerification` (E37) |
+| **SA05. Shopping** | UC Shopping Cart | `BR-SH01` $\to$ `BR-SH15` | `FR-CRT-01` $\to$ `FR-CRT-04` | `DR-10` | `SHOP-Q01..06` | `ShoppingCart` (E38), `CartItem` (E39) |
+| **SA06. Sales & Order** | UC-01, UC-05 | `BR-SA01` $\to$ `BR-SA20` | `FR-ORD-01` $\to$ `FR-ORD-06` | `DR-23`, `HDR-01` $\to$ `HDR-03`, `HDR-07` | `BD-02..04`, `CORR-03`, `CORR-04`, `CORR-06`, `CORR-09` | `SalesOrder` (E40), `OrderLine` (E41), `OrderAddress` (E42), `OrderStatusHistory` (E43) |
+| **SA07. Fulfillment & Shipping** | UC-05 (Shipping & Return In) | `BR-FS01` $\to$ `BR-FS22` | `FR-SHP-01` $\to$ `FR-SHP-05` | `DR-17`, `DR-18`, `DR-20`, `HDR-04`, `HDR-07` | `BD-03`, `BD-07`, `CORR-06`, `CORR-08` | `Carrier` (E44), `Shipment` (E45), `ShipmentLine` (E46), `DeliveryAttempt` (E47), `ShipmentStatusHistory` (E48), `DeliveryReturnReceipt` (E75) |
+| **SA08. Promotion & Voucher** | UC-06 (Promotion & Voucher) | `BR-PRM01` $\to$ `BR-PRM24` | `FR-PRM-01` $\to$ `FR-PRM-05` | `DR-21` $\to$ `DR-24`, `HDR-10` | `BD-05`, `CORR-03`, `PROMO-Q01..08` | `Promotion` (E49), `PromotionCondition` (E50), `PromotionProduct` (E51), `Voucher` (E52), `PromotionUsage` (E53), `PromotionTargetCustomer` (E54) |
+| **SA09. Payment & Settlement** | UC-04, UC-09 (Payment, COD & Refund) | `BR-PY01` $\to$ `BR-PY25` | `FR-PAY-01` $\to$ `FR-PAY-05` | `DR-28`, `HDR-08`, `HDR-09` | `CORR-04` $\to$ `CORR-08`, `PAY-Q01..10` | `PaymentMethod` (E55), `Payment` (E56), `PaymentTransaction` (E57), `Refund` (E58), `RefundTransaction` (E59), `PaymentWebhookLog` (E71), `IdempotencyRecord` (E74), `CODCollection` (E77), `CODRemittance` (E78), `CODReconciliation` (E79) |
+| **SA10. Return & Exchange** | UC-07 (RMA & KCS Assessment) | `BR-RT01` $\to$ `BR-RT24` | `FR-RET-01` $\to$ `FR-RET-05` | `DR-29`, `HDR-07`, `HDR-11` | `CORR-01`, `CORR-03`, `CORR-10`, `RET-Q01..08` | `ReturnRequest` (E60), `ReturnRequestLine` (E61), `ReturnReceipt` (E62), `ReturnReceiptLine` (E63), `ReturnStatusHistory` (E64), `ReturnLineAssessment` (E72), `ReturnShipmentAllocation` (E76) |
+| **SA11. Audit & Reporting** | UC Audit & Reporting | `BR-AR01` $\to$ `BR-AR20` | `FR-AUD-01`, `FR-AUD-02`, `FR-REP-01` $\to$ `FR-REP-04` | `DR-30`, `HDR-12` | `AR-Q01..07` | `AuditLog` (E65), `AuditLogDetail` (E66), `ReportDefinition` (E67), `ReportExecution` (E68), `ReportSnapshot` (E69), `ReportPermission` (E70) |
 
 ---
 
-## 10.2. M1 Exit Criteria – Điều kiện Nghiệm thu Hoàn thành Milestone M1
+## 10.2. Điều kiện Nghiệm thu Hoàn thành Milestone M1 (Exit Criteria)
 
-| ID | Tiêu chí nghiệm thu | File | Đánh giá |
+| ID | Tiêu chí nghiệm thu | Tài liệu bàn giao | Đánh giá |
 | :--- | :--- | :--- | :---: |
-| **EC-01** | Project Charter xác định rõ mục tiêu và phạm vi | 01-Project-Charter.md| **Đạt** |
-| **EC-02** | Xác định Stakeholder và ma trận phân quyền RBAC | 02-Stakeholder-Register.md | **Đạt** |
-| **EC-03** | Use Case Diagram tổng thể và phân rã chi tiết | 03-Use-Case-Diagram.md | **Đạt** |
-| **EC-04** | Đặc tả các Use Case cốt lõi (Checkout, Giữ kho, Nhập kho) | 04-Use-Case-Specifications.md | **Đạt** |
-| **EC-05** | Sơ đồ Business Process (Sequence & State Machine) | 05-Business-Processes.md | **Đạt** |
-| **EC-06** | Business Rules chuẩn hóa có mã định danh (v1.1) | 06-Business-Rules.md | **Đạt** |
-| **EC-07** | Functional Requirements chi tiết theo phân hệ | 07-Functional-Requirements.md | **Đạt** |
-| **EC-08** | Non-Functional Requirements (ACID, Concurrency, Security) | 08-Non-Functional-Requirements.md | **Đạt** |
-| **EC-09** | Data Requirements (v1.1) & Constraints Baseline | 09-Data-Requirements.md | **Đạt** |
-| **EC-10** | Traceability Matrix kết nối toàn diện | 10-Traceability-Matrix.md | **Đạt** |
-| **EC-11** | Business Decisions Register (BD-01 đến BD-07) | 11-Business-Decisions.md | **Đạt** |
+| **EC-01** | Project Charter xác định rõ mục tiêu và phạm vi | `01-Project-Charter.md` | **Đạt** |
+| **EC-02** | Xác định Stakeholder và ma trận trách nhiệm | `02-Stakeholder-Register.md` | **Đạt** |
+| **EC-03** | Use Case Diagram tổng thể và phân rã chi tiết | `03-Use-Case-Diagram.md` | **Đạt** |
+| **EC-04** | Đặc tả các Use Case cốt lõi (Checkout, Giữ kho, Nhập kho) | `04-Use-Case-Specifications.md` | **Đạt** |
+| **EC-05** | Sơ đồ luồng quy trình nghiệp vụ cốt lõi (Flowcharts) | `05-Business-Processes.md` | **Đạt** |
+| **EC-06** | Bộ 215 Business Rules định danh duy nhất không trùng lặp (v2.0) | `06-Business-Rules.md` | **Đạt** |
+| **EC-07** | Bộ 55 Functional Requirements đồng bộ mã định danh | `07-Functional-Requirements.md` | **Đạt** |
+| **EC-08** | Non-Functional Requirements định lượng (ACID, Concurrency, RPO/RTO) | `08-Non-Functional-Requirements.md` | **Đạt** |
+| **EC-09** | Bộ 30 Data Requirements (`DR-01..DR-30`) & Constraints Baseline | `09-Data-Requirements.md` | **Đạt** |
+| **EC-10** | Traceability Matrix hai chiều không đứt gãy mã tham chiếu | `10-Traceability-Matrix.md` | **Đạt** |
+| **EC-11** | Business Decisions Register (`BD-01..07` & Reverse-Sync `CORR-01..10`) | `11-Business-Decisions.md` | **Đạt** |
 
 ---
 
-## 10.3. M1 – Bảng Quyết định Nghiệp vụ Đã Chốt Chính thức (Approved Decisions)
+## 10.3. Bảng Tổng hợp 7 Quyết định Nghiệp vụ Đã Chốt (`BD-01` – `BD-07`)
 
-| Mã QĐ | Quyết định nghiệp vụ | Lựa chọn chính thức | Tác động cốt lõi đến M2 |
+| Mã QĐ | Quyết định nghiệp vụ | Lựa chọn chính thức | Thực thể & Cơ chế Cốt lõi ở M2–M3 |
 | :---: | :--- | :--- | :--- |
-| **BD-01** | Sản phẩm – Danh mục | **Có, hỗ trợ nhiều danh mục ($N-N$)** kèm cờ `IsPrimary`. | Bảng `ProductCategory(ProductID, CategoryID, IsPrimary)`. |
-| **BD-02** | Guest Checkout | **Bắt buộc đăng nhập tài khoản**. Không hỗ trợ Guest Checkout. | `Orders.CustomerID` là `NOT NULL`. Quản lý chuẩn `VoucherUsages`. |
-| **BD-03** | Split Shipment | **Có, hỗ trợ chia đơn giao nhiều kho**. | `Order` tách khỏi `WarehouseID`. Sử dụng `OrderAllocation` và `Shipment`. |
-| **BD-04** | Chính sách giữ hàng (Reservation) | **Giữ hàng ngay khi tạo đơn**, có thời hạn (`ExpiresAt` = 15 phút). | Bảng `StockReservation` (hoặc gắn với `OrderAllocation`) ngăn Overselling. |
-| **BD-05** | Chính sách kết hợp khuyến mãi (Stacking) | **Phân tách 2 tầng độc lập:** Tối đa 1 Product Promo + 1 Order Voucher (nếu `IsStackable = 1`). | Cấm >1 chương trình cùng tầng. Bảng `OrderPromotions` lưu snapshot chiết khấu đối soát. |
-| **BD-06** | Thuộc tính biến thể sản phẩm | **Mô hình thuộc tính động có kiểm soát** (`Attribute` $\rightarrow$ `AttributeValue` $\rightarrow$ `VariantAttributeValue`). | Linh hoạt cho cả Thời trang (Size/Màu) và Gia dụng (Kích thước/Chất liệu). |
-| **BD-07** | Chính sách tồn kho khi vận chuyển & hoàn hàng | **Phân định 4 trạng thái tồn kho; Vòng đời 5 bước:** Xuất kho giảm đồng thời `OnHandQty` và `ReservedQty` (`SHIPMENT_OUT`). Giao thất bại chỉ nhập lại kho khi thực sự quay về (`DELIVERY_RETURN_IN`). | Bảo toàn tính toàn vẹn tồn kho trên kệ: `AvailableQty = OnHandQty - ReservedQty`. Hàng trên đường giao theo dõi qua `Shipment`. |
-
-> **Kết luận chính thức nghiệm thu Milestone M1:** Toàn bộ $11/11$ tiêu chí nghiệm thu đã hoàn tất $100\%$. Milestone M1 chính thức khép lại, bàn giao đầy đủ bộ đặc tả làm đầu vào vững chắc cho **Milestone M2 – Conceptual Database Design**.
+| **BD-01** | Sản phẩm – Danh mục | Hỗ trợ nhiều danh mục ($N:N$), bắt buộc đúng 1 danh mục chính khi `PUBLISHED`. | `ProductCategory(ProductID, CategoryID, IsPrimary)` + `UX_ProductCategory_Primary` + SP/Trigger Publish. |
+| **BD-02** | Guest Checkout | Cấm Guest Checkout; bắt buộc đăng nhập tài khoản trước khi đặt đơn. | `SalesOrder.CustomerID NOT NULL` tham chiếu `Customer(AccountID)`. |
+| **BD-03** | Split Shipment | Hỗ trợ chia đơn/dòng đơn xuất từ nhiều kho; tách doanh thu phí ship khách trả với cước hãng. | `OrderWarehouseAllocation` (E12), `Shipment` (E45), `ShipmentLine` (E46). |
+| **BD-04** | Stock Reservation | Giữ tồn logic All-or-Nothing ngay khi tạo đơn với thời hạn `ExpiresAt` (15p chuẩn / 5p Flash Sale). | `StockReservation` (E13), `StockReservationLine` (E14) ($1:0..N$ với `AllocationID`), `PromotionProduct` (E51). |
+| **BD-05** | Promotion Stacking | Tối đa 1 ưu đãi `PRODUCT` trên dòng + 1 `Voucher` `ORDER` + 1 `Voucher` `SHIPPING` (Freeship) trên đơn khi `IsStackable = 1`. | `Promotion` (E49), `Voucher` (E52), `PromotionUsage` (E53) + phân bổ LRM (`CORR-03`). |
+| **BD-06** | Thuộc tính động 2 lớp | Phân tách vai trò `'VARIANT_DEFINING'` và `'DESCRIPTIVE'` trên từng sản phẩm. | `Attribute` (E05), `AttributeValue` (E06), `ProductAttribute` (E07), `ProductAttributeValue` (E08), `VariantAttributeValue` (E09). |
+| **BD-07** | Tồn kho giao vận & giao thất bại | Xuất bãi giảm đồng thời `OnHandQty` & `ReservedQty`; giao thất bại chỉ cộng tồn khi ký `DeliveryReturnReceipt` (E75). | `InventoryBalance` (E11) (3 phẩm chất `SELLABLE`, `QUARANTINED`, `DAMAGED`), `InventoryTransactionLine` (E16), `DeliveryReturnReceipt` (E75). |

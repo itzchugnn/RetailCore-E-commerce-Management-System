@@ -11,8 +11,13 @@ erDiagram
     SHIPMENT ||--o{ DELIVERY_ATTEMPT : "attempted (1..1 : 0..N)"
     SHIPMENT ||--|{ SHIPMENT_STATUS_HISTORY : "logs_status (1..1 : 1..N)"
 
+    SHIPMENT ||--o| DELIVERY_RETURN_RECEIPT : "returned_to_wh (1..1 : 0..1)"
+    WAREHOUSE ||--o{ DELIVERY_RETURN_RECEIPT : "receives_failed_shipment (1..1 : 0..N)"
+    ACCOUNT ||--o{ DELIVERY_RETURN_RECEIPT : "verified_by (1..1 : 0..N)"
+    ACCOUNT |o--o{ SHIPMENT_STATUS_HISTORY : "changed_by (0..1 : 0..N)"
+
     CARRIER {
-        bigint CarrierID PK
+        int CarrierID PK
         varchar CarrierCode UK
         nvarchar CarrierName
         varchar ContactPhone
@@ -25,11 +30,12 @@ erDiagram
         bigint ShipmentID PK
         varchar ShipmentNumber UK
         bigint OrderID FK
-        bigint WarehouseID FK
-        bigint CarrierID FK
-        varchar TrackingNumber UK
+        int WarehouseID FK
+        int CarrierID FK
+        varchar TrackingNumber
         varchar ShipmentStatus
         decimal ShippingFee
+        decimal CODAmountToCollect
         datetimeoffset CreatedAt
         datetimeoffset HandedOverAt
         datetimeoffset DeliveredAt
@@ -40,6 +46,7 @@ erDiagram
         bigint OrderLineID FK
         bigint AllocationID FK
         int ShipmentQty
+        decimal OutboundUnitCost
     }
     DELIVERY_ATTEMPT {
         bigint AttemptID PK
@@ -57,7 +64,18 @@ erDiagram
         varchar PreviousStatus
         varchar NewStatus
         datetimeoffset ChangedAt
-        bigint ChangedBy
+        bigint ChangedBy FK
         nvarchar ChangeReason
+    }
+    DELIVERY_RETURN_RECEIPT {
+        bigint DeliveryReturnReceiptID PK
+        varchar ReceiptNumber UK
+        bigint ShipmentID FK,UK
+        int WarehouseID FK
+        datetimeoffset ReceivedAt
+        bigint ReceivedBy FK
+        varchar ReceiptStatus
+        nvarchar ConditionNote
+        datetimeoffset PostedAt
     }
 ```

@@ -27,7 +27,7 @@ Khi thực hiện công đoạn M3.01, Agent phải kiểm tra và kế thừa �
 ### 2.1. Phân loại và Quy tắc Ánh xạ (`1:1` Entity-to-Table)
 1. **Thực thể Mạnh (Strong Entity):**
    * Ánh xạ thành 1 bảng độc lập.
-   * Sử dụng Surrogate Key `BIGINT IDENTITY(1,1)` cho bảng giao dịch/tài khoản/SKU hoặc `INT IDENTITY(1,1)` cho bảng danh mục master (`Category`, `Brand`, `Attribute`, `Warehouse`, `Carrier`, `Role`, `PaymentMethod`) làm `PRIMARY KEY CLUSTERED`.
+   * Sử dụng Surrogate Key `BIGINT IDENTITY(1,1)` cho bảng giao dịch/tài khoản/SKU hoặc `INT IDENTITY(1,1)` cho 12 bảng danh mục master (`Brand`, `Category`, `Product`, `Attribute`, `AttributeValue`, `Warehouse`, `Supplier`, `Carrier`, `Role`, `Permission`, `PaymentMethod`, `ReportDefinition`) làm `PRIMARY KEY CLUSTERED`.
    * Khóa tự nhiên mang ràng buộc `UNIQUE` hoặc `UNIQUE FILTERED INDEX`.
 2. **Thực thể Phụ thuộc / Yếu (Weak Entity):**
    * Ánh xạ thành bảng con có Khóa ngoại (FK) trỏ về bảng cha kèm `ON DELETE NO ACTION` và Nonclustered Index hỗ trợ truy vấn FK.
@@ -46,9 +46,9 @@ Khi thực hiện công đoạn M3.01, Agent phải kiểm tra và kế thừa �
 5. **Cấu trúc Cây Phân cấp Đệ quy (Hierarchical Data):**
    * `Category` (E02): Khóa ngoại đệ quy `ParentCategoryID REFERENCES Category(CategoryID) NULL` kèm `CHECK ((ParentCategoryID IS NULL AND CategoryLevel = 1) OR (ParentCategoryID IS NOT NULL AND CategoryLevel BETWEEN 2 AND 10))`.
 6. **Bảng Chụp Lịch sử (Snapshot Pattern):**
-   * `OrderAddress` (E42): Bản chụp địa chỉ nhận hàng tại thời điểm đặt đơn ($1:1$ với `SalesOrder`). Không trỏ FK về `CustomerAddress`.
-   * `OrderLine` (E41): Snapshot `UnitPrice`, `VatRate`, `TaxAmount`, `ProductName`, `VariantName`, và JSON Array `VariantAttributesSnapshot NVARCHAR(MAX)` có `CHECK (ISJSON(...) = 1)`.
-   * `ShipmentLine` (E46): Snapshot `OutboundUnitCost` phục vụ hoàn nhập kho chuẩn giá vốn WAC.
+   * `OrderAddress` (E42): Bản chụp địa chỉ nhận hàng và thông tin hóa đơn GTGT B2B tùy chọn tại thời điểm đặt đơn ($1:1$ với `SalesOrder`). Không trỏ FK về `CustomerAddress`.
+   * `OrderLine` (E41): Snapshot `UnitPrice` (đã gồm VAT), `VatRate`, `TaxAmount`, `ProductName`, `VariantName`, và JSON Array `VariantAttributesSnapshot NVARCHAR(MAX)` có `CHECK (ISJSON(...) = 1)`.
+   * `ShipmentLine` (E46) & `WarehouseTransferLine` (E20): Snapshot `OutboundUnitCost` và `UnitCost` phục vụ hoàn nhập/chuyển kho chuẩn giá vốn WAC.
 
 ---
 
